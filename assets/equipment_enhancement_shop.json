@@ -20649,5 +20649,161 @@
         "stage": 6,
         "stock": -1,
         "enhancementPurchaseMode": "per_level"
+    },
+    "513988101": {
+        "availableFrom": "2000-01-01 00:00:00",
+        "availableUntil": null,
+        "costs": [],
+        "enhancementMaxLevel": 68,
+        "equipmentId": 5139881,
+        "groupId": 5139881,
+        "requireAwakeningLevel": 5,
+        "rewards": [],
+        "shopCategoryId": 9,
+        "stage": 1,
+        "stock": -1,
+        "enhancementPurchaseMode": "per_level"
+    },
+    "513988102": {
+        "availableFrom": "2000-01-01 00:00:00",
+        "availableUntil": null,
+        "costs": [
+            {
+                "id": 10000311,
+                "amount": 1
+            }
+        ],
+        "enhancementMaxLevel": 69,
+        "equipmentId": 5139881,
+        "groupId": 5139881,
+        "requireAwakeningLevel": 5,
+        "rewards": [],
+        "shopCategoryId": 9,
+        "stage": 2,
+        "stock": -1,
+        "enhancementPurchaseMode": "per_level"
+    },
+    "513988103": {
+        "availableFrom": "2000-01-01 00:00:00",
+        "availableUntil": null,
+        "costs": [
+            {
+                "id": 10000311,
+                "amount": 1
+            }
+        ],
+        "enhancementMaxLevel": 70,
+        "equipmentId": 5139881,
+        "groupId": 5139881,
+        "requireAwakeningLevel": 5,
+        "rewards": [],
+        "shopCategoryId": 9,
+        "stage": 3,
+        "stock": -1,
+        "enhancementPurchaseMode": "per_level"
+    },
+    "513988104": {
+        "availableFrom": "2000-01-01 00:00:00",
+        "availableUntil": null,
+        "costs": [],
+        "enhancementMaxLevel": 97,
+        "equipmentId": 5139881,
+        "groupId": 5139881,
+        "requireAwakeningLevel": 5,
+        "rewards": [],
+        "shopCategoryId": 9,
+        "stage": 4,
+        "stock": -1,
+        "enhancementPurchaseMode": "per_level"
+    },
+    "513988105": {
+        "availableFrom": "2000-01-01 00:00:00",
+        "availableUntil": null,
+        "costs": [
+            {
+                "id": 10000311,
+                "amount": 2
+            }
+        ],
+        "enhancementMaxLevel": 98,
+        "equipmentId": 5139881,
+        "groupId": 5139881,
+        "requireAwakeningLevel": 5,
+        "rewards": [],
+        "shopCategoryId": 9,
+        "stage": 5,
+        "stock": -1,
+        "enhancementPurchaseMode": "per_level"
+    },
+    "513988106": {
+        "availableFrom": "2000-01-01 00:00:00",
+        "availableUntil": null,
+        "costs": [
+            {
+                "id": 10000311,
+                "amount": 2
+            }
+        ],
+        "enhancementMaxLevel": 99,
+        "equipmentId": 5139881,
+        "groupId": 5139881,
+        "requireAwakeningLevel": 5,
+        "rewards": [],
+        "shopCategoryId": 9,
+        "stage": 6,
+        "stock": -1,
+        "enhancementPurchaseMode": "per_level"
+    },
+    "513988107": {
+        "availableFrom": "2000-01-01 00:00:00",
+        "availableUntil": null,
+        "costs": [],
+        "enhancementMaxLevel": 118,
+        "equipmentId": 5139881,
+        "groupId": 5139881,
+        "requireAwakeningLevel": 5,
+        "rewards": [],
+        "shopCategoryId": 9,
+        "stage": 7,
+        "stock": -1,
+        "enhancementPurchaseMode": "per_level"
+    },
+    "513988108": {
+        "availableFrom": "2000-01-01 00:00:00",
+        "availableUntil": null,
+        "costs": [
+            {
+                "id": 10000311,
+                "amount": 3
+            }
+        ],
+        "enhancementMaxLevel": 119,
+        "equipmentId": 5139881,
+        "groupId": 5139881,
+        "requireAwakeningLevel": 5,
+        "rewards": [],
+        "shopCategoryId": 9,
+        "stage": 8,
+        "stock": -1,
+        "enhancementPurchaseMode": "per_level"
+    },
+    "513988109": {
+        "availableFrom": "2000-01-01 00:00:00",
+        "availableUntil": null,
+        "costs": [
+            {
+                "id": 10000311,
+                "amount": 3
+            }
+        ],
+        "enhancementMaxLevel": 120,
+        "equipmentId": 5139881,
+        "groupId": 5139881,
+        "requireAwakeningLevel": 5,
+        "rewards": [],
+        "shopCategoryId": 9,
+        "stage": 9,
+        "stock": -1,
+        "enhancementPurchaseMode": "per_level"
     }
 }

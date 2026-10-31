@@ -26,5 +26,173 @@
     "kana": "abyss_spheal_clear",
     "condition": "获得条件：完整通关深渊主塔，最终通关队伍携带海豹球（主位或辅助位均可）。",
     "category_id": 8
+  },
+  "9911401": {
+    "string_id": "degree_mod_tester_shazixnar",
+    "name": "影刺·Shazixnar",
+    "kana": "degree_mod_tester_shazixnar",
+    "condition": "测试服专属铭牌 · 感谢 影刺·Shazixnar 参与平衡测试",
+    "category_id": 8
+  },
+  "9911402": {
+    "string_id": "degree_mod_tester_pppp",
+    "name": "下辈子还要玩水直击",
+    "kana": "degree_mod_tester_pppp",
+    "condition": "测试服专属铭牌 · 感谢 P.P.P.P 参与平衡测试",
+    "category_id": 8
+  },
+  "9911403": {
+    "string_id": "degree_mod_tester_cuicuisha",
+    "name": "万人血书背鳍三兄弟",
+    "kana": "degree_mod_tester_cuicuisha",
+    "condition": "测试服专属铭牌 · 感谢 脆脆鲨想吃鱼 参与平衡测试",
+    "category_id": 8
+  },
+  "9911404": {
+    "string_id": "degree_mod_tester_shuiyu",
+    "name": "找一车海豹球来弄你",
+    "kana": "degree_mod_tester_shuiyu",
+    "condition": "测试服专属铭牌 · 感谢 东隅已逝 参与平衡测试",
+    "category_id": 8
+  },
+  "9911405": {
+    "string_id": "degree_mod_tester_guantou",
+    "name": "来自流星的深渊骑士",
+    "kana": "degree_mod_tester_guantou",
+    "condition": "测试服专属铭牌 · 感谢 Aswerl57 参与平衡测试",
+    "category_id": 8
+  },
+  "9911406": {
+    "string_id": "degree_mod_tester_miao",
+    "name": "来点关注谢谢喵",
+    "kana": "degree_mod_tester_miao",
+    "condition": "测试服专属铭牌 · 感谢 来点关注谢谢喵 参与平衡测试",
+    "category_id": 8
+  },
+  "9911407": {
+    "string_id": "degree_mod_tester_yinghuafen",
+    "name": "丧心病狂的樱花粉",
+    "kana": "degree_mod_tester_yinghuafen",
+    "condition": "测试服专属铭牌 · 感谢 丧心病狂的樱花粉 参与平衡测试",
+    "category_id": 8
+  },
+  "9911408": {
+    "string_id": "degree_mod_tester_guangege",
+    "name": "关鸽鸽",
+    "kana": "degree_mod_tester_guangege",
+    "condition": "测试服专属铭牌 · 感谢 关鸽鸽 参与平衡测试",
+    "category_id": 8
+  },
+  "9911409": {
+    "string_id": "degree_mod_tester_baihe",
+    "name": "百合色彩虹桥",
+    "kana": "degree_mod_tester_baihe",
+    "condition": "测试服专属铭牌 · 感谢 fishking 参与平衡测试",
+    "category_id": 8
+  },
+  "9911410": {
+    "string_id": "degree_mod_tester_hui",
+    "name": "灰",
+    "kana": "degree_mod_tester_hui",
+    "condition": "测试服专属铭牌 · 感谢 灰 一直以来的支持",
+    "category_id": 8
+  },
+  "9911411": {
+    "string_id": "degree_mod_char_ludi_0",
+    "name": "「任性」学习模块",
+    "kana": "degree_mod_char_ludi_0",
+    "condition": "露迪专属铭牌（觉醒前）",
+    "category_id": 8
+  },
+  "9911412": {
+    "string_id": "degree_mod_char_ludi_1",
+    "name": "本公主赐你糖果！",
+    "kana": "degree_mod_char_ludi_1",
+    "condition": "露迪专属铭牌（觉醒后）",
+    "category_id": 8
+  },
+  "9911413": {
+    "string_id": "degree_mod_char_momiya_0",
+    "name": "南瓜帮手一口闷",
+    "kana": "degree_mod_char_momiya_0",
+    "condition": "莫弥亚专属铭牌（觉醒前）",
+    "category_id": 8
+  },
+  "9911414": {
+    "string_id": "degree_mod_char_momiya_1",
+    "name": "魔剑饱餐万圣夜",
+    "kana": "degree_mod_char_momiya_1",
+    "condition": "莫弥亚专属铭牌（觉醒后）",
+    "category_id": 8
+  },
+  "9911415": {
+    "string_id": "degree_mod_char_seriol_0",
+    "name": "「无聊」但全套演完",
+    "kana": "degree_mod_char_seriol_0",
+    "condition": "塞里奥尔专属铭牌（觉醒前）",
+    "category_id": 8
+  },
+  "9911416": {
+    "string_id": "degree_mod_char_seriol_1",
+    "name": "敬这杯结晶星芒",
+    "kana": "degree_mod_char_seriol_1",
+    "condition": "塞里奥尔专属铭牌（觉醒后）",
+    "category_id": 8
+  },
+  "9911417": {
+    "string_id": "degree_mod_char_recital_0",
+    "name": "藤蔓绑怪口袋装糖",
+    "kana": "degree_mod_char_recital_0",
+    "condition": "瑞西塔尔专属铭牌（觉醒前）",
+    "category_id": 8
+  },
+  "9911418": {
+    "string_id": "degree_mod_char_recital_1",
+    "name": "今夜棺柩不打烊",
+    "kana": "degree_mod_char_recital_1",
+    "condition": "瑞西塔尔专属铭牌（觉醒后）",
+    "category_id": 8
+  },
+  "9911419": {
+    "string_id": "degree_mod_char_beretta_0",
+    "name": "全息频道呼叫挚友",
+    "kana": "degree_mod_char_beretta_0",
+    "condition": "贝瑞塔专属铭牌（觉醒前）",
+    "category_id": 8
+  },
+  "9911420": {
+    "string_id": "degree_mod_char_beretta_1",
+    "name": "雷光与暗夜二重奏",
+    "kana": "degree_mod_char_beretta_1",
+    "condition": "贝瑞塔专属铭牌（觉醒后）",
+    "category_id": 8
+  },
+  "9911421": {
+    "string_id": "degree_mod_char_zenith_1",
+    "name": "胜败之外烈火长明",
+    "kana": "degree_mod_char_zenith_1",
+    "condition": "炎龙王·瓦格纳专属铭牌（超限）",
+    "category_id": 8
+  },
+  "9911422": {
+    "string_id": "degree_mod_char_rose_1",
+    "name": "告别软饭持证护花",
+    "kana": "degree_mod_char_rose_1",
+    "condition": "护花使龙·休尔特专属铭牌（超限）",
+    "category_id": 8
+  },
+  "9911423": {
+    "string_id": "degree_mod_char_aqua_0",
+    "name": "天台上的晴日哨岗",
+    "kana": "degree_mod_char_aqua_0",
+    "condition": "水杰拉德专属铭牌（觉醒前）",
+    "category_id": 8
+  },
+  "9911424": {
+    "string_id": "degree_mod_char_aqua_1",
+    "name": "月下守望者",
+    "kana": "degree_mod_char_aqua_1",
+    "condition": "水杰拉德专属铭牌（觉醒后）",
+    "category_id": 8
   }
 }
