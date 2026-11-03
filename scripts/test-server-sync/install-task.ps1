@@ -13,7 +13,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 New-Item -ItemType Directory -Force -Path $SyncRoot | Out-Null
-Copy-Item -Force (Join-Path $PSScriptRoot 'sync.cjs') (Join-Path $SyncRoot 'sync.cjs')
+$src = Join-Path $PSScriptRoot 'sync.cjs'
+$dst = Join-Path $SyncRoot 'sync.cjs'
+if ((Resolve-Path $src).Path -ne [IO.Path]::GetFullPath($dst)) { Copy-Item -Force $src $dst }
 
 $token = Join-Path $SyncRoot 'token.txt'
 if (-not (Test-Path $token)) { throw "put the GitHub token in $token first" }
