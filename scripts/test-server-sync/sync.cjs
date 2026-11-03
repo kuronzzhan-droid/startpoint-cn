@@ -388,14 +388,21 @@ async function main() {
 // Single instance: the deploy hook and the scheduled task may overlap.
 const LOCK = path.join(SYNC_ROOT, 'sync.lock');
 let lockFd;
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 try {
   lockFd = fs.openSync(LOCK, 'wx');
 } catch {
+  // A run killed mid-way (deploy scripts may stop node) leaves its lock behind.
+  // Nothing is half-written remotely: the branch only moves after the commit exists.
+  let pid = 0;
+  try { pid = Number(fs.readFileSync(LOCK, 'utf8')) || 0; } catch { /* unreadable */ }
   const age = Date.now() - fs.statSync(LOCK).mtimeMs;
-  if (age < 60 * 60 * 1000) { log('another sync is running, skip'); process.exit(0); }
-  fs.rmSync(LOCK, { force: true });              // stale lock from a crashed run
+  if (pid && alive(pid) && age < 60 * 60 * 1000) { log(`another sync is running (pid ${pid}), skip`); process.exit(0); }
+  log(`removing stale lock (pid ${pid || '?'})`);
+  fs.rmSync(LOCK, { force: true });
   lockFd = fs.openSync(LOCK, 'wx');
 }
+fs.writeSync(lockFd, String(process.pid));
 main()
   .then((code) => { process.exitCode = code; })
   .catch((e) => { log(`ERROR: ${e.message.replace(TOKEN || '\u0000', '***')}`); process.exitCode = 1; })
