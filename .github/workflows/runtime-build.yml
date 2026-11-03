@@ -2,7 +2,9 @@ name: runtime-build
 
 on:
   push:
-    branches: ['**']
+    # test-server is an automatic mirror of the test server (scripts/test-server-sync);
+    # its out/ and assets run ahead of src/, so CI there only produces noise.
+    branches-ignore: ['test-server']
     tags-ignore: ['**']
   pull_request:
 
