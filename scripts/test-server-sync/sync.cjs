@@ -35,6 +35,8 @@ const MAX_BINARY = 1024 * 1024;        // new binaries above this are skipped (r
 const INLINE_MAX = 512 * 1024;         // larger text files are uploaded as blobs
 const CHUNK_BYTES = 4 * 1024 * 1024;   // inline content per create-tree call
 const CHUNK_FILES = 300;
+// A deploy swaps files over several minutes; never snapshot while that is going on.
+const QUIET_MS = Number(opt('--quiet-minutes', '10')) * 60 * 1000;
 
 // Mirrored top-level paths. Everything else on the server stays out.
 // out/ is included on purpose: the live server runs from out/ and many fixes
@@ -309,6 +311,12 @@ async function main() {
   log(report.split('\n').slice(0, 2).join(' | '));
 
   if (!changed.length && !deleted.length) { log('no changes'); return 0; }
+
+  const recent = files.filter((f) => { try { return Date.now() - fs.statSync(f.abs).mtimeMs < QUIET_MS; } catch { return true; } });
+  if (recent.length) {
+    log(`files changed in the last ${QUIET_MS / 60000} min (e.g. ${recent[0].rel}), deploy may be running; skip this run`);
+    return 0;
+  }
 
   // 4. Secret scan, fail closed.
   const hits = changed.filter((c) => c.text).flatMap((c) => scan(c.rel, c.buf.toString('utf8')));
