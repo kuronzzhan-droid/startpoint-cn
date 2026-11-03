@@ -163,6 +163,9 @@ function computeDaily(pattern, ctx, dbProgress) {
     if (/^use_dash(?:_[23])?$/.test(pattern)) {
         return Math.max(dbProgress, periodValue((_a = ctx.player.totalDashes) !== null && _a !== void 0 ? _a : 0, snapshot === null || snapshot === void 0 ? void 0 : snapshot.dashCount));
     }
+    // 每日登录（作者 1103）：当天只要结算到就算完成，凌晨 5 点日切重置
+    if (pattern === "kaihuang_daily_login")
+        return 1;
     if (pattern === "daily_quest_stamina_use_2024_02") {
         return Math.max(dbProgress, periodValue((_b = ctx.player.totalStaminaUsed) !== null && _b !== void 0 ? _b : 0, snapshot === null || snapshot === void 0 ? void 0 : snapshot.staminaUsed));
     }
