@@ -114,6 +114,42 @@ function reloadRogueEventConfig() {
 }
 exports.reloadRogueEventConfig = reloadRogueEventConfig;
 reloadRogueEventConfig();
+let towerDungeonExtraRewardsData = null;
+function reloadTowerDungeonExtraRewards(customPath) {
+    const targetPath = customPath !== null && customPath !== void 0
+        ? customPath
+        : (0, path_1.join)(MOD_ASSETS_DIR, "tower_dungeon_extra_rewards.json");
+    try {
+        const raw = (0, fs_1.readFileSync)(targetPath, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            console.warn(`[ASSETS] Invalid tower_dungeon_extra_rewards.json at ${targetPath}; tower dungeon extra rewards disabled.`);
+            towerDungeonExtraRewardsData = null;
+            return false;
+        }
+        towerDungeonExtraRewardsData = parsed;
+        return true;
+    }
+    catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        console.warn(`[ASSETS] Failed to load tower_dungeon_extra_rewards.json (${reason}); tower dungeon extra rewards disabled.`);
+        towerDungeonExtraRewardsData = null;
+        return false;
+    }
+}
+exports.reloadTowerDungeonExtraRewards = reloadTowerDungeonExtraRewards;
+reloadTowerDungeonExtraRewards();
+function getTowerDungeonExtraRewardsSync(stage) {
+    if (!towerDungeonExtraRewardsData) {
+        return [];
+    }
+    const list = towerDungeonExtraRewardsData[String(stage)];
+    if (!Array.isArray(list)) {
+        return [];
+    }
+    return list;
+}
+exports.getTowerDungeonExtraRewardsSync = getTowerDungeonExtraRewardsSync;
 /**
  * Gets a clear reward from its ID.
  *

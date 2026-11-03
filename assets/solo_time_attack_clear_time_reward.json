@@ -1,0 +1,2726 @@
+{
+  "75": {
+    "questId": 1003,
+    "clearTimeMs": 420000,
+    "name": "7分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "76": {
+    "questId": 1003,
+    "clearTimeMs": 410000,
+    "name": "6分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "77": {
+    "questId": 1003,
+    "clearTimeMs": 400000,
+    "name": "6分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "78": {
+    "questId": 1003,
+    "clearTimeMs": 390000,
+    "name": "6分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "79": {
+    "questId": 1003,
+    "clearTimeMs": 380000,
+    "name": "6分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "80": {
+    "questId": 1003,
+    "clearTimeMs": 370000,
+    "name": "6分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "81": {
+    "questId": 1003,
+    "clearTimeMs": 360000,
+    "name": "6分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 20
+      }
+    ]
+  },
+  "82": {
+    "questId": 1003,
+    "clearTimeMs": 350000,
+    "name": "5分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "83": {
+    "questId": 1003,
+    "clearTimeMs": 340000,
+    "name": "5分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "84": {
+    "questId": 1003,
+    "clearTimeMs": 330000,
+    "name": "5分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 30
+      }
+    ]
+  },
+  "85": {
+    "questId": 1003,
+    "clearTimeMs": 320000,
+    "name": "5分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "86": {
+    "questId": 1003,
+    "clearTimeMs": 310000,
+    "name": "5分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "87": {
+    "questId": 1003,
+    "clearTimeMs": 300000,
+    "name": "5分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54550,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 40
+      }
+    ]
+  },
+  "88": {
+    "questId": 1003,
+    "clearTimeMs": 290000,
+    "name": "4分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "89": {
+    "questId": 1003,
+    "clearTimeMs": 280000,
+    "name": "4分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "90": {
+    "questId": 1003,
+    "clearTimeMs": 270000,
+    "name": "4分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 50
+      }
+    ]
+  },
+  "91": {
+    "questId": 1003,
+    "clearTimeMs": 260000,
+    "name": "4分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "92": {
+    "questId": 1003,
+    "clearTimeMs": 250000,
+    "name": "4分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "93": {
+    "questId": 1003,
+    "clearTimeMs": 240000,
+    "name": "4分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 60
+      }
+    ]
+  },
+  "94": {
+    "questId": 1003,
+    "clearTimeMs": 230000,
+    "name": "3分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "95": {
+    "questId": 1003,
+    "clearTimeMs": 220000,
+    "name": "3分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "96": {
+    "questId": 1003,
+    "clearTimeMs": 210000,
+    "name": "3分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 70
+      }
+    ]
+  },
+  "97": {
+    "questId": 1003,
+    "clearTimeMs": 200000,
+    "name": "3分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "98": {
+    "questId": 1003,
+    "clearTimeMs": 190000,
+    "name": "3分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "99": {
+    "questId": 1003,
+    "clearTimeMs": 180000,
+    "name": "3分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54540,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 80
+      }
+    ]
+  },
+  "100": {
+    "questId": 1003,
+    "clearTimeMs": 170000,
+    "name": "2分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "101": {
+    "questId": 1003,
+    "clearTimeMs": 160000,
+    "name": "2分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "102": {
+    "questId": 1003,
+    "clearTimeMs": 150000,
+    "name": "2分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 90
+      }
+    ]
+  },
+  "103": {
+    "questId": 1003,
+    "clearTimeMs": 140000,
+    "name": "2分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "104": {
+    "questId": 1003,
+    "clearTimeMs": 130000,
+    "name": "2分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "105": {
+    "questId": 1003,
+    "clearTimeMs": 120000,
+    "name": "2分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "106": {
+    "questId": 1003,
+    "clearTimeMs": 110000,
+    "name": "1分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "107": {
+    "questId": 1003,
+    "clearTimeMs": 100000,
+    "name": "1分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "108": {
+    "questId": 1003,
+    "clearTimeMs": 90000,
+    "name": "1分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "109": {
+    "questId": 1003,
+    "clearTimeMs": 80000,
+    "name": "1分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "110": {
+    "questId": 1003,
+    "clearTimeMs": 70000,
+    "name": "1分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "111": {
+    "questId": 1003,
+    "clearTimeMs": 60000,
+    "name": "1分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "112": {
+    "questId": 1004,
+    "clearTimeMs": 420000,
+    "name": "7分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "113": {
+    "questId": 1004,
+    "clearTimeMs": 410000,
+    "name": "6分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "114": {
+    "questId": 1004,
+    "clearTimeMs": 400000,
+    "name": "6分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "115": {
+    "questId": 1004,
+    "clearTimeMs": 390000,
+    "name": "6分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "116": {
+    "questId": 1004,
+    "clearTimeMs": 380000,
+    "name": "6分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "117": {
+    "questId": 1004,
+    "clearTimeMs": 370000,
+    "name": "6分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "118": {
+    "questId": 1004,
+    "clearTimeMs": 360000,
+    "name": "6分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 20
+      }
+    ]
+  },
+  "119": {
+    "questId": 1004,
+    "clearTimeMs": 350000,
+    "name": "5分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "120": {
+    "questId": 1004,
+    "clearTimeMs": 340000,
+    "name": "5分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "121": {
+    "questId": 1004,
+    "clearTimeMs": 330000,
+    "name": "5分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 30
+      }
+    ]
+  },
+  "122": {
+    "questId": 1004,
+    "clearTimeMs": 320000,
+    "name": "5分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "123": {
+    "questId": 1004,
+    "clearTimeMs": 310000,
+    "name": "5分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "124": {
+    "questId": 1004,
+    "clearTimeMs": 300000,
+    "name": "5分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54570,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 40
+      }
+    ]
+  },
+  "125": {
+    "questId": 1004,
+    "clearTimeMs": 290000,
+    "name": "4分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "126": {
+    "questId": 1004,
+    "clearTimeMs": 280000,
+    "name": "4分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "127": {
+    "questId": 1004,
+    "clearTimeMs": 270000,
+    "name": "4分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 50
+      }
+    ]
+  },
+  "128": {
+    "questId": 1004,
+    "clearTimeMs": 260000,
+    "name": "4分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "129": {
+    "questId": 1004,
+    "clearTimeMs": 250000,
+    "name": "4分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "130": {
+    "questId": 1004,
+    "clearTimeMs": 240000,
+    "name": "4分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 60
+      }
+    ]
+  },
+  "131": {
+    "questId": 1004,
+    "clearTimeMs": 230000,
+    "name": "3分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "132": {
+    "questId": 1004,
+    "clearTimeMs": 220000,
+    "name": "3分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "133": {
+    "questId": 1004,
+    "clearTimeMs": 210000,
+    "name": "3分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 70
+      }
+    ]
+  },
+  "134": {
+    "questId": 1004,
+    "clearTimeMs": 200000,
+    "name": "3分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "135": {
+    "questId": 1004,
+    "clearTimeMs": 190000,
+    "name": "3分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "136": {
+    "questId": 1004,
+    "clearTimeMs": 180000,
+    "name": "3分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54560,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 80
+      }
+    ]
+  },
+  "137": {
+    "questId": 1004,
+    "clearTimeMs": 170000,
+    "name": "2分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "138": {
+    "questId": 1004,
+    "clearTimeMs": 160000,
+    "name": "2分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "139": {
+    "questId": 1004,
+    "clearTimeMs": 150000,
+    "name": "2分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 90
+      }
+    ]
+  },
+  "140": {
+    "questId": 1004,
+    "clearTimeMs": 140000,
+    "name": "2分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "141": {
+    "questId": 1004,
+    "clearTimeMs": 130000,
+    "name": "2分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "142": {
+    "questId": 1004,
+    "clearTimeMs": 120000,
+    "name": "2分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "143": {
+    "questId": 1004,
+    "clearTimeMs": 110000,
+    "name": "1分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "144": {
+    "questId": 1004,
+    "clearTimeMs": 100000,
+    "name": "1分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "145": {
+    "questId": 1004,
+    "clearTimeMs": 90000,
+    "name": "1分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "146": {
+    "questId": 1004,
+    "clearTimeMs": 80000,
+    "name": "1分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "147": {
+    "questId": 1004,
+    "clearTimeMs": 70000,
+    "name": "1分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "148": {
+    "questId": 1004,
+    "clearTimeMs": 60000,
+    "name": "1分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "1": {
+    "questId": 1001,
+    "clearTimeMs": 420000,
+    "name": "7分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "2": {
+    "questId": 1001,
+    "clearTimeMs": 410000,
+    "name": "6分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "3": {
+    "questId": 1001,
+    "clearTimeMs": 400000,
+    "name": "6分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "4": {
+    "questId": 1001,
+    "clearTimeMs": 390000,
+    "name": "6分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "5": {
+    "questId": 1001,
+    "clearTimeMs": 380000,
+    "name": "6分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "6": {
+    "questId": 1001,
+    "clearTimeMs": 370000,
+    "name": "6分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "7": {
+    "questId": 1001,
+    "clearTimeMs": 360000,
+    "name": "6分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 20
+      }
+    ]
+  },
+  "8": {
+    "questId": 1001,
+    "clearTimeMs": 350000,
+    "name": "5分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "9": {
+    "questId": 1001,
+    "clearTimeMs": 340000,
+    "name": "5分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "10": {
+    "questId": 1001,
+    "clearTimeMs": 330000,
+    "name": "5分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 30
+      }
+    ]
+  },
+  "11": {
+    "questId": 1001,
+    "clearTimeMs": 320000,
+    "name": "5分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "12": {
+    "questId": 1001,
+    "clearTimeMs": 310000,
+    "name": "5分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "13": {
+    "questId": 1001,
+    "clearTimeMs": 300000,
+    "name": "5分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54530,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 40
+      }
+    ]
+  },
+  "14": {
+    "questId": 1001,
+    "clearTimeMs": 290000,
+    "name": "4分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "15": {
+    "questId": 1001,
+    "clearTimeMs": 280000,
+    "name": "4分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "16": {
+    "questId": 1001,
+    "clearTimeMs": 270000,
+    "name": "4分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 50
+      }
+    ]
+  },
+  "17": {
+    "questId": 1001,
+    "clearTimeMs": 260000,
+    "name": "4分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "18": {
+    "questId": 1001,
+    "clearTimeMs": 250000,
+    "name": "4分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "19": {
+    "questId": 1001,
+    "clearTimeMs": 240000,
+    "name": "4分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 60
+      }
+    ]
+  },
+  "20": {
+    "questId": 1001,
+    "clearTimeMs": 230000,
+    "name": "3分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "21": {
+    "questId": 1001,
+    "clearTimeMs": 220000,
+    "name": "3分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "22": {
+    "questId": 1001,
+    "clearTimeMs": 210000,
+    "name": "3分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 70
+      }
+    ]
+  },
+  "23": {
+    "questId": 1001,
+    "clearTimeMs": 200000,
+    "name": "3分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "24": {
+    "questId": 1001,
+    "clearTimeMs": 190000,
+    "name": "3分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "25": {
+    "questId": 1001,
+    "clearTimeMs": 180000,
+    "name": "3分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54520,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 80
+      }
+    ]
+  },
+  "26": {
+    "questId": 1001,
+    "clearTimeMs": 170000,
+    "name": "2分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "27": {
+    "questId": 1001,
+    "clearTimeMs": 160000,
+    "name": "2分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "28": {
+    "questId": 1001,
+    "clearTimeMs": 150000,
+    "name": "2分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 90
+      }
+    ]
+  },
+  "29": {
+    "questId": 1001,
+    "clearTimeMs": 140000,
+    "name": "2分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "30": {
+    "questId": 1001,
+    "clearTimeMs": 130000,
+    "name": "2分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "31": {
+    "questId": 1001,
+    "clearTimeMs": 120000,
+    "name": "2分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "32": {
+    "questId": 1001,
+    "clearTimeMs": 110000,
+    "name": "1分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "33": {
+    "questId": 1001,
+    "clearTimeMs": 100000,
+    "name": "1分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "34": {
+    "questId": 1001,
+    "clearTimeMs": 90000,
+    "name": "1分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "35": {
+    "questId": 1001,
+    "clearTimeMs": 80000,
+    "name": "1分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "36": {
+    "questId": 1001,
+    "clearTimeMs": 70000,
+    "name": "1分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "37": {
+    "questId": 1001,
+    "clearTimeMs": 60000,
+    "name": "1分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "38": {
+    "questId": 1002,
+    "clearTimeMs": 420000,
+    "name": "7分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "39": {
+    "questId": 1002,
+    "clearTimeMs": 410000,
+    "name": "6分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "40": {
+    "questId": 1002,
+    "clearTimeMs": 400000,
+    "name": "6分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "41": {
+    "questId": 1002,
+    "clearTimeMs": 390000,
+    "name": "6分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "42": {
+    "questId": 1002,
+    "clearTimeMs": 380000,
+    "name": "6分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "43": {
+    "questId": 1002,
+    "clearTimeMs": 370000,
+    "name": "6分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "44": {
+    "questId": 1002,
+    "clearTimeMs": 360000,
+    "name": "6分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 20
+      }
+    ]
+  },
+  "45": {
+    "questId": 1002,
+    "clearTimeMs": 350000,
+    "name": "5分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "46": {
+    "questId": 1002,
+    "clearTimeMs": 340000,
+    "name": "5分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "47": {
+    "questId": 1002,
+    "clearTimeMs": 330000,
+    "name": "5分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 30
+      }
+    ]
+  },
+  "48": {
+    "questId": 1002,
+    "clearTimeMs": 320000,
+    "name": "5分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "49": {
+    "questId": 1002,
+    "clearTimeMs": 310000,
+    "name": "5分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "50": {
+    "questId": 1002,
+    "clearTimeMs": 300000,
+    "name": "5分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54510,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 40
+      }
+    ]
+  },
+  "51": {
+    "questId": 1002,
+    "clearTimeMs": 290000,
+    "name": "4分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "52": {
+    "questId": 1002,
+    "clearTimeMs": 280000,
+    "name": "4分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "53": {
+    "questId": 1002,
+    "clearTimeMs": 270000,
+    "name": "4分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 50
+      }
+    ]
+  },
+  "54": {
+    "questId": 1002,
+    "clearTimeMs": 260000,
+    "name": "4分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "55": {
+    "questId": 1002,
+    "clearTimeMs": 250000,
+    "name": "4分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "56": {
+    "questId": 1002,
+    "clearTimeMs": 240000,
+    "name": "4分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 60
+      }
+    ]
+  },
+  "57": {
+    "questId": 1002,
+    "clearTimeMs": 230000,
+    "name": "3分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "58": {
+    "questId": 1002,
+    "clearTimeMs": 220000,
+    "name": "3分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "59": {
+    "questId": 1002,
+    "clearTimeMs": 210000,
+    "name": "3分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 70
+      }
+    ]
+  },
+  "60": {
+    "questId": 1002,
+    "clearTimeMs": 200000,
+    "name": "3分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "61": {
+    "questId": 1002,
+    "clearTimeMs": 190000,
+    "name": "3分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "62": {
+    "questId": 1002,
+    "clearTimeMs": 180000,
+    "name": "3分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54500,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 80
+      }
+    ]
+  },
+  "63": {
+    "questId": 1002,
+    "clearTimeMs": 170000,
+    "name": "2分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "64": {
+    "questId": 1002,
+    "clearTimeMs": 160000,
+    "name": "2分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "65": {
+    "questId": 1002,
+    "clearTimeMs": 150000,
+    "name": "2分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 90
+      }
+    ]
+  },
+  "66": {
+    "questId": 1002,
+    "clearTimeMs": 140000,
+    "name": "2分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "67": {
+    "questId": 1002,
+    "clearTimeMs": 130000,
+    "name": "2分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "68": {
+    "questId": 1002,
+    "clearTimeMs": 120000,
+    "name": "2分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "69": {
+    "questId": 1002,
+    "clearTimeMs": 110000,
+    "name": "1分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "70": {
+    "questId": 1002,
+    "clearTimeMs": 100000,
+    "name": "1分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "71": {
+    "questId": 1002,
+    "clearTimeMs": 90000,
+    "name": "1分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "72": {
+    "questId": 1002,
+    "clearTimeMs": 80000,
+    "name": "1分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "73": {
+    "questId": 1002,
+    "clearTimeMs": 70000,
+    "name": "1分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "74": {
+    "questId": 1002,
+    "clearTimeMs": 60000,
+    "name": "1分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "149": {
+    "questId": 1005,
+    "clearTimeMs": 420000,
+    "name": "7分钟内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "150": {
+    "questId": 1005,
+    "clearTimeMs": 410000,
+    "name": "6分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "151": {
+    "questId": 1005,
+    "clearTimeMs": 400000,
+    "name": "6分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "152": {
+    "questId": 1005,
+    "clearTimeMs": 390000,
+    "name": "6分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "153": {
+    "questId": 1005,
+    "clearTimeMs": 380000,
+    "name": "6分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "154": {
+    "questId": 1005,
+    "clearTimeMs": 370000,
+    "name": "6分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "155": {
+    "questId": 1005,
+    "clearTimeMs": 360000,
+    "name": "6分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 20
+      }
+    ]
+  },
+  "156": {
+    "questId": 1005,
+    "clearTimeMs": 350000,
+    "name": "5分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "157": {
+    "questId": 1005,
+    "clearTimeMs": 340000,
+    "name": "5分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "158": {
+    "questId": 1005,
+    "clearTimeMs": 330000,
+    "name": "5分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 30
+      }
+    ]
+  },
+  "159": {
+    "questId": 1005,
+    "clearTimeMs": 320000,
+    "name": "5分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "160": {
+    "questId": 1005,
+    "clearTimeMs": 310000,
+    "name": "5分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "161": {
+    "questId": 1005,
+    "clearTimeMs": 300000,
+    "name": "5分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54590,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 40
+      }
+    ]
+  },
+  "162": {
+    "questId": 1005,
+    "clearTimeMs": 290000,
+    "name": "4分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "163": {
+    "questId": 1005,
+    "clearTimeMs": 280000,
+    "name": "4分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "164": {
+    "questId": 1005,
+    "clearTimeMs": 270000,
+    "name": "4分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 50
+      }
+    ]
+  },
+  "165": {
+    "questId": 1005,
+    "clearTimeMs": 260000,
+    "name": "4分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "166": {
+    "questId": 1005,
+    "clearTimeMs": 250000,
+    "name": "4分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "167": {
+    "questId": 1005,
+    "clearTimeMs": 240000,
+    "name": "4分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 60
+      }
+    ]
+  },
+  "168": {
+    "questId": 1005,
+    "clearTimeMs": 230000,
+    "name": "3分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "169": {
+    "questId": 1005,
+    "clearTimeMs": 220000,
+    "name": "3分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "170": {
+    "questId": 1005,
+    "clearTimeMs": 210000,
+    "name": "3分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 70
+      }
+    ]
+  },
+  "171": {
+    "questId": 1005,
+    "clearTimeMs": 200000,
+    "name": "3分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "172": {
+    "questId": 1005,
+    "clearTimeMs": 190000,
+    "name": "3分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "173": {
+    "questId": 1005,
+    "clearTimeMs": 180000,
+    "name": "3分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54580,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 80
+      }
+    ]
+  },
+  "174": {
+    "questId": 1005,
+    "clearTimeMs": 170000,
+    "name": "2分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "175": {
+    "questId": 1005,
+    "clearTimeMs": 160000,
+    "name": "2分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "176": {
+    "questId": 1005,
+    "clearTimeMs": 150000,
+    "name": "2分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 90
+      }
+    ]
+  },
+  "177": {
+    "questId": 1005,
+    "clearTimeMs": 140000,
+    "name": "2分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "178": {
+    "questId": 1005,
+    "clearTimeMs": 130000,
+    "name": "2分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "179": {
+    "questId": 1005,
+    "clearTimeMs": 120000,
+    "name": "2分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "180": {
+    "questId": 1005,
+    "clearTimeMs": 110000,
+    "name": "1分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "181": {
+    "questId": 1005,
+    "clearTimeMs": 100000,
+    "name": "1分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "182": {
+    "questId": 1005,
+    "clearTimeMs": 90000,
+    "name": "1分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "183": {
+    "questId": 1005,
+    "clearTimeMs": 80000,
+    "name": "1分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "184": {
+    "questId": 1005,
+    "clearTimeMs": 70000,
+    "name": "1分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "185": {
+    "questId": 1005,
+    "clearTimeMs": 60000,
+    "name": "1分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "186": {
+    "questId": 1006,
+    "clearTimeMs": 420000,
+    "name": "7分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "187": {
+    "questId": 1006,
+    "clearTimeMs": 410000,
+    "name": "6分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "188": {
+    "questId": 1006,
+    "clearTimeMs": 400000,
+    "name": "6分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "189": {
+    "questId": 1006,
+    "clearTimeMs": 390000,
+    "name": "6分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "190": {
+    "questId": 1006,
+    "clearTimeMs": 380000,
+    "name": "6分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "191": {
+    "questId": 1006,
+    "clearTimeMs": 370000,
+    "name": "6分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "192": {
+    "questId": 1006,
+    "clearTimeMs": 360000,
+    "name": "6分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 20
+      }
+    ]
+  },
+  "193": {
+    "questId": 1006,
+    "clearTimeMs": 350000,
+    "name": "5分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "194": {
+    "questId": 1006,
+    "clearTimeMs": 340000,
+    "name": "5分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "195": {
+    "questId": 1006,
+    "clearTimeMs": 330000,
+    "name": "5分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 30
+      }
+    ]
+  },
+  "196": {
+    "questId": 1006,
+    "clearTimeMs": 320000,
+    "name": "5分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "197": {
+    "questId": 1006,
+    "clearTimeMs": 310000,
+    "name": "5分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "198": {
+    "questId": 1006,
+    "clearTimeMs": 300000,
+    "name": "5分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54610,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 40
+      }
+    ]
+  },
+  "199": {
+    "questId": 1006,
+    "clearTimeMs": 290000,
+    "name": "4分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "200": {
+    "questId": 1006,
+    "clearTimeMs": 280000,
+    "name": "4分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "201": {
+    "questId": 1006,
+    "clearTimeMs": 270000,
+    "name": "4分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 50
+      }
+    ]
+  },
+  "202": {
+    "questId": 1006,
+    "clearTimeMs": 260000,
+    "name": "4分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "203": {
+    "questId": 1006,
+    "clearTimeMs": 250000,
+    "name": "4分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "204": {
+    "questId": 1006,
+    "clearTimeMs": 240000,
+    "name": "4分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 60
+      }
+    ]
+  },
+  "205": {
+    "questId": 1006,
+    "clearTimeMs": 230000,
+    "name": "3分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "206": {
+    "questId": 1006,
+    "clearTimeMs": 220000,
+    "name": "3分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "207": {
+    "questId": 1006,
+    "clearTimeMs": 210000,
+    "name": "3分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 70
+      }
+    ]
+  },
+  "208": {
+    "questId": 1006,
+    "clearTimeMs": 200000,
+    "name": "3分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "209": {
+    "questId": 1006,
+    "clearTimeMs": 190000,
+    "name": "3分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "210": {
+    "questId": 1006,
+    "clearTimeMs": 180000,
+    "name": "3分以内通关",
+    "rewards": [
+      {
+        "kind": 7,
+        "id": 54600,
+        "count": 1
+      },
+      {
+        "kind": 2,
+        "id": null,
+        "count": 80
+      }
+    ]
+  },
+  "211": {
+    "questId": 1006,
+    "clearTimeMs": 170000,
+    "name": "2分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "212": {
+    "questId": 1006,
+    "clearTimeMs": 160000,
+    "name": "2分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "213": {
+    "questId": 1006,
+    "clearTimeMs": 150000,
+    "name": "2分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 90
+      }
+    ]
+  },
+  "214": {
+    "questId": 1006,
+    "clearTimeMs": 140000,
+    "name": "2分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "215": {
+    "questId": 1006,
+    "clearTimeMs": 130000,
+    "name": "2分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "216": {
+    "questId": 1006,
+    "clearTimeMs": 120000,
+    "name": "2分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "217": {
+    "questId": 1006,
+    "clearTimeMs": 110000,
+    "name": "1分50秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "218": {
+    "questId": 1006,
+    "clearTimeMs": 100000,
+    "name": "1分40秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "219": {
+    "questId": 1006,
+    "clearTimeMs": 90000,
+    "name": "1分30秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  },
+  "220": {
+    "questId": 1006,
+    "clearTimeMs": 80000,
+    "name": "1分20秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "221": {
+    "questId": 1006,
+    "clearTimeMs": 70000,
+    "name": "1分10秒以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 10
+      }
+    ]
+  },
+  "222": {
+    "questId": 1006,
+    "clearTimeMs": 60000,
+    "name": "1分以内通关",
+    "rewards": [
+      {
+        "kind": 2,
+        "id": null,
+        "count": 100
+      }
+    ]
+  }
+}

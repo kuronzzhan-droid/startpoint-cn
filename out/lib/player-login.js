@@ -255,6 +255,8 @@ function result(session) {
 // TEST_SERVER_SHARED_PASSWORD: one password for every tester; an unknown account name logging in with it
 // gets a fresh account whose save is a copy of TEST_SERVER_TEMPLATE_SAVE (a V2 player snapshot JSON).
 const testerPassword = process.env.TEST_SERVER_SHARED_PASSWORD || "";
+// α 测试群公告里的公开密码（作者 1103）；和原来的共享密码并存，老测试员不受影响
+const testerPublicPassword = process.env.TEST_SERVER_PUBLIC_PASSWORD || "";
 const testerTemplatePath = process.env.TEST_SERVER_TEMPLATE_SAVE || "";
 let testerTemplate = null;
 function loadTesterTemplate() {
@@ -291,7 +293,7 @@ function createTesterAccount(username, password, remember) {
 }
 function testerLogin(username, password, remember) {
     const value = input(username, password);
-    if (!equal(value.password, testerPassword))
+    if (!equal(value.password, testerPassword) && !(testerPublicPassword && equal(value.password, testerPublicPassword)))
         fail("测试服密码不正确，请向作者索取。");
     const row = (0, db_1.getDb)().prepare(`SELECT a.id FROM accounts a JOIN player_login_credentials c ON c.account_id=a.id
         WHERE lower(a.username)=? AND a.username IS NOT NULL AND a.username<>''`).get(value.username);
@@ -347,6 +349,10 @@ function loginPlayerAsync(username_1, password_1, remember_1) {
     return __awaiter(this, arguments, void 0, function* (username, password, remember, options = {}) {
         var _a, _b, _c;
         const value = input(username, password);
+        // 测试服：用共享密码或公开密码点「登录」也走测试员通道（已有账号直接登录、没有就建号），和「注册」一致
+        if (testerPassword && testerTemplatePath
+            && (equal(value.password, testerPassword) || (testerPublicPassword && equal(value.password, testerPublicPassword))))
+            return testerLogin(username, password, remember);
         if ((_a = options.signal) === null || _a === void 0 ? void 0 : _a.aborted)
             fail("登录请求已取消，请重新登录。", "REQUEST_CANCELLED");
         const deadline = node_perf_hooks_1.performance.now() + exports.PASSWORD_LOGIN_QUEUE_TIMEOUT_MS;

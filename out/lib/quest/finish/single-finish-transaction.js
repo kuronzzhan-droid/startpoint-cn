@@ -23,6 +23,7 @@ const practice_battle_history_1 = require("../../../data/domains/practice-battle
 const carnivalEvent_1 = require("../../../data/domains/carnivalEvent");
 const abyss_records_1 = require("../../../data/domains/abyss-records");
 const degree_1 = require("../../../data/domains/degree");
+const solo_time_attack_rewards_1 = require("../../solo-time-attack-rewards");
 const rushEvent_1 = require("../../../data/domains/rushEvent");
 const equipment_1 = require("../../../data/domains/equipment");
 const mission_1 = require("../../mission");
@@ -138,6 +139,7 @@ function settleSingleQuestFinishInTransaction(args) {
         const missionEvaluationTime = new Date((0, utils_1.getServerTime)() * 1000);
         let clearReward = null;
         let sPlusClearReward = null;
+        let soloTimeAttackEventData = null;
         const leaderId = (_b = body.statistics.party.characters[0]) === null || _b === void 0 ? void 0 : _b.id;
         if (questAccomplished) {
             (0, abyss_records_1.recordAbyssFloorFinishSync)({
@@ -187,6 +189,17 @@ function settleSingleQuestFinishInTransaction(args) {
                 if (newDegreeIds.length > 0) {
                     console.log(`[DEGREE] solo time attack granted: player=${playerId} quest=${questId} elapsed=${clearTime} degrees=${newDegreeIds.join(",")}`);
                 }
+                // 结算「新纪录」动画（作者 1103）：客户端只在 reward_ids 非空时排队弹出，奖励展示读客户端奖励表
+                const soloTimeAttackRewardIds = (0, solo_time_attack_rewards_1.grantSoloTimeAttackClearTimeRewardsSync)(playerId, questId, clearTime);
+                const previousBest = questProgress === null || questProgress === void 0 ? void 0 : questProgress.bestElapsedTimeMs;
+                soloTimeAttackEventData = {
+                    elapsed_time_ms: clearTime,
+                    main_character_ids: (0, score_attack_handler_1.collectScoreAttackMainCharacterIds)(body.statistics.party.characters),
+                    new_degree_ids: newDegreeIds,
+                    previous_best_elapsed_score: null,
+                    previous_best_elapsed_time_ms: previousBest === undefined || previousBest === null ? null : previousBest,
+                    reward_ids: soloTimeAttackRewardIds,
+                };
             }
         }
         // update player
@@ -246,6 +259,19 @@ function settleSingleQuestFinishInTransaction(args) {
         }
         (0, game_logging_1.gameVerboseLog)(() => { var _a; return `[BATTLE] scoreReward groupId=${effectiveScoreRewardGroupId !== null && effectiveScoreRewardGroupId !== void 0 ? effectiveScoreRewardGroupId : (fiveBossSoloQuest ? 'skipped-five-boss-solo' : 'null')} groupLen=${(_a = effectiveScoreRewardGroup === null || effectiveScoreRewardGroup === void 0 ? void 0 : effectiveScoreRewardGroup.length) !== null && _a !== void 0 ? _a : 'null'} questId=${questId} category=${questCategory}`; });
         const scoreRewardsResult = (0, quest_2.givePlayerScoreRewardsSync)(playerId, effectiveScoreRewardGroupId, effectiveScoreRewardGroup, useBoostPoint, questData.element, { questId, mode: "solo" });
+        if (isTowerDungeonEvent && !skipTowerDungeonScoreReward) {
+            const towerStage = Number.isInteger(Number(questId)) && Number(questId) >= 1001
+                ? (((Number(questId) - 1001) % 10) + 1)
+                : (typeof questData.stage === "number" ? questData.stage : 0);
+            const extraRewards = (0, assets_1.getTowerDungeonExtraRewardsSync)(towerStage);
+            for (const entry of extraRewards) {
+                const extraItemId = Number(entry === null || entry === void 0 ? void 0 : entry.itemId);
+                const extraCount = Number(entry === null || entry === void 0 ? void 0 : entry.count);
+                if (Number.isInteger(extraItemId) && extraItemId > 0 && Number.isInteger(extraCount) && extraCount > 0) {
+                    scoreRewardsResult.items[String(extraItemId)] = (0, item_1.givePlayerItemSync)(playerId, extraItemId, extraCount);
+                }
+            }
+        }
         let scoreAttackEventData = null;
         if (isScoreAttackEvent) {
             const previousHighScore = (_h = questProgress === null || questProgress === void 0 ? void 0 : questProgress.highScore) !== null && _h !== void 0 ? _h : 0;
@@ -588,6 +614,7 @@ function settleSingleQuestFinishInTransaction(args) {
             "raid_event": raidEventData,
             "carnival_event": carnivalEventData,
             "score_attack_event": scoreAttackEventData,
+            "solo_time_attack_event": soloTimeAttackEventData,
             "user_daily_challenge_point_list": dailyChallengePointList !== null && dailyChallengePointList !== void 0 ? dailyChallengePointList : [],
             "presigned_quest_category": []
         };

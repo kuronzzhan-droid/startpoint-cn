@@ -29,7 +29,15 @@ var MailType;
 /**
  * Inserts a mail record for a player. Returns the auto-generated mail ID.
  */
+// 邮件保留期（作者 1103「都 7 天」）：没写期限的新邮件一律 7 天有效，过期没领就清掉；已领的邮件 7 天后删除。
+exports.MAIL_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+function formatMailTime(ms) {
+    return new Date(ms).toISOString().replace('T', ' ').substring(0, 19);
+}
 function insertMailSync(playerId, mail) {
+    if (mail.reward_limit_time === null || mail.reward_limit_time === undefined) {
+        mail = Object.assign({}, mail, { reward_period_limited: 1, reward_limit_time: formatMailTime(Date.now() + exports.MAIL_RETENTION_MS) });
+    }
     const result = (0, db_1.getDb)().prepare(`
         INSERT INTO players_mails (player_id, reason_id, subject, description, type, type_id, number, receive_time, create_time, reward_period_limited, reward_limit_time)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -37,6 +45,19 @@ function insertMailSync(playerId, mail) {
     return Number(result.lastInsertRowid);
 }
 exports.insertMailSync = insertMailSync;
+/** 删掉这个号过期没领的邮件和领取超过 7 天的邮件，返回删除条数。 */
+function purgeExpiredPlayerMailsSync(playerId, nowMs = Date.now()) {
+    const now = formatMailTime(nowMs);
+    const receivedBefore = formatMailTime(nowMs - exports.MAIL_RETENTION_MS);
+    const result = (0, db_1.getDb)().prepare(`
+        DELETE FROM players_mails
+        WHERE player_id = ?
+          AND ((receive_time = '0000-00-00 00:00:00' AND reward_limit_time IS NOT NULL AND reward_limit_time < ?)
+            OR (receive_time <> '0000-00-00 00:00:00' AND receive_time < ?))
+    `).run(playerId, now, receivedBefore);
+    return result.changes;
+}
+exports.purgeExpiredPlayerMailsSync = purgeExpiredPlayerMailsSync;
 /**
  * Gets paginated mail list for a player.
  * @param unreceivedOnly If true, only returns unreceived mails.

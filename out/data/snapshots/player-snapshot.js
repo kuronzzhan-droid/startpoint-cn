@@ -127,6 +127,12 @@ const EXCLUDED_PLAYER_STATE = Object.freeze([
         policy: "preserve-target",
         reason: "支付和协议请求回执属于服务器幂等账本，不是便携玩家进度；覆盖存档时保留目标侧记录，避免重试再次发放奖励。",
     },
+    {
+        // 测试服自制功能（1102–1104）新增的玩家表；未登记会让测试号建号（模板存档恢复）直接失败
+        tables: ["players_crazy_gacha", "players_growth_fund_rewards", "players_solo_time_attack_rewards", "players_star_crumb_battle"],
+        policy: "preserve-target",
+        reason: "疯狂扭蛋、成长基金、极时通关奖励和星碎战斗发放都是本服发放账本，不随存档迁移；覆盖时保留目标侧记录，避免重复发放。",
+    },
 ]);
 const REMAPPED_AUTOINCREMENT_IDS = new Map([
     ["players_mails", new Set(["id"])],

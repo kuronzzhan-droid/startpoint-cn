@@ -267,6 +267,8 @@ const routes = (fastify) => __awaiter(void 0, void 0, void 0, function* () {
                 message: "No player bound to account"
             });
         const page = body.current_page || 1;
+        if (page === 1)
+            (0, mail_1.purgeExpiredPlayerMailsSync)(playerId);
         const mails = (0, mail_1.getPlayerMailsSync)(playerId, page, 100);
         const totalCount = (0, mail_1.getPlayerMailCountSync)(playerId);
         reply.header("content-type", "application/x-msgpack");
