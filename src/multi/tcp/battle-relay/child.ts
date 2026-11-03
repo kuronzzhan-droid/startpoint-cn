@@ -44,6 +44,44 @@ interface RelaySocket {
 }
 
 const sockets = new Map<number, RelaySocket>()
+
+// Optional diagnostics: record every inbound battle frame (the players' input
+// stream) per room generation as JSONL, so a desynced co-op fight can be
+// replayed offline. Off unless MULTI_RELAY_RECORD_DIR is set.
+const RECORD_DIR = process.env.MULTI_RELAY_RECORD_DIR || ""
+const RECORD_MAX_BYTES = positiveInteger("MULTI_RELAY_RECORD_MAX_MB", 2048, 1) * 1024 * 1024
+const recordStreams = new Map<string, { stream: import("fs").WriteStream; lastAt: number }>()
+let recordedBytes = 0
+function recordFrame(entry: RelaySocket, raw: string, now: number): void {
+    if (!RECORD_DIR || entry.room === undefined || recordedBytes > RECORD_MAX_BYTES) return
+    try {
+        const key = `${entry.room}-g${entry.gen ?? 0}`
+        let record = recordStreams.get(key)
+        if (!record) {
+            const fs = require("fs") as typeof import("fs")
+            const path = require("path") as typeof import("path")
+            fs.mkdirSync(RECORD_DIR, { recursive: true })
+            const day = new Date(now).toISOString().slice(0, 10)
+            record = { stream: fs.createWriteStream(path.join(RECORD_DIR, `${day}-room${key}.jsonl`), { flags: "a" }), lastAt: now }
+            record.stream.on("error", () => {})
+            recordStreams.set(key, record)
+        }
+        record.lastAt = now
+        const line = JSON.stringify({ t: now, sid: entry.sid, cid: entry.cid, f: raw }) + "\n"
+        recordedBytes += line.length
+        record.stream.write(line)
+    } catch {}
+}
+if (RECORD_DIR) {
+    setInterval(() => {
+        const now = Date.now()
+        for (const [key, record] of recordStreams) {
+            if (now - record.lastAt < 300_000) continue
+            record.stream.end()
+            recordStreams.delete(key)
+        }
+    }, 60_000).unref()
+}
 interface RoomSnapshot extends RelayRoomIdentity { members: RelayMember[]; version: number; active: boolean }
 const rooms = new Map<string, RoomSnapshot>()
 const controls = new Map<number, { sid: number; room?: string }>()
@@ -171,6 +209,7 @@ function handleLocally(entry: RelaySocket, data: unknown): boolean {
                 return true
             }
             if (notify[0] === 5) { // Heartbeat
+                if (notify.length > 1) return false
                 ack(entry)
                 entry.activity.heartbeats++
                 return true
@@ -209,6 +248,7 @@ function onData(entry: RelaySocket, chunk: string): void {
             closeSocket(entry, "protocol", `frame exceeded ${MAX_FRAME_BYTES} bytes`)
             break
         }
+        recordFrame(entry, raw, now)
         let data: unknown
         try {
             data = JSON.parse(raw)

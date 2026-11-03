@@ -1,0 +1,21 @@
+{
+  "name": "pinball-1.4.316-1.4.317-1-riven-port175-atlas.zip",
+  "size": 553703,
+  "sha256": "0c8bedff2f1ba7f279e83317de6427deb9a03b27a5529bff6fec54a9d07119bc",
+  "members": 2,
+  "files": [
+    "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3",
+    "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3"
+  ],
+  "logical": {
+    "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3": "item/sprite_sheet.png",
+    "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3": "item/sprite_sheet.atlas.amf3.deflate"
+  },
+  "member_sha256": {
+    "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3": "f6de98f4647da824e8a079339c6da3e7215d9e3ce775c6e66bbfa9e92a330242",
+    "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3": "eaa58225239472de8b58ad2a6d7de2f3a3c6d61428c816d52e1f0728ed4f1787"
+  },
+  "applies_on": "1.4.316",
+  "version": "1.4.317",
+  "server_files": {}
+}

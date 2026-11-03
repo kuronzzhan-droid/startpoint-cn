@@ -1245,12 +1245,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 30,
+    "stock": 100,
     "userCost": {
       "type": 1,
       "amount": 100
     },
-    "dailyStock": 30
+    "dailyStock": 100
   },
   "200071": {
     "costs": [],
@@ -1263,12 +1263,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 10,
+    "stock": 80,
     "userCost": {
       "type": 1,
       "amount": 250
     },
-    "dailyStock": 10
+    "dailyStock": 80
   },
   "200072": {
     "costs": [],
@@ -1281,12 +1281,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 5,
+    "stock": 40,
     "userCost": {
       "type": 1,
       "amount": 1500
     },
-    "dailyStock": 5
+    "dailyStock": 40
   },
   "200073": {
     "costs": [],
@@ -1299,12 +1299,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 30,
+    "stock": 100,
     "userCost": {
       "type": 1,
       "amount": 100
     },
-    "dailyStock": 30
+    "dailyStock": 100
   },
   "200074": {
     "costs": [],
@@ -1317,12 +1317,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 10,
+    "stock": 80,
     "userCost": {
       "type": 1,
       "amount": 250
     },
-    "dailyStock": 10
+    "dailyStock": 80
   },
   "200075": {
     "costs": [],
@@ -1335,12 +1335,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 5,
+    "stock": 40,
     "userCost": {
       "type": 1,
       "amount": 1500
     },
-    "dailyStock": 5
+    "dailyStock": 40
   },
   "200076": {
     "costs": [],
@@ -1353,12 +1353,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 30,
+    "stock": 100,
     "userCost": {
       "type": 1,
       "amount": 100
     },
-    "dailyStock": 30
+    "dailyStock": 100
   },
   "200077": {
     "costs": [],
@@ -1371,12 +1371,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 10,
+    "stock": 80,
     "userCost": {
       "type": 1,
       "amount": 250
     },
-    "dailyStock": 10
+    "dailyStock": 80
   },
   "200078": {
     "costs": [],
@@ -1389,12 +1389,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 5,
+    "stock": 40,
     "userCost": {
       "type": 1,
       "amount": 1500
     },
-    "dailyStock": 5
+    "dailyStock": 40
   },
   "200079": {
     "costs": [],
@@ -1407,12 +1407,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 30,
+    "stock": 100,
     "userCost": {
       "type": 1,
       "amount": 100
     },
-    "dailyStock": 30
+    "dailyStock": 100
   },
   "200080": {
     "costs": [],
@@ -1425,12 +1425,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 10,
+    "stock": 80,
     "userCost": {
       "type": 1,
       "amount": 250
     },
-    "dailyStock": 10
+    "dailyStock": 80
   },
   "200081": {
     "costs": [],
@@ -1443,12 +1443,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 5,
+    "stock": 40,
     "userCost": {
       "type": 1,
       "amount": 1500
     },
-    "dailyStock": 5
+    "dailyStock": 40
   },
   "200082": {
     "costs": [],
@@ -1461,12 +1461,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 30,
+    "stock": 100,
     "userCost": {
       "type": 1,
       "amount": 100
     },
-    "dailyStock": 30
+    "dailyStock": 100
   },
   "200083": {
     "costs": [],
@@ -1479,12 +1479,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 10,
+    "stock": 80,
     "userCost": {
       "type": 1,
       "amount": 250
     },
-    "dailyStock": 10
+    "dailyStock": 80
   },
   "200084": {
     "costs": [],
@@ -1497,12 +1497,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 5,
+    "stock": 40,
     "userCost": {
       "type": 1,
       "amount": 1500
     },
-    "dailyStock": 5
+    "dailyStock": 40
   },
   "200085": {
     "costs": [],
@@ -1515,12 +1515,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 30,
+    "stock": 100,
     "userCost": {
       "type": 1,
       "amount": 100
     },
-    "dailyStock": 30
+    "dailyStock": 100
   },
   "200086": {
     "costs": [],
@@ -1533,12 +1533,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 10,
+    "stock": 80,
     "userCost": {
       "type": 1,
       "amount": 250
     },
-    "dailyStock": 10
+    "dailyStock": 80
   },
   "200087": {
     "costs": [],
@@ -1551,12 +1551,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 5,
+    "stock": 40,
     "userCost": {
       "type": 1,
       "amount": 1500
     },
-    "dailyStock": 5
+    "dailyStock": 40
   },
   "200088": {
     "costs": [],
@@ -1585,12 +1585,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 10,
+    "stock": 80,
     "userCost": {
       "type": 1,
       "amount": 1500
     },
-    "dailyStock": 10
+    "dailyStock": 80
   },
   "200090": {
     "costs": [],
@@ -1603,12 +1603,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 5,
+    "stock": 60,
     "userCost": {
       "type": 1,
       "amount": 10000
     },
-    "dailyStock": 5
+    "dailyStock": 60
   },
   "200091": {
     "costs": [],
@@ -1639,12 +1639,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 4,
+    "stock": 30,
     "userCost": {
       "type": 1,
       "amount": 3000
     },
-    "dailyStock": 4
+    "dailyStock": 30
   },
   "200093": {
     "costs": [],
@@ -1657,12 +1657,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 3,
+    "stock": 20,
     "userCost": {
       "type": 1,
       "amount": 5000
     },
-    "dailyStock": 3
+    "dailyStock": 20
   },
   "200094": {
     "costs": [],
@@ -1693,12 +1693,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 4,
+    "stock": 30,
     "userCost": {
       "type": 1,
       "amount": 3000
     },
-    "dailyStock": 4
+    "dailyStock": 30
   },
   "200096": {
     "costs": [],
@@ -1711,12 +1711,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 3,
+    "stock": 20,
     "userCost": {
       "type": 1,
       "amount": 5000
     },
-    "dailyStock": 3
+    "dailyStock": 20
   },
   "200097": {
     "costs": [],
@@ -1747,12 +1747,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 4,
+    "stock": 30,
     "userCost": {
       "type": 1,
       "amount": 3000
     },
-    "dailyStock": 4
+    "dailyStock": 30
   },
   "200099": {
     "costs": [],
@@ -1765,12 +1765,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 3,
+    "stock": 20,
     "userCost": {
       "type": 1,
       "amount": 5000
     },
-    "dailyStock": 3
+    "dailyStock": 20
   },
   "200100": {
     "costs": [],
@@ -1801,12 +1801,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 4,
+    "stock": 30,
     "userCost": {
       "type": 1,
       "amount": 3000
     },
-    "dailyStock": 4
+    "dailyStock": 30
   },
   "200102": {
     "costs": [],
@@ -1819,12 +1819,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 3,
+    "stock": 20,
     "userCost": {
       "type": 1,
       "amount": 5000
     },
-    "dailyStock": 3
+    "dailyStock": 20
   },
   "200103": {
     "costs": [],
@@ -1855,12 +1855,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 4,
+    "stock": 30,
     "userCost": {
       "type": 1,
       "amount": 3000
     },
-    "dailyStock": 4
+    "dailyStock": 30
   },
   "200105": {
     "costs": [],
@@ -1873,12 +1873,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 3,
+    "stock": 20,
     "userCost": {
       "type": 1,
       "amount": 5000
     },
-    "dailyStock": 3
+    "dailyStock": 20
   },
   "200106": {
     "costs": [],
@@ -1909,12 +1909,12 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 4,
+    "stock": 30,
     "userCost": {
       "type": 1,
       "amount": 3000
     },
-    "dailyStock": 4
+    "dailyStock": 30
   },
   "200108": {
     "costs": [],
@@ -1927,11 +1927,83 @@
     ],
     "availableFrom": "2025-03-06 05:00:00",
     "availableUntil": null,
-    "stock": 3,
+    "stock": 20,
     "userCost": {
       "type": 1,
       "amount": 5000
     },
-    "dailyStock": 3
+    "dailyStock": 20
+  },
+  "200109": {
+    "costs": [],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 10002,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2025-03-06 05:00:00",
+    "availableUntil": null,
+    "stock": 40,
+    "userCost": {
+      "type": 1,
+      "amount": 200000
+    },
+    "dailyStock": 40
+  },
+  "200110": {
+    "costs": [],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 10003,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2025-03-06 05:00:00",
+    "availableUntil": null,
+    "stock": 10,
+    "userCost": {
+      "type": 1,
+      "amount": 400000
+    },
+    "dailyStock": 10
+  },
+  "200112": {
+    "costs": [],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 101,
+        "count": 5
+      }
+    ],
+    "availableFrom": "2025-03-06 05:00:00",
+    "availableUntil": null,
+    "stock": 10,
+    "userCost": {
+      "type": 1,
+      "amount": 10000
+    },
+    "dailyStock": 10
+  },
+  "200113": {
+    "costs": [],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 99,
+        "count": 20
+      }
+    ],
+    "availableFrom": "2025-03-06 05:00:00",
+    "availableUntil": null,
+    "stock": 40,
+    "userCost": {
+      "type": 1,
+      "amount": 5000
+    },
+    "dailyStock": 40
   }
 }

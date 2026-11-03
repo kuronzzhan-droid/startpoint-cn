@@ -1,0 +1,5371 @@
+{
+  "schema_version": 3,
+  "contract": "weapon-riven-v2.0",
+  "library_version": 3,
+  "affixes": [
+    {
+      "id": "self_ability_damage_down",
+      "catalog_id": "ABD-03",
+      "name_zh": "自身能力伤害降低（独立乘区）",
+      "polarity": "-",
+      "family": "ability_damage",
+      "scope": "self",
+      "weight": 0.6,
+      "weight_class": "damage",
+      "max_full": 320,
+      "curve": "reciprocal",
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "ability_damage",
+      "kind": {
+        "id": 695,
+        "name": "SeparatedTermAbilityDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "transform_note": "Apply 100*V/(100+V) after disposition, count and quality; max_full remains positive-equivalent.",
+      "lo": 0,
+      "hi": 76.19047619047619,
+      "raw_lo": 0,
+      "raw_hi": -76190,
+      "quantization_step": 0.7696007696007696,
+      "key": 15990001,
+      "legacy_encoding": {
+        "lo": 30.0,
+        "hi": 80.0,
+        "raw_lo": -30000,
+        "raw_hi": -80000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.506,
+        "kind": {
+          "id": 695,
+          "name": "SeparatedTermAbilityDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_ability_damage_up",
+      "catalog_id": "ABD-01",
+      "name_zh": "自身的能力伤害 +X%",
+      "polarity": "+",
+      "family": "ability_damage",
+      "scope": "self",
+      "weight": 2,
+      "weight_class": "damage",
+      "max_full": 500,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "ability_damage",
+      "kind": {
+        "id": 388,
+        "name": "AbilityDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 500.0,
+      "raw_lo": 0,
+      "raw_hi": 500000,
+      "quantization_step": 5.05050505050505,
+      "key": 15990002,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 300.0,
+        "raw_lo": 200,
+        "raw_hi": 300000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 3.029,
+        "kind": {
+          "id": 388,
+          "name": "AbilityDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_all_resistance_down",
+      "catalog_id": "RES-03",
+      "name_zh": "自身的全属性耐性 -X%",
+      "polarity": "-",
+      "family": "all_resistance",
+      "scope": "self",
+      "weight": 2.0,
+      "weight_class": "utility",
+      "max_full": 35,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "all_resistance",
+      "kind": {
+        "id": 36,
+        "name": "ResistanceAllElement",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 35.0,
+      "raw_lo": 0,
+      "raw_hi": -35000,
+      "quantization_step": 0.35353535353535354,
+      "key": 15990003,
+      "legacy_encoding": {
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.203,
+        "kind": {
+          "id": 36,
+          "name": "ResistanceAllElement",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_all_resistance_up",
+      "catalog_id": "RES-01",
+      "name_zh": "自身的全属性耐性 +X%",
+      "polarity": "+",
+      "family": "all_resistance",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 35,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "all_resistance",
+      "kind": {
+        "id": 36,
+        "name": "ResistanceAllElement",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 35.0,
+      "raw_lo": 0,
+      "raw_hi": 35000,
+      "quantization_step": 0.35353535353535354,
+      "key": 15990004,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 10.0,
+        "raw_lo": 200,
+        "raw_hi": 10000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.099,
+        "kind": {
+          "id": 36,
+          "name": "ResistanceAllElement",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_attack_down",
+      "catalog_id": "ATK-03",
+      "name_zh": "自身造成的伤害降低（独立乘区）",
+      "polarity": "-",
+      "family": "attack",
+      "scope": "self",
+      "weight": 0.6,
+      "weight_class": "attack",
+      "max_full": 360,
+      "curve": "reciprocal",
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "attack",
+      "kind": {
+        "id": 723,
+        "name": "SeparatedTermDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "transform_note": "Apply 100*V/(100+V) after disposition, count and quality; max_full remains positive-equivalent.",
+      "lo": 0,
+      "hi": 78.26086956521739,
+      "raw_lo": 0,
+      "raw_hi": -78261,
+      "quantization_step": 0.7905138339920948,
+      "key": 15990005,
+      "legacy_encoding": {
+        "lo": 30.0,
+        "hi": 80.0,
+        "raw_lo": -30000,
+        "raw_hi": -80000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.506,
+        "kind": {
+          "id": 723,
+          "name": "SeparatedTermDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_attack_up",
+      "catalog_id": "ATK-01",
+      "name_zh": "自身的攻击力 +X%",
+      "polarity": "+",
+      "family": "attack",
+      "scope": "self",
+      "weight": 3,
+      "weight_class": "attack",
+      "max_full": 500,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "attack",
+      "kind": {
+        "id": 32,
+        "name": "AttackPoint",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 500.0,
+      "raw_lo": 0,
+      "raw_hi": 500000,
+      "quantization_step": 5.05050505050505,
+      "key": 15990006,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 500.0,
+        "raw_lo": 200,
+        "raw_hi": 500000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 5.049,
+        "kind": {
+          "id": 32,
+          "name": "AttackPoint",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_dark_resistance_up",
+      "catalog_id": "RES-05",
+      "name_zh": "自身的暗属性耐性 +X%",
+      "polarity": "+",
+      "family": "dark_resistance",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "dark_resistance",
+      "kind": {
+        "id": 42,
+        "name": "ResistanceBlack",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": 60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990007,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.15,
+        "kind": {
+          "id": 42,
+          "name": "ResistanceBlack",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_direct_damage_down",
+      "catalog_id": "DRD-03",
+      "name_zh": "自身直接攻击伤害降低（独立乘区）",
+      "polarity": "-",
+      "family": "direct_damage",
+      "scope": "self",
+      "weight": 0.6,
+      "weight_class": "damage",
+      "max_full": 450,
+      "curve": "reciprocal",
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "direct_damage",
+      "kind": {
+        "id": 693,
+        "name": "SeparatedTermDirectDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "transform_note": "Apply 100*V/(100+V) after disposition, count and quality; max_full remains positive-equivalent.",
+      "lo": 0,
+      "hi": 81.81818181818183,
+      "raw_lo": 0,
+      "raw_hi": -81818,
+      "quantization_step": 0.8264462809917357,
+      "key": 15990008,
+      "legacy_encoding": {
+        "lo": 30.0,
+        "hi": 80.0,
+        "raw_lo": -30000,
+        "raw_hi": -80000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.506,
+        "kind": {
+          "id": 693,
+          "name": "SeparatedTermDirectDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_direct_damage_up",
+      "catalog_id": "DRD-01",
+      "name_zh": "自身的直接攻击伤害 +X%",
+      "polarity": "+",
+      "family": "direct_damage",
+      "scope": "self",
+      "weight": 2,
+      "weight_class": "damage",
+      "max_full": 500,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "direct_damage",
+      "kind": {
+        "id": 33,
+        "name": "DirectDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 500.0,
+      "raw_lo": 0,
+      "raw_hi": 500000,
+      "quantization_step": 5.05050505050505,
+      "key": 15990009,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 500.0,
+        "raw_lo": 200,
+        "raw_hi": 500000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 5.049,
+        "kind": {
+          "id": 33,
+          "name": "DirectDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_fire_resistance_down",
+      "catalog_id": "RES-07",
+      "name_zh": "自身的火属性耐性 -X%",
+      "polarity": "-",
+      "family": "fire_resistance",
+      "scope": "self",
+      "weight": 2.0,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "fire_resistance",
+      "kind": {
+        "id": 37,
+        "name": "ResistanceRed",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": -60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990010,
+      "legacy_encoding": {
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.203,
+        "kind": {
+          "id": 37,
+          "name": "ResistanceRed",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_fire_resistance_up",
+      "catalog_id": "RES-05",
+      "name_zh": "自身的火属性耐性 +X%",
+      "polarity": "+",
+      "family": "fire_resistance",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "fire_resistance",
+      "kind": {
+        "id": 37,
+        "name": "ResistanceRed",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": 60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990011,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.15,
+        "kind": {
+          "id": 37,
+          "name": "ResistanceRed",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_flat_damage_cut",
+      "catalog_id": "CUT-01",
+      "name_zh": "自身受到的全属性伤害 -X（固定值减免）",
+      "polarity": "+",
+      "family": "flat_damage_cut",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 800,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "flat_damage_cut",
+      "kind": {
+        "id": 43,
+        "name": "DamageCutAllElement",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "damage",
+      "raw_sign": 1,
+      "raw_per_unit": 100000,
+      "resolution": 1,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 2500.0,
+      "raw_lo": 0,
+      "raw_hi": 250000000,
+      "quantization_step": 25.252525252525253,
+      "key": 15990012,
+      "legacy_encoding": {
+        "lo": 100.0,
+        "hi": 2500.0,
+        "raw_lo": 10000000,
+        "raw_hi": 250000000,
+        "raw_sign": 1,
+        "raw_per_unit": 100000,
+        "unit": "damage",
+        "quantization_step": 25.0,
+        "kind": {
+          "id": 43,
+          "name": "DamageCutAllElement",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_initial_skill_gauge",
+      "catalog_id": "GAU-01",
+      "name_zh": "战斗开始时，自身的技能槽 +X%",
+      "polarity": "+",
+      "family": "initial_skill_gauge",
+      "scope": "self",
+      "weight": 0.5,
+      "weight_class": "utility",
+      "max_full": 100,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "initial_skill_gauge",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 100.0,
+      "raw_lo": 0,
+      "raw_hi": 100000,
+      "quantization_step": 1.0101010101010102,
+      "key": 15990013,
+      "legacy_encoding": {
+        "lo": 10.0,
+        "hi": 100.0,
+        "raw_lo": 10000,
+        "raw_hi": 100000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.91,
+        "kind": {
+          "id": 211,
+          "name": "SkillGauge",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_light_resistance_up",
+      "catalog_id": "RES-05",
+      "name_zh": "自身的光属性耐性 +X%",
+      "polarity": "+",
+      "family": "light_resistance",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "light_resistance",
+      "kind": {
+        "id": 41,
+        "name": "ResistanceWhite",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": 60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990014,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.15,
+        "kind": {
+          "id": 41,
+          "name": "ResistanceWhite",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_max_hp_down",
+      "catalog_id": "HP-03",
+      "name_zh": "自身的最大生命值 -X%",
+      "polarity": "-",
+      "family": "max_hp",
+      "scope": "self",
+      "weight": 2.0,
+      "weight_class": "utility",
+      "max_full": 80,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "max_hp",
+      "kind": {
+        "id": 205,
+        "name": "Hp",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 80.0,
+      "raw_lo": 0,
+      "raw_hi": -80000,
+      "quantization_step": 0.8080808080808081,
+      "key": 15990015,
+      "legacy_encoding": {
+        "lo": 15.0,
+        "hi": 32.0,
+        "raw_lo": -15000,
+        "raw_hi": -32000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.172,
+        "kind": {
+          "id": 205,
+          "name": "Hp",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_max_hp_up",
+      "catalog_id": "HP-01",
+      "name_zh": "自身的最大生命值 +X%",
+      "polarity": "+",
+      "family": "max_hp",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 80,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "max_hp",
+      "kind": {
+        "id": 205,
+        "name": "Hp",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 80.0,
+      "raw_lo": 0,
+      "raw_hi": 80000,
+      "quantization_step": 0.8080808080808081,
+      "key": 15990016,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 30.0,
+        "raw_lo": 200,
+        "raw_hi": 30000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.302,
+        "kind": {
+          "id": 205,
+          "name": "Hp",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_paralysis_slayer_up",
+      "name_zh": "自身对麻痹状态敌人伤害提升",
+      "polarity": "+",
+      "tier": "strong",
+      "kind": {
+        "id": 118,
+        "name": "ParalysisSlayer",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "min": 0,
+      "max_full": 20,
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "weight": 1.5,
+      "exclusive_group": "paralysis_slayer",
+      "enabled": false,
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      },
+      "donor": "5020009#2",
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "notes": "作者2026-10-26定案：独立乘区正面最高+20%，原候选100～600两端均收至20。kind118为麻痹条件独立特攻乘区；倾向系数照旧，倾向1为+4%。",
+      "key": 15990017,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "resolve_int": false,
+      "quantization_step": 0.20202020202020202,
+      "numeric_version": 3,
+      "family": "paralysis_slayer",
+      "scope": "self",
+      "target_value": 0,
+      "trigger_kind": 0,
+      "independent_damage": true,
+      "legacy_only": true,
+      "legacy_encoding": {
+        "lo": 4.0,
+        "hi": 20.0,
+        "raw_lo": 4000,
+        "raw_hi": 20000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.162,
+        "kind": {
+          "id": 118,
+          "name": "ParalysisSlayer",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      }
+    },
+    {
+      "id": "self_skill_damage_down",
+      "catalog_id": "SKD-03",
+      "name_zh": "自身技能伤害降低（独立乘区）",
+      "polarity": "-",
+      "family": "skill_damage",
+      "scope": "self",
+      "weight": 0.6,
+      "weight_class": "damage",
+      "max_full": 400,
+      "curve": "reciprocal",
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "skill_damage",
+      "kind": {
+        "id": 694,
+        "name": "SeparatedTermSkillDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "transform_note": "Apply 100*V/(100+V) after disposition, count and quality; max_full remains positive-equivalent.",
+      "lo": 0,
+      "hi": 80.0,
+      "raw_lo": 0,
+      "raw_hi": -80000,
+      "quantization_step": 0.8080808080808081,
+      "key": 15990018,
+      "legacy_encoding": {
+        "lo": 30.0,
+        "hi": 80.0,
+        "raw_lo": -30000,
+        "raw_hi": -80000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.506,
+        "kind": {
+          "id": 694,
+          "name": "SeparatedTermSkillDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_skill_damage_up",
+      "catalog_id": "SKD-01",
+      "name_zh": "自身的技能伤害 +X%",
+      "polarity": "+",
+      "family": "skill_damage",
+      "scope": "self",
+      "weight": 2,
+      "weight_class": "damage",
+      "max_full": 500,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "skill_damage",
+      "kind": {
+        "id": 34,
+        "name": "SkillDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 500.0,
+      "raw_lo": 0,
+      "raw_hi": 500000,
+      "quantization_step": 5.05050505050505,
+      "key": 15990019,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 500.0,
+        "raw_lo": 200,
+        "raw_hi": 500000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 5.049,
+        "kind": {
+          "id": 34,
+          "name": "SkillDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_wind_resistance_up",
+      "catalog_id": "RES-05",
+      "name_zh": "自身的风属性耐性 +X%",
+      "polarity": "+",
+      "family": "wind_resistance",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "wind_resistance",
+      "kind": {
+        "id": 40,
+        "name": "ResistanceGreen",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": 60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990020,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.15,
+        "kind": {
+          "id": 40,
+          "name": "ResistanceGreen",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_ability_damage_up_medium",
+      "name_zh": "自身能力伤害提升（中）",
+      "polarity": "+",
+      "tier": "medium",
+      "kind": {
+        "id": 388,
+        "name": "AbilityDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "min": 0,
+      "max_full": 180,
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "weight": 1.5,
+      "exclusive_group": "ability_damage",
+      "enabled": false,
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      },
+      "donor": "5040031#1",
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "notes": "中档输出词条；与对应强档和负面共用互斥组。同一卡不重复同类效果。保留官方自身Initial donor全部门控。",
+      "key": 15990021,
+      "lo": 0,
+      "hi": 180.0,
+      "raw_lo": 0,
+      "raw_hi": 180000,
+      "resolve_int": false,
+      "quantization_step": 1.8181818181818181,
+      "numeric_version": 3,
+      "family": "ability_damage",
+      "scope": "self",
+      "target_value": 0,
+      "trigger_kind": 0,
+      "legacy_only": true,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 180.0,
+        "raw_lo": 200,
+        "raw_hi": 180000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 1.817,
+        "kind": {
+          "id": 388,
+          "name": "AbilityDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      }
+    },
+    {
+      "id": "self_attack_up_medium",
+      "name_zh": "自身攻击力提升（中）",
+      "polarity": "+",
+      "tier": "medium",
+      "kind": {
+        "id": 32,
+        "name": "AttackPoint",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "min": 0,
+      "max_full": 180,
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "weight": 1.5,
+      "exclusive_group": "attack",
+      "enabled": false,
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      },
+      "donor": "4020007#1",
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "notes": "中档输出词条；与对应强档和负面共用互斥组。同一卡不重复同类效果。保留官方自身Initial donor全部门控。",
+      "key": 15990022,
+      "lo": 0,
+      "hi": 180.0,
+      "raw_lo": 0,
+      "raw_hi": 180000,
+      "resolve_int": false,
+      "quantization_step": 1.8181818181818181,
+      "numeric_version": 3,
+      "family": "attack",
+      "scope": "self",
+      "target_value": 0,
+      "trigger_kind": 0,
+      "legacy_only": true,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 180.0,
+        "raw_lo": 200,
+        "raw_hi": 180000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 1.817,
+        "kind": {
+          "id": 32,
+          "name": "AttackPoint",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      }
+    },
+    {
+      "id": "self_dark_resistance_down",
+      "catalog_id": "RES-07",
+      "name_zh": "自身的暗属性耐性 -X%",
+      "polarity": "-",
+      "family": "dark_resistance",
+      "scope": "self",
+      "weight": 2.0,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "dark_resistance",
+      "kind": {
+        "id": 42,
+        "name": "ResistanceBlack",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": -60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990023,
+      "legacy_encoding": {
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.203,
+        "kind": {
+          "id": 42,
+          "name": "ResistanceBlack",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_direct_damage_up_medium",
+      "name_zh": "自身直接攻击伤害提升（中）",
+      "polarity": "+",
+      "tier": "medium",
+      "kind": {
+        "id": 33,
+        "name": "DirectDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "min": 0,
+      "max_full": 180,
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "weight": 1.5,
+      "exclusive_group": "direct_damage",
+      "enabled": false,
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      },
+      "donor": "5090027#1",
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "notes": "中档输出词条；与对应强档和负面共用互斥组。同一卡不重复同类效果。保留官方自身Initial donor全部门控。",
+      "key": 15990024,
+      "lo": 0,
+      "hi": 180.0,
+      "raw_lo": 0,
+      "raw_hi": 180000,
+      "resolve_int": false,
+      "quantization_step": 1.8181818181818181,
+      "numeric_version": 3,
+      "family": "direct_damage",
+      "scope": "self",
+      "target_value": 0,
+      "trigger_kind": 0,
+      "legacy_only": true,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 180.0,
+        "raw_lo": 200,
+        "raw_hi": 180000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 1.817,
+        "kind": {
+          "id": 33,
+          "name": "DirectDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      }
+    },
+    {
+      "id": "self_light_resistance_down",
+      "catalog_id": "RES-07",
+      "name_zh": "自身的光属性耐性 -X%",
+      "polarity": "-",
+      "family": "light_resistance",
+      "scope": "self",
+      "weight": 2.0,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "light_resistance",
+      "kind": {
+        "id": 41,
+        "name": "ResistanceWhite",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": -60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990025,
+      "legacy_encoding": {
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.203,
+        "kind": {
+          "id": 41,
+          "name": "ResistanceWhite",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_skill_damage_up_medium",
+      "name_zh": "自身技能伤害提升（中）",
+      "polarity": "+",
+      "tier": "medium",
+      "kind": {
+        "id": 34,
+        "name": "SkillDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "min": 0,
+      "max_full": 180,
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "weight": 1.5,
+      "exclusive_group": "skill_damage",
+      "enabled": false,
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      },
+      "donor": "3040006#1",
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "notes": "中档输出词条；与对应强档和负面共用互斥组。同一卡不重复同类效果。保留官方自身Initial donor全部门控。",
+      "key": 15990026,
+      "lo": 0,
+      "hi": 180.0,
+      "raw_lo": 0,
+      "raw_hi": 180000,
+      "resolve_int": false,
+      "quantization_step": 1.8181818181818181,
+      "numeric_version": 3,
+      "family": "skill_damage",
+      "scope": "self",
+      "target_value": 0,
+      "trigger_kind": 0,
+      "legacy_only": true,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 180.0,
+        "raw_lo": 200,
+        "raw_hi": 180000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 1.817,
+        "kind": {
+          "id": 34,
+          "name": "SkillDamage",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      }
+    },
+    {
+      "id": "self_thunder_resistance_down",
+      "catalog_id": "RES-07",
+      "name_zh": "自身的雷属性耐性 -X%",
+      "polarity": "-",
+      "family": "thunder_resistance",
+      "scope": "self",
+      "weight": 2.0,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "thunder_resistance",
+      "kind": {
+        "id": 39,
+        "name": "ResistanceYellow",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": -60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990027,
+      "legacy_encoding": {
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.203,
+        "kind": {
+          "id": 39,
+          "name": "ResistanceYellow",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_thunder_resistance_up",
+      "catalog_id": "RES-05",
+      "name_zh": "自身的雷属性耐性 +X%",
+      "polarity": "+",
+      "family": "thunder_resistance",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "thunder_resistance",
+      "kind": {
+        "id": 39,
+        "name": "ResistanceYellow",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": 60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990028,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.15,
+        "kind": {
+          "id": 39,
+          "name": "ResistanceYellow",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_water_resistance_down",
+      "catalog_id": "RES-07",
+      "name_zh": "自身的水属性耐性 -X%",
+      "polarity": "-",
+      "family": "water_resistance",
+      "scope": "self",
+      "weight": 2.0,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "water_resistance",
+      "kind": {
+        "id": 38,
+        "name": "ResistanceBlue",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": -60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990029,
+      "legacy_encoding": {
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.203,
+        "kind": {
+          "id": 38,
+          "name": "ResistanceBlue",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_water_resistance_up",
+      "catalog_id": "RES-05",
+      "name_zh": "自身的水属性耐性 +X%",
+      "polarity": "+",
+      "family": "water_resistance",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "water_resistance",
+      "kind": {
+        "id": 38,
+        "name": "ResistanceBlue",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": 60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990030,
+      "legacy_encoding": {
+        "lo": 0.2,
+        "hi": 15.0,
+        "raw_lo": 200,
+        "raw_hi": 15000,
+        "raw_sign": 1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.15,
+        "kind": {
+          "id": 38,
+          "name": "ResistanceBlue",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_wind_resistance_down",
+      "catalog_id": "RES-07",
+      "name_zh": "自身的风属性耐性 -X%",
+      "polarity": "-",
+      "family": "wind_resistance",
+      "scope": "self",
+      "weight": 2.0,
+      "weight_class": "utility",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "wind_resistance",
+      "kind": {
+        "id": 40,
+        "name": "ResistanceGreen",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": -60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990031,
+      "legacy_encoding": {
+        "lo": 15.0,
+        "hi": 35.0,
+        "raw_lo": -15000,
+        "raw_hi": -35000,
+        "raw_sign": -1,
+        "raw_per_unit": 1000,
+        "unit": "percent",
+        "quantization_step": 0.203,
+        "kind": {
+          "id": 40,
+          "name": "ResistanceGreen",
+          "block": "instant_content",
+          "column": "c44"
+        }
+      },
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "combo_add",
+      "catalog_id": "SPC-07",
+      "name_zh": "连击数达到 30 时，连击数追加 +X（冷却10秒）",
+      "polarity": "+",
+      "family": "combo_add",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "combo_add",
+      "kind": {
+        "id": 226,
+        "name": "AddCombo",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "count",
+      "raw_sign": 1,
+      "raw_per_unit": 100000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 12,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "threshold": 30,
+      "trigger_limit": 0,
+      "cooldown_seconds": 10,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 2500000,
+      "quantization_step": 1,
+      "key": 15990032,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 12
+      }
+    },
+    {
+      "id": "flying_extend",
+      "catalog_id": "SPC-12",
+      "name_zh": "队伍全体角色的浮游状态持续时间 +X%",
+      "polarity": "+",
+      "family": "flying_extend",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "flying_extend",
+      "kind": {
+        "id": 191,
+        "name": "FlyingExtend",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "independent_cap": true,
+      "cap_note": "持续时间乘区正面按作者总则封20%。",
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990033,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "leader_power_flip_up",
+      "catalog_id": "PFD-01A",
+      "name_zh": "自身为队长时，强化弹射伤害 +X%",
+      "polarity": "+",
+      "family": "power_flip",
+      "scope": "self",
+      "weight": 2,
+      "weight_class": "damage",
+      "max_full": 500,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "power_flip",
+      "kind": {
+        "id": 55,
+        "name": "PowerFlipDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "precondition": 42,
+      "lo": 0,
+      "hi": 500.0,
+      "raw_lo": 0,
+      "raw_hi": 500000,
+      "quantization_step": 5.05050505050505,
+      "key": 15990034,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "opening_piercing",
+      "catalog_id": "SPC-10",
+      "name_zh": "战斗开始时，赋予队伍全体角色贯通状态 X 秒",
+      "polarity": "+",
+      "family": "opening_piercing",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "opening_piercing",
+      "kind": {
+        "id": 26,
+        "name": "ConditionPiercing",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "seconds",
+      "raw_sign": 1,
+      "raw_per_unit": 6000000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "value_field": "frame",
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 150000000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990035,
+      "strength_columns": [
+        "c54",
+        "c55"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_ability_damage_down",
+      "catalog_id": "ABD-04",
+      "name_zh": "队伍全体角色能力伤害降低（独立乘区）",
+      "polarity": "-",
+      "family": "ability_damage",
+      "scope": "party",
+      "weight": 0.3,
+      "weight_class": "damage",
+      "max_full": 110,
+      "curve": "reciprocal",
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "ability_damage",
+      "kind": {
+        "id": 695,
+        "name": "SeparatedTermAbilityDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "transform_note": "Apply 100*V/(100+V) after disposition, count and quality; max_full remains positive-equivalent.",
+      "lo": 0,
+      "hi": 52.38095238095239,
+      "raw_lo": 0,
+      "raw_hi": -52381,
+      "quantization_step": 0.5291005291005292,
+      "key": 15990036,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_ability_damage_up",
+      "catalog_id": "ABD-02",
+      "name_zh": "队伍全体角色的能力伤害 +X%",
+      "polarity": "+",
+      "family": "ability_damage",
+      "scope": "party",
+      "weight": 1.0,
+      "weight_class": "damage",
+      "max_full": 172,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "ability_damage",
+      "kind": {
+        "id": 388,
+        "name": "AbilityDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 172.0,
+      "raw_lo": 0,
+      "raw_hi": 172000,
+      "quantization_step": 1.7373737373737375,
+      "key": 15990037,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_all_resistance_down",
+      "catalog_id": "RES-04",
+      "name_zh": "队伍全体角色的全属性耐性 -X%",
+      "polarity": "-",
+      "family": "all_resistance",
+      "scope": "party",
+      "weight": 1.0,
+      "weight_class": "utility",
+      "max_full": 15,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "all_resistance",
+      "kind": {
+        "id": 36,
+        "name": "ResistanceAllElement",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 15.0,
+      "raw_lo": 0,
+      "raw_hi": -15000,
+      "quantization_step": 0.15151515151515152,
+      "key": 15990038,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_all_resistance_up",
+      "catalog_id": "RES-02",
+      "name_zh": "队伍全体角色的全属性耐性 +X%",
+      "polarity": "+",
+      "family": "all_resistance",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 15,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "all_resistance",
+      "kind": {
+        "id": 36,
+        "name": "ResistanceAllElement",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 15.0,
+      "raw_lo": 0,
+      "raw_hi": 15000,
+      "quantization_step": 0.15151515151515152,
+      "key": 15990039,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_attack_down",
+      "catalog_id": "ATK-04",
+      "name_zh": "队伍全体角色造成的伤害降低（独立乘区）",
+      "polarity": "-",
+      "family": "attack",
+      "scope": "party",
+      "weight": 0.3,
+      "weight_class": "attack",
+      "max_full": 120,
+      "curve": "reciprocal",
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "attack",
+      "kind": {
+        "id": 723,
+        "name": "SeparatedTermDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "transform_note": "Apply 100*V/(100+V) after disposition, count and quality; max_full remains positive-equivalent.",
+      "lo": 0,
+      "hi": 54.54545454545454,
+      "raw_lo": 0,
+      "raw_hi": -54545,
+      "quantization_step": 0.5509641873278236,
+      "key": 15990040,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_attack_up",
+      "catalog_id": "ATK-02",
+      "name_zh": "队伍全体角色的攻击力 +X%",
+      "polarity": "+",
+      "family": "attack",
+      "scope": "party",
+      "weight": 1.5,
+      "weight_class": "attack",
+      "max_full": 167,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "attack",
+      "kind": {
+        "id": 32,
+        "name": "AttackPoint",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 167.0,
+      "raw_lo": 0,
+      "raw_hi": 167000,
+      "quantization_step": 1.6868686868686869,
+      "key": 15990041,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_dark_resistance_up",
+      "catalog_id": "RES-06",
+      "name_zh": "队伍全体角色的暗属性耐性 +X%",
+      "polarity": "+",
+      "family": "dark_resistance",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "dark_resistance",
+      "kind": {
+        "id": 42,
+        "name": "ResistanceBlack",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990042,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_debuff_slayer",
+      "catalog_id": "SLY-04",
+      "name_zh": "队伍全体角色对处于弱体效果（Debuff）中的敌人造成的伤害 +X%",
+      "polarity": "+",
+      "family": "slayer_debuff",
+      "scope": "party",
+      "weight": 1.0,
+      "weight_class": "damage",
+      "max_full": 12,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "slayer_debuff",
+      "kind": {
+        "id": 96,
+        "name": "DebuffSlayer",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "lo": 0,
+      "hi": 12.0,
+      "raw_lo": 0,
+      "raw_hi": 12000,
+      "quantization_step": 0.12121212121212122,
+      "key": 15990043,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_direct_damage_down",
+      "catalog_id": "DRD-04",
+      "name_zh": "队伍全体角色直接攻击伤害降低（独立乘区）",
+      "polarity": "-",
+      "family": "direct_damage",
+      "scope": "party",
+      "weight": 0.3,
+      "weight_class": "damage",
+      "max_full": 160,
+      "curve": "reciprocal",
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "direct_damage",
+      "kind": {
+        "id": 693,
+        "name": "SeparatedTermDirectDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "transform_note": "Apply 100*V/(100+V) after disposition, count and quality; max_full remains positive-equivalent.",
+      "lo": 0,
+      "hi": 61.53846153846154,
+      "raw_lo": 0,
+      "raw_hi": -61538,
+      "quantization_step": 0.6216006216006216,
+      "key": 15990044,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_direct_damage_up",
+      "catalog_id": "DRD-02",
+      "name_zh": "队伍全体角色的直接攻击伤害 +X%",
+      "polarity": "+",
+      "family": "direct_damage",
+      "scope": "party",
+      "weight": 1.0,
+      "weight_class": "damage",
+      "max_full": 178,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "direct_damage",
+      "kind": {
+        "id": 33,
+        "name": "DirectDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 178.0,
+      "raw_lo": 0,
+      "raw_hi": 178000,
+      "quantization_step": 1.797979797979798,
+      "key": 15990045,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_elapsed_damage",
+      "catalog_id": "SPC-20",
+      "name_zh": "战斗开始后每经过 15 秒，队伍全体角色造成的伤害（独立乘区） +X%（最多叠加4次）",
+      "polarity": "+",
+      "family": "elapsed_damage",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 5,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "elapsed_damage",
+      "kind": {
+        "id": 723,
+        "name": "SeparatedTermDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 77,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "threshold": 900,
+      "trigger_limit": 4,
+      "max_stacks": 4,
+      "lo": 0,
+      "hi": 5.0,
+      "raw_lo": 0,
+      "raw_hi": 5000,
+      "quantization_step": 0.050505050505050504,
+      "key": 15990046,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 77
+      }
+    },
+    {
+      "id": "party_fever_gauge",
+      "catalog_id": "SPC-02",
+      "name_zh": "进入狂热（Fever）状态时，队伍全体角色的技能槽 +X%（上限3次）",
+      "polarity": "+",
+      "family": "fever_gauge",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "fever_gauge",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 8,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "trigger_limit": 3,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990047,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 8
+      }
+    },
+    {
+      "id": "party_fire_resistance_up",
+      "catalog_id": "RES-06",
+      "name_zh": "队伍全体角色的火属性耐性 +X%",
+      "polarity": "+",
+      "family": "fire_resistance",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "fire_resistance",
+      "kind": {
+        "id": 37,
+        "name": "ResistanceRed",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990048,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_flat_damage_cut",
+      "catalog_id": "CUT-02",
+      "name_zh": "队伍全体角色受到的全属性伤害 -X（固定值减免）",
+      "polarity": "+",
+      "family": "flat_damage_cut",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 300,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "flat_damage_cut",
+      "kind": {
+        "id": 43,
+        "name": "DamageCutAllElement",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "damage",
+      "raw_sign": 1,
+      "raw_per_unit": 100000,
+      "resolution": 1,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 300.0,
+      "raw_lo": 0,
+      "raw_hi": 30000000,
+      "quantization_step": 3.0303030303030303,
+      "key": 15990049,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_gauge_speed_down",
+      "catalog_id": "SGC-04",
+      "name_zh": "队伍全体角色的技能槽充能速度 -X%",
+      "polarity": "-",
+      "family": "gauge_speed",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 10,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "gauge_speed",
+      "kind": {
+        "id": 35,
+        "name": "SkillGaugeCharging",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "independent_cap": true,
+      "lo": 0,
+      "hi": 10.0,
+      "raw_lo": 0,
+      "raw_hi": -10000,
+      "quantization_step": 0.10101010101010101,
+      "key": 15990050,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_gauge_speed_up",
+      "catalog_id": "SGC-02",
+      "name_zh": "队伍全体角色的技能槽充能速度 +X%",
+      "polarity": "+",
+      "family": "gauge_speed",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 10,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "gauge_speed",
+      "kind": {
+        "id": 35,
+        "name": "SkillGaugeCharging",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "independent_cap": true,
+      "lo": 0,
+      "hi": 10.0,
+      "raw_lo": 0,
+      "raw_hi": 10000,
+      "quantization_step": 0.10101010101010101,
+      "key": 15990051,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_initial_skill_gauge",
+      "catalog_id": "GAU-02",
+      "name_zh": "战斗开始时，队伍全体角色的技能槽 +X%",
+      "polarity": "+",
+      "family": "initial_skill_gauge",
+      "scope": "party",
+      "weight": 0.25,
+      "weight_class": "utility",
+      "max_full": 35,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "initial_skill_gauge",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 35.0,
+      "raw_lo": 0,
+      "raw_hi": 35000,
+      "quantization_step": 0.35353535353535354,
+      "key": 15990052,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_light_resistance_up",
+      "catalog_id": "RES-06",
+      "name_zh": "队伍全体角色的光属性耐性 +X%",
+      "polarity": "+",
+      "family": "light_resistance",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "light_resistance",
+      "kind": {
+        "id": 41,
+        "name": "ResistanceWhite",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990053,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_max_hp_down",
+      "catalog_id": "HP-04",
+      "name_zh": "队伍全体角色的最大生命值 -X%",
+      "polarity": "-",
+      "family": "max_hp",
+      "scope": "party",
+      "weight": 1.0,
+      "weight_class": "utility",
+      "max_full": 35,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "max_hp",
+      "kind": {
+        "id": 205,
+        "name": "Hp",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 35.0,
+      "raw_lo": 0,
+      "raw_hi": -35000,
+      "quantization_step": 0.35353535353535354,
+      "key": 15990054,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_max_hp_up",
+      "catalog_id": "HP-02",
+      "name_zh": "队伍全体角色的最大生命值 +X%",
+      "polarity": "+",
+      "family": "max_hp",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 35,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "max_hp",
+      "kind": {
+        "id": 205,
+        "name": "Hp",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 35.0,
+      "raw_lo": 0,
+      "raw_hi": 35000,
+      "quantization_step": 0.35353535353535354,
+      "key": 15990055,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_power_flip_down",
+      "catalog_id": "PFD-03",
+      "name_zh": "强化弹射伤害 -X%",
+      "polarity": "-",
+      "family": "power_flip",
+      "scope": "party",
+      "weight": 0.3,
+      "weight_class": "damage",
+      "max_full": 160,
+      "curve": "reciprocal",
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "power_flip",
+      "kind": {
+        "id": 55,
+        "name": "PowerFlipDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "transform_note": "Apply 100*V/(100+V) after disposition, count and quality; max_full remains positive-equivalent.",
+      "lo": 0,
+      "hi": 61.53846153846154,
+      "raw_lo": 0,
+      "raw_hi": -61538,
+      "quantization_step": 0.6216006216006216,
+      "key": 15990056,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_power_flip_up",
+      "catalog_id": "PFD-02",
+      "name_zh": "强化弹射伤害 +X%",
+      "polarity": "+",
+      "family": "power_flip",
+      "scope": "party",
+      "weight": 1.0,
+      "weight_class": "damage",
+      "max_full": 222,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "power_flip",
+      "kind": {
+        "id": 55,
+        "name": "PowerFlipDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 222.0,
+      "raw_lo": 0,
+      "raw_hi": 222000,
+      "quantization_step": 2.242424242424242,
+      "key": 15990057,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_race_slayer",
+      "catalog_id": "SLY-02",
+      "name_zh": "队伍全体角色对全种族敌人的伤害 +X%",
+      "polarity": "+",
+      "family": "slayer_race",
+      "scope": "party",
+      "weight": 1.0,
+      "weight_class": "damage",
+      "max_full": 10,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "slayer_race",
+      "kind": {
+        "id": 52,
+        "name": "CharacterSlayer",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "lo": 0,
+      "hi": 10.0,
+      "raw_lo": 0,
+      "raw_hi": 10000,
+      "quantization_step": 0.10101010101010101,
+      "key": 15990058,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_second_gauge",
+      "catalog_id": "SGM-02",
+      "name_zh": "队伍全体角色的技能槽能够蓄能的上限 +X%（最高 200%）",
+      "polarity": "+",
+      "family": "second_gauge",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 50,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "second_gauge",
+      "kind": {
+        "id": 245,
+        "name": "SecondSkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 50.0,
+      "raw_lo": 0,
+      "raw_hi": 50000,
+      "quantization_step": 0.5050505050505051,
+      "key": 15990059,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_skill_damage_down",
+      "catalog_id": "SKD-04",
+      "name_zh": "队伍全体角色技能伤害降低（独立乘区）",
+      "polarity": "-",
+      "family": "skill_damage",
+      "scope": "party",
+      "weight": 0.3,
+      "weight_class": "damage",
+      "max_full": 140,
+      "curve": "reciprocal",
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "skill_damage",
+      "kind": {
+        "id": 694,
+        "name": "SeparatedTermSkillDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "transform_note": "Apply 100*V/(100+V) after disposition, count and quality; max_full remains positive-equivalent.",
+      "lo": 0,
+      "hi": 58.333333333333336,
+      "raw_lo": 0,
+      "raw_hi": -58333,
+      "quantization_step": 0.5892255892255892,
+      "key": 15990060,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_skill_damage_up",
+      "catalog_id": "SKD-02",
+      "name_zh": "队伍全体角色的技能伤害 +X%",
+      "polarity": "+",
+      "family": "skill_damage",
+      "scope": "party",
+      "weight": 1.0,
+      "weight_class": "damage",
+      "max_full": 175,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "skill_damage",
+      "kind": {
+        "id": 34,
+        "name": "SkillDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 175.0,
+      "raw_lo": 0,
+      "raw_hi": 175000,
+      "quantization_step": 1.7676767676767677,
+      "key": 15990061,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_thunder_resistance_up",
+      "catalog_id": "RES-06",
+      "name_zh": "队伍全体角色的雷属性耐性 +X%",
+      "polarity": "+",
+      "family": "thunder_resistance",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "thunder_resistance",
+      "kind": {
+        "id": 39,
+        "name": "ResistanceYellow",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990062,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_water_resistance_up",
+      "catalog_id": "RES-06",
+      "name_zh": "队伍全体角色的水属性耐性 +X%",
+      "polarity": "+",
+      "family": "water_resistance",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "water_resistance",
+      "kind": {
+        "id": 38,
+        "name": "ResistanceBlue",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990063,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "party_wind_resistance_up",
+      "catalog_id": "RES-06",
+      "name_zh": "队伍全体角色的风属性耐性 +X%",
+      "polarity": "+",
+      "family": "wind_resistance",
+      "scope": "party",
+      "weight": 0.75,
+      "weight_class": "utility",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "wind_resistance",
+      "kind": {
+        "id": 40,
+        "name": "ResistanceGreen",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990064,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "piercing_extend",
+      "catalog_id": "SPC-11",
+      "name_zh": "队伍全体角色的贯通状态持续时间 +X%",
+      "polarity": "+",
+      "family": "piercing_extend",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "piercing_extend",
+      "kind": {
+        "id": 190,
+        "name": "PiercingExtend",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "independent_cap": true,
+      "cap_note": "持续时间乘区正面按作者总则封20%。",
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990065,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "power_flip_combo_down",
+      "catalog_id": "SPC-08",
+      "name_zh": "强化弹射 Lv3 必要连击数 -X",
+      "polarity": "+",
+      "family": "pf_combo",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 10,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "pf_combo",
+      "kind": {
+        "id": 200,
+        "name": "PowerFlipComboCountDown",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "count",
+      "raw_sign": 1,
+      "raw_per_unit": 100000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 10.0,
+      "raw_lo": 0,
+      "raw_hi": 1000000,
+      "quantization_step": 1,
+      "key": 15990066,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_attack_buff_extend",
+      "catalog_id": "SPC-21",
+      "name_zh": "自身的攻击力提升效果持续时间延长",
+      "polarity": "+",
+      "family": "attack_buff_extend",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "attack_buff_extend",
+      "kind": {
+        "id": 157,
+        "name": "AttackPointUpExtend",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "independent_cap": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990067,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_coffin_count_down",
+      "catalog_id": "SPC-22",
+      "name_zh": "复活自身所需的棺材计数（弹射次数） -X",
+      "polarity": "+",
+      "family": "coffin_count",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 6,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "coffin_count",
+      "kind": {
+        "id": 203,
+        "name": "CoffinBaseCountDown",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "count",
+      "raw_sign": 1,
+      "raw_per_unit": 100000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 6.0,
+      "raw_lo": 0,
+      "raw_hi": 600000,
+      "quantization_step": 1,
+      "key": 15990068,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_debuff_slayer",
+      "catalog_id": "SLY-03",
+      "name_zh": "自身对处于弱体效果（Debuff）中的敌人造成的伤害 +X%",
+      "polarity": "+",
+      "family": "slayer_debuff",
+      "scope": "self",
+      "weight": 2,
+      "weight_class": "damage",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "slayer_debuff",
+      "kind": {
+        "id": 96,
+        "name": "DebuffSlayer",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990069,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_direct_double",
+      "catalog_id": "DHC-01",
+      "name_zh": "自身的直接攻击次数变为2次、总伤害 +X%",
+      "polarity": "+",
+      "family": "direct_count",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "direct_count",
+      "kind": {
+        "id": 201,
+        "name": "DirectAttack2",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990070,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_direct_gauge",
+      "catalog_id": "SPC-18",
+      "name_zh": "队伍全体角色每直接攻击合计 30 次时，自身的技能槽 +X%（上限5次）",
+      "polarity": "+",
+      "family": "direct_gauge",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "direct_gauge",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 20,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "trigger_puller": 7,
+      "threshold": 30,
+      "trigger_limit": 5,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990071,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 20
+      }
+    },
+    {
+      "id": "self_direct_single",
+      "catalog_id": "DRM-05",
+      "name_zh": "自身的直接攻击倍率（1连击总伤害） +X%",
+      "polarity": "+",
+      "family": "direct_count",
+      "scope": "self",
+      "weight": 2,
+      "weight_class": "damage",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "direct_count",
+      "kind": {
+        "id": 521,
+        "name": "DirectAttack1",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990072,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_direct_triple",
+      "catalog_id": "DHC-03",
+      "name_zh": "自身的直接攻击次数变为3次、总伤害 +X%",
+      "polarity": "+",
+      "family": "direct_count",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "direct_count",
+      "kind": {
+        "id": 202,
+        "name": "DirectAttack3",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990073,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_down_slayer",
+      "catalog_id": "SLY-05",
+      "name_zh": "自身对击晕（Down）或畏缩中的敌人造成的伤害 +X%",
+      "polarity": "+",
+      "family": "slayer_down",
+      "scope": "self",
+      "weight": 2,
+      "weight_class": "damage",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "slayer_down",
+      "kind": {
+        "id": 53,
+        "name": "StunWinceSlayer",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990074,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_elapsed_gauge_down",
+      "catalog_id": "SPC-24",
+      "name_zh": "每经过15秒，累计自身技能槽充能负债（最多4次；抵扣后续充能，不扣当前槽）",
+      "polarity": "-",
+      "family": "elapsed_gauge",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "special",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "elapsed_gauge",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 77,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "threshold": 900,
+      "trigger_limit": 4,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": -25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990075,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 77
+      }
+    },
+    {
+      "id": "self_fever_direct",
+      "catalog_id": "SPC-03",
+      "name_zh": "狂热（Fever）状态期间，自身的直接攻击伤害（独立乘区） +X%",
+      "polarity": "+",
+      "family": "conditional_direct",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "conditional_direct",
+      "kind": {
+        "id": 410,
+        "name": "SeparatedTermDirectDamage",
+        "block": "during_content",
+        "column": "c106"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "during": 4,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990076,
+      "strength_columns": [
+        "c110",
+        "c111"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 1,
+        "event_value": 4
+      }
+    },
+    {
+      "id": "self_fever_gauge",
+      "catalog_id": "SPC-01",
+      "name_zh": "进入狂热（Fever）状态时，自身的技能槽 +X%（上限3次）",
+      "polarity": "+",
+      "family": "fever_gauge",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 50,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "fever_gauge",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 8,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "trigger_limit": 3,
+      "lo": 0,
+      "hi": 50.0,
+      "raw_lo": 0,
+      "raw_hi": 50000,
+      "quantization_step": 0.5050505050505051,
+      "key": 15990077,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 8
+      }
+    },
+    {
+      "id": "self_flying_direct",
+      "catalog_id": "SPC-14",
+      "name_zh": "浮游状态期间，自身的直接攻击伤害（独立乘区） +X%",
+      "polarity": "+",
+      "family": "conditional_direct",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "conditional_direct",
+      "kind": {
+        "id": 410,
+        "name": "SeparatedTermDirectDamage",
+        "block": "during_content",
+        "column": "c106"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "during": 31,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990078,
+      "strength_columns": [
+        "c110",
+        "c111"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 1,
+        "event_value": 31
+      }
+    },
+    {
+      "id": "self_gauge_speed_down",
+      "catalog_id": "SGC-03",
+      "name_zh": "自身的技能槽充能速度 -X%",
+      "polarity": "-",
+      "family": "gauge_speed",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "gauge_speed",
+      "kind": {
+        "id": 35,
+        "name": "SkillGaugeCharging",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": -1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "independent_cap": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": -20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990079,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_gauge_speed_up",
+      "catalog_id": "SGC-01",
+      "name_zh": "自身的技能槽充能速度 +X%",
+      "polarity": "+",
+      "family": "gauge_speed",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "gauge_speed",
+      "kind": {
+        "id": 35,
+        "name": "SkillGaugeCharging",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "independent_cap": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990080,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_high_hp_skill",
+      "catalog_id": "SPC-15",
+      "name_zh": "自身生命值在80%以上期间，自身技能伤害提升（独立乘区）",
+      "polarity": "+",
+      "family": "high_hp_skill",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "high_hp_skill",
+      "kind": {
+        "id": 411,
+        "name": "SeparatedTermSkillDamage",
+        "block": "during_content",
+        "column": "c106"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "during": 0,
+      "threshold": 0.8,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990081,
+      "strength_columns": [
+        "c110",
+        "c111"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 1,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_kill_gauge",
+      "catalog_id": "SPC-19",
+      "name_zh": "每当击破 3 个敌人时，自身的技能槽 +X%（上限5次）",
+      "polarity": "+",
+      "family": "kill_gauge",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 30,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "kill_gauge",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 10,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "threshold": 3,
+      "trigger_limit": 5,
+      "lo": 0,
+      "hi": 30.0,
+      "raw_lo": 0,
+      "raw_hi": 30000,
+      "quantization_step": 0.30303030303030304,
+      "key": 15990082,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 10
+      }
+    },
+    {
+      "id": "self_low_hp_barrier",
+      "catalog_id": "SPC-17",
+      "name_zh": "自身的生命值跌破 50% 时，赋予自身最大生命值 X% 的护盾（上限1次）",
+      "polarity": "+",
+      "family": "low_hp_barrier",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 50,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "low_hp_barrier",
+      "kind": {
+        "id": 227,
+        "name": "Barrier",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 25,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "threshold": 0.5,
+      "trigger_limit": 1,
+      "lo": 0,
+      "hi": 50.0,
+      "raw_lo": 0,
+      "raw_hi": 50000,
+      "quantization_step": 0.5050505050505051,
+      "key": 15990083,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 25
+      }
+    },
+    {
+      "id": "self_low_hp_damage",
+      "catalog_id": "SPC-16",
+      "name_zh": "自身生命值在50%以下期间，自身造成的伤害提升（独立乘区）",
+      "polarity": "+",
+      "family": "low_hp_damage",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "low_hp_damage",
+      "kind": {
+        "id": 421,
+        "name": "SeparatedTermDamage",
+        "block": "during_content",
+        "column": "c106"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "during": 1,
+      "threshold": 0.5,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990084,
+      "strength_columns": [
+        "c110",
+        "c111"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 1,
+        "event_value": 1
+      }
+    },
+    {
+      "id": "self_pf3_gauge",
+      "catalog_id": "SPC-09",
+      "name_zh": "发动 Lv3 强化弹射时，自身的技能槽 +X%（冷却15秒）",
+      "polarity": "+",
+      "family": "pf3_gauge",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 25,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "pf3_gauge",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 65,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "trigger_limit": 0,
+      "cooldown_seconds": 15,
+      "lo": 0,
+      "hi": 25.0,
+      "raw_lo": 0,
+      "raw_hi": 25000,
+      "quantization_step": 0.25252525252525254,
+      "key": 15990085,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 65
+      }
+    },
+    {
+      "id": "self_piercing_direct",
+      "catalog_id": "SPC-14",
+      "name_zh": "贯通状态期间，自身的直接攻击伤害（独立乘区） +X%",
+      "polarity": "+",
+      "family": "conditional_direct",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "conditional_direct",
+      "kind": {
+        "id": 410,
+        "name": "SeparatedTermDirectDamage",
+        "block": "during_content",
+        "column": "c106"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "during": 30,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990086,
+      "strength_columns": [
+        "c110",
+        "c111"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 1,
+        "event_value": 30
+      }
+    },
+    {
+      "id": "self_race_slayer",
+      "catalog_id": "SLY-01",
+      "name_zh": "自身对全种族敌人的伤害 +X%",
+      "polarity": "+",
+      "family": "slayer_race",
+      "scope": "self",
+      "weight": 2,
+      "weight_class": "damage",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "slayer_race",
+      "kind": {
+        "id": 52,
+        "name": "CharacterSlayer",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990087,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_revival_gauge",
+      "catalog_id": "SPC-23",
+      "name_zh": "自身从棺材状态复活时，自身的技能槽 +X%（上限2次）",
+      "polarity": "+",
+      "family": "revival_gauge",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 60,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "revival_gauge",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 18,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "trigger_limit": 2,
+      "lo": 0,
+      "hi": 60.0,
+      "raw_lo": 0,
+      "raw_hi": 60000,
+      "quantization_step": 0.6060606060606061,
+      "key": 15990088,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 18
+      }
+    },
+    {
+      "id": "self_second_gauge",
+      "catalog_id": "SGM-01",
+      "name_zh": "自身的技能槽能够蓄能的上限 +X%（最高 200%）",
+      "polarity": "+",
+      "family": "second_gauge",
+      "scope": "self",
+      "weight": 1.5,
+      "weight_class": "utility",
+      "max_full": 100,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "second_gauge",
+      "kind": {
+        "id": 245,
+        "name": "SecondSkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "lo": 0,
+      "hi": 100.0,
+      "raw_lo": 0,
+      "raw_hi": 100000,
+      "quantization_step": 1.0101010101010102,
+      "key": 15990089,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_skill_buff_extend",
+      "catalog_id": "SPC-21",
+      "name_zh": "自身的技能伤害提升效果持续时间延长",
+      "polarity": "+",
+      "family": "skill_buff_extend",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "skill_buff_extend",
+      "kind": {
+        "id": 159,
+        "name": "SkillDamageUpExtend",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "independent_cap": true,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990090,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    },
+    {
+      "id": "self_skill_gauge_refund",
+      "catalog_id": "SPC-05",
+      "name_zh": "自身发动技能时，自身的技能槽 +X%（上限2次）",
+      "polarity": "+",
+      "family": "skill_gauge_refund",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 35,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "skill_gauge_refund",
+      "kind": {
+        "id": 211,
+        "name": "SkillGauge",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 23,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "trigger_limit": 2,
+      "lo": 0,
+      "hi": 35.0,
+      "raw_lo": 0,
+      "raw_hi": 35000,
+      "quantization_step": 0.35353535353535354,
+      "key": 15990091,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 23
+      }
+    },
+    {
+      "id": "self_speedup_direct",
+      "catalog_id": "SPC-14",
+      "name_zh": "加速状态期间，自身的直接攻击伤害（独立乘区） +X%",
+      "polarity": "+",
+      "family": "conditional_direct",
+      "scope": "self",
+      "weight": 0.3,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "conditional_direct",
+      "kind": {
+        "id": 410,
+        "name": "SeparatedTermDirectDamage",
+        "block": "during_content",
+        "column": "c106"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": true,
+      "during": 104,
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990092,
+      "strength_columns": [
+        "c110",
+        "c111"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 1,
+        "event_value": 104
+      }
+    },
+    {
+      "id": "skill_fever_point",
+      "catalog_id": "SPC-04",
+      "name_zh": "每次发动技能时，狂热（Fever）槽 +X（上限5次）",
+      "polarity": "+",
+      "family": "skill_fever_point",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 150,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "skill_fever_point",
+      "kind": {
+        "id": 213,
+        "name": "AddFeverPoint",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "points",
+      "raw_sign": 1,
+      "raw_per_unit": 100000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 23,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "trigger_limit": 5,
+      "lo": 0,
+      "hi": 150.0,
+      "raw_lo": 0,
+      "raw_hi": 15000000,
+      "quantization_step": 1.5151515151515151,
+      "key": 15990093,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 23
+      }
+    },
+    {
+      "id": "skill_party_heal",
+      "catalog_id": "SPC-06",
+      "name_zh": "自身发动技能时，恢复队伍全体角色最大生命值的 X%（上限3次）",
+      "polarity": "+",
+      "family": "skill_heal",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 12,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "skill_heal",
+      "kind": {
+        "id": 206,
+        "name": "RatioHeal",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 23,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "trigger_limit": 3,
+      "lo": 0,
+      "hi": 12.0,
+      "raw_lo": 0,
+      "raw_hi": 12000,
+      "quantization_step": 0.12121212121212122,
+      "key": 15990094,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 23
+      }
+    },
+    {
+      "id": "skill_power_flip_buff",
+      "catalog_id": "PFD-01B",
+      "name_zh": "自身发动技能时，15秒内强化弹射伤害 +X%",
+      "polarity": "+",
+      "family": "power_flip",
+      "scope": "self",
+      "weight": 2,
+      "weight_class": "damage",
+      "max_full": 240,
+      "min": 0,
+      "enabled": true,
+      "tier": "strong",
+      "exclusive_group": "power_flip",
+      "kind": {
+        "id": 28,
+        "name": "ConditionPowerFlipDamage",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 23,
+      "target_value": 0,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "trigger_limit": 0,
+      "frame_seconds": 15,
+      "lo": 0,
+      "hi": 240.0,
+      "raw_lo": 0,
+      "raw_hi": 240000,
+      "quantization_step": 2.4242424242424243,
+      "key": 15990095,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Myself",
+        "value": 0,
+        "scope": "self"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 23
+      }
+    },
+    {
+      "id": "speedup_extend",
+      "catalog_id": "SPC-13",
+      "name_zh": "队伍全体角色的加速状态持续时间 +X%",
+      "polarity": "+",
+      "family": "speedup_extend",
+      "scope": "party",
+      "weight": 0.15,
+      "weight_class": "special",
+      "max_full": 20,
+      "min": 0,
+      "enabled": true,
+      "tier": "medium",
+      "exclusive_group": "speedup_extend",
+      "kind": {
+        "id": 229,
+        "name": "SpeedupExtend",
+        "block": "instant_content",
+        "column": "c44"
+      },
+      "unit": "percent",
+      "raw_sign": 1,
+      "raw_per_unit": 1000,
+      "resolution": 0.001,
+      "rounding": "Decimal.raw_integer_nearest_ties_positive_infinity",
+      "source_status": "可用",
+      "trigger_kind": 0,
+      "target_value": 5,
+      "numeric_version": 3,
+      "independent_damage": false,
+      "independent_cap": true,
+      "cap_note": "持续时间乘区正面按作者总则封20%。",
+      "lo": 0,
+      "hi": 20.0,
+      "raw_lo": 0,
+      "raw_hi": 20000,
+      "quantization_step": 0.20202020202020202,
+      "key": 15990096,
+      "strength_columns": [
+        "c48",
+        "c49"
+      ],
+      "target": {
+        "name": "Party",
+        "value": 5,
+        "scope": "party"
+      },
+      "trigger": {
+        "mode_value": 0,
+        "event_value": 0
+      }
+    }
+  ],
+  "legacy_endpoints_source_sha256": "ff5322771f676a3d274c702ced39462fa71ee513c861be9a026414cad9e6e351",
+  "round2_note": "2026-10-27 作者/协调者：自身攻击/技伤/直击/能力伤害/PF伤害正面满档 500（单条正面可吃满 500% 预算）；全队版同比例放大取整（能力110→172、攻击120→167、直击160→178、技伤140→175、PF160→222）。全局端点 hi 同步抬到 max_full。"
+}

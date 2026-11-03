@@ -1,0 +1,43 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Element = exports.QuestCategory = void 0;
+var QuestCategory;
+(function (QuestCategory) {
+    QuestCategory[QuestCategory["EMPTY"] = 0] = "EMPTY";
+    QuestCategory[QuestCategory["MAIN"] = 1] = "MAIN";
+    QuestCategory[QuestCategory["BOSS_BATTLE"] = 2] = "BOSS_BATTLE";
+    QuestCategory[QuestCategory["CHARACTER"] = 3] = "CHARACTER";
+    QuestCategory[QuestCategory["EX"] = 4] = "EX";
+    QuestCategory[QuestCategory["EMPTY2"] = 5] = "EMPTY2";
+    QuestCategory[QuestCategory["DAILY_WEEK_EVENT"] = 6] = "DAILY_WEEK_EVENT";
+    QuestCategory[QuestCategory["ADVENT_EVENT_SINGLE"] = 7] = "ADVENT_EVENT_SINGLE";
+    QuestCategory[QuestCategory["ADVENT_EVENT_MULTI"] = 8] = "ADVENT_EVENT_MULTI";
+    QuestCategory[QuestCategory["TUTORIAL"] = 9] = "TUTORIAL";
+    QuestCategory[QuestCategory["STORY_EVENT_SINGLE"] = 10] = "STORY_EVENT_SINGLE";
+    QuestCategory[QuestCategory["RANKING_EVENT_SINGLE"] = 11] = "RANKING_EVENT_SINGLE";
+    QuestCategory[QuestCategory["EMPTY3"] = 12] = "EMPTY3";
+    QuestCategory[QuestCategory["CHALLENGE_DUNGEON_EVENT"] = 13] = "CHALLENGE_DUNGEON_EVENT";
+    QuestCategory[QuestCategory["DAILY_EXP_MANA_EVENT"] = 14] = "DAILY_EXP_MANA_EVENT";
+    QuestCategory[QuestCategory["PRACTICE"] = 15] = "PRACTICE";
+    QuestCategory[QuestCategory["SKILL_PREVIEW"] = 16] = "SKILL_PREVIEW";
+    QuestCategory[QuestCategory["EMPTY4"] = 17] = "EMPTY4";
+    QuestCategory[QuestCategory["WORLD_STORY_EVENT"] = 18] = "WORLD_STORY_EVENT";
+    QuestCategory[QuestCategory["WORLD_STORY_EVENT_BOSS_BATTLE"] = 19] = "WORLD_STORY_EVENT_BOSS_BATTLE";
+    QuestCategory[QuestCategory["TOWER_DUNGEON_EVENT"] = 20] = "TOWER_DUNGEON_EVENT";
+    QuestCategory[QuestCategory["EXPERT_SINGLE_EVENT"] = 21] = "EXPERT_SINGLE_EVENT";
+    QuestCategory[QuestCategory["CARNIVAL_EVENT"] = 22] = "CARNIVAL_EVENT";
+    QuestCategory[QuestCategory["RAID_EVENT"] = 23] = "RAID_EVENT";
+    QuestCategory[QuestCategory["RUSH_EVENT"] = 24] = "RUSH_EVENT";
+    QuestCategory[QuestCategory["SOLO_TIME_ATTACK_EVENT"] = 25] = "SOLO_TIME_ATTACK_EVENT";
+    QuestCategory[QuestCategory["HARD_MULTI_EVENT"] = 26] = "HARD_MULTI_EVENT";
+    QuestCategory[QuestCategory["SCORE_ATTACK_EVENT"] = 27] = "SCORE_ATTACK_EVENT"; //?
+})(QuestCategory || (exports.QuestCategory = QuestCategory = {}));
+var Element;
+(function (Element) {
+    Element[Element["FIRE"] = 0] = "FIRE";
+    Element[Element["WATER"] = 1] = "WATER";
+    Element[Element["LIGHTNING"] = 2] = "LIGHTNING";
+    Element[Element["WIND"] = 3] = "WIND";
+    Element[Element["LIGHT"] = 4] = "LIGHT";
+    Element[Element["DARK"] = 5] = "DARK";
+})(Element || (exports.Element = Element = {}));

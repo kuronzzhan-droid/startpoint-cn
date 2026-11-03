@@ -41604,5 +41604,35 @@
         ""
       ]
     ]
+  },
+  "990005": {
+    "1": [
+      [
+        "0",
+        "",
+        "gacha/feature_movie/cnmod_starview_encounter/top/feature",
+        "",
+        "",
+        "",
+        "(None)",
+        "",
+        ""
+      ]
+    ]
+  },
+  "990006": {
+    "1": [
+      [
+        "0",
+        "",
+        "gacha/feature_movie/cnmod_starview_sway/top/feature",
+        "",
+        "",
+        "",
+        "(None)",
+        "",
+        ""
+      ]
+    ]
   }
 }

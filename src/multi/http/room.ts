@@ -25,6 +25,23 @@ async function roomFacts(roomNumber?: string, accessToken?: string): Promise<Roo
     return await getRoomCommandGateway().execute("room.query", roomNumber
         ? { roomNumber } : { accessToken: accessToken || "" }) as RoomQueryProjection | null
 }
+/**
+ * Every co-op client simulates the whole battle from its own copy of the
+ * master data and DSL, so a member on an older resource edge plays a different
+ * boss. MULTI_REQUIRE_CURRENT_ASSETS=1 makes such a client update first.
+ */
+function isAssetStale(request: FastifyRequest): boolean {
+    if (!/^(1|true|yes|on)$/i.test(process.env.MULTI_REQUIRE_CURRENT_ASSETS ?? "")) return false
+    const resVer = request.headers["res_ver"]
+    if (typeof resVer !== "string" || !resVer) return false
+    try {
+        const { computeAssetTarget } = require("../../lib/version") as typeof import("../../lib/version")
+        const target = computeAssetTarget(resVer)
+        return !target.isFirstTime && target.targetVersion !== resVer
+    } catch {
+        return false
+    }
+}
 function decisionPayload(room: RoomQueryProjection | null, roomNumber: string, viewerId: number): RoomDecisionPayload {
     return { roomNumber: room?.room_number || roomNumber, viewerId,
         identity: room?.identity ?? null, mode15Closed: !!room && isMode15RoomClosed(room) }
@@ -76,7 +93,7 @@ export function registerRoomRoutes(fastify: FastifyInstance): void {
         if (!await hasValidViewer(viewerId)) return reply.status(400).send({ error: "Bad Request", message: "Invalid request body." })
         const room = await roomFacts(body.room_number, body.access_token)
         const payload = { ...decisionPayload(room, body.room_number || "", viewerId),
-            category: numberOrNull(body.category), questId: numberOrNull(body.quest_id) }
+            category: numberOrNull(body.category), questId: numberOrNull(body.quest_id), assetStale: isAssetStale(request) }
         const result = await executeConnection("room.prepare", payload)
         if (result.status !== "ready") {
             console.warn(`[MULTI] room connection acknowledged as unavailable: viewer=${viewerId} room=${payload.roomNumber} reason=${result.status}`)
@@ -99,7 +116,8 @@ export function registerRoomRoutes(fastify: FastifyInstance): void {
         const body = request.body as RestoreRoomBody, viewerId = body.viewer_id
         if (!await hasValidViewer(viewerId)) return reply.status(400).send({ error: "Bad Request", message: "Invalid request body." })
         const room = await roomFacts(body.room_number)
-        const result = await executeConnection("room.restore", decisionPayload(room, body.room_number, viewerId))
+        const result = await executeConnection("room.restore",
+            { ...decisionPayload(room, body.room_number, viewerId), assetStale: isAssetStale(request) })
         const connection = result.status === "ready" ? result.connection : missingConnection(body.room_number)
         return send(reply, viewerId, { ...connectionData(connection, [9, 13].includes(connection.raising_state)), is_same_room: true })
     })

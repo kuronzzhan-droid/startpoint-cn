@@ -1015,6 +1015,18 @@ function commitClaimedAdmission(socket: net.Socket, client: SessionClient): bool
 }
 
 function handleEnter(socket: net.Socket, client: SessionClient, data: any[]): void {
+    if (sessionManager.takeStaleAssetViewer(client.roomNumber, client.viewerId)) {
+        // MeetingServerMessage.AssetUpdate (9): the client leaves the room and
+        // returns to the title, which downloads the missing resource edges.
+        // Let the normal Enter/Welcome finish first so the room UI is ready.
+        console.warn(`[MULTI] outdated resources, sending AssetUpdate: room=${client.roomNumber} viewer=${client.viewerId}`)
+        setTimeout(() => {
+            if (!socket.destroyed) sessionManager.sendJson(socket, [1, [9]], {
+                roomNumber: client.roomNumber, connectionId: client.connectionId, viewerId: client.viewerId,
+                roomGeneration: client.roomGeneration, channel: "asset_update",
+            })
+        }, 300).unref()
+    }
     const existingRoom = getRoom(client.roomNumber)
     if (existingRoom?.lifecycle.phase === "BATTLE") {
         queueFiveBossHostReturnEnter(client, data, existingRoom)

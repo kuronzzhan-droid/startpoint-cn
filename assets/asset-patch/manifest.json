@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.351",
+  "cdn_version": "1.4.380",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -4711,14 +4711,14 @@
           263015
         ],
         "gacha_pool_counts": {
-          "5": 248,
+          "3": 76,
           "4": 125,
-          "3": 76
+          "5": 248
         },
         "gacha_pool_total_weights": {
-          "5": 1593000,
+          "3": 1113,
           "4": 2184,
-          "3": 1113
+          "5": 1593000
         },
         "gacha_rank_rates_preserved": true,
         "gacha_rate_up_rows_weights_and_probabilities_preserved": true,
@@ -4747,10 +4747,10 @@
           "character_139997_ui": "d5912f87a65210f4fd752ba899c10dacceceed21ea3307d58c157c597d266991"
         },
         "source_zip_sha256": {
+          "139997": "a52ae1c45b3e22e9cea81df2192e253edf7e614aea7dc2828b8d8ea32d486169",
           "西蒙": "f5b2b751be9fa2459bd746b13c942ca10125a933d034809c91150a864a0c434c",
           "巴萨拉卡": "b184640aef57927259adfb552361a028615896558210225ab9a8e22ac130cb70",
-          "希耶提": "bfc579b543cf3624984f96125d9bf75a46a579a19ca47e451e55192f8fa9a34b",
-          "139997": "a52ae1c45b3e22e9cea81df2192e253edf7e614aea7dc2828b8d8ea32d486169"
+          "希耶提": "bfc579b543cf3624984f96125d9bf75a46a579a19ca47e451e55192f8fa9a34b"
         }
       },
       "archive_integrity": [
@@ -34464,11 +34464,12 @@
     {
       "id": "hell-pumpkin-1.4.259",
       "type": "patch",
-      "name": "地狱南瓜活动 300097：boss/小怪/机关/地形/DSL + 美术 + 三段BGM + 活动/掉落/商店表",
+      "name": "(测试服) 地狱南瓜活动 300097：boss/小怪/机关/地形/DSL + 美术 + 三段BGM + 活动/掉落/商店表",
       "description": "",
       "version": "1.4.259",
       "depends_on": "1.4.258",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.258-1.4.259-1-hell-pumpkin-local.zip",
       "archive_size": 15400623,
       "chain": [
@@ -34879,11 +34880,12 @@
     {
       "id": "hell-pumpkin-candy-icon-1.4.260",
       "type": "patch",
-      "name": "地狱南瓜 万圣糖果 10009701 c4 图标切到 item_icon 图集子纹理",
+      "name": "(测试服) 地狱南瓜 万圣糖果 10009701 c4 图标切到 item_icon 图集子纹理",
       "description": "",
       "version": "1.4.260",
       "depends_on": "1.4.259",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.259-1.4.260-1-hell-pumpkin-candy-icon-local.zip",
       "archive_size": 243436,
       "chain": [
@@ -34908,11 +34910,12 @@
     {
       "id": "hell-pumpkin-p1rounds-1.4.261",
       "type": "patch",
-      "name": "地狱南瓜 P1 三轮随机试炼 / 血量对标决战机兵 / 控制免疫 / 眩晕只在 Fever 一次 / Fever 槽 2500 / 10% 技能瓶",
+      "name": "(测试服) 地狱南瓜 P1 三轮随机试炼 / 血量对标决战机兵 / 控制免疫 / 眩晕只在 Fever 一次 / Fever 槽 2500 / 10% 技能瓶",
       "description": "",
       "version": "1.4.261",
       "depends_on": "1.4.260",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.260-1.4.261-1-hell-pumpkin-p1rounds-local.zip",
       "archive_size": 4171578,
       "chain": [
@@ -34981,11 +34984,12 @@
     {
       "id": "hell-pumpkin-tolerance-1.4.262",
       "type": "patch",
-      "name": "地狱南瓜 不吃异常(弱体耐性)/全程不晕/去重复音效 / P1 固定轮次表 / P2 开场不发呆 / 召唤加快 / jack×0.8 rage×1.5 / 单人=共斗",
+      "name": "(测试服) 地狱南瓜 不吃异常(弱体耐性)/全程不晕/去重复音效 / P1 固定轮次表 / P2 开场不发呆 / 召唤加快 / jack×0.8 rage×1.5 / 单人=共斗",
       "description": "",
       "version": "1.4.262",
       "depends_on": "1.4.261",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.261-1.4.262-1-hell-pumpkin-tolerance-local.zip",
       "archive_size": 4249109,
       "chain": [
@@ -35074,11 +35078,12 @@
     {
       "id": "balance-1020b-1.4.263",
       "type": "patch",
-      "name": "平衡表10-20晚：阿鲁玛德乌斯/基诺维/白梅斩铁",
+      "name": "(本地) 平衡表10-20晚：阿鲁玛德乌斯/基诺维/白梅斩铁",
       "description": "",
       "version": "1.4.263",
       "depends_on": "1.4.262",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.262-1.4.263-1-balance-1020b-local.zip",
       "archive_size": 353428,
       "chain": [
@@ -35111,11 +35116,12 @@
     {
       "id": "skill-rework-1020b-1.4.264",
       "type": "patch",
-      "name": "平衡表10-20：万圣露迪全领域判定/中秋丝缇涅尔最近敌人前展开",
+      "name": "(本地) 平衡表10-20：万圣露迪全领域判定/中秋丝缇涅尔最近敌人前展开",
       "description": "",
       "version": "1.4.264",
       "depends_on": "1.4.263",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.263-1.4.264-1-skill-rework-1020b-local.zip",
       "archive_size": 573885,
       "chain": [
@@ -35150,11 +35156,12 @@
     {
       "id": "water-gerald-unison-pf-1.4.265",
       "type": "patch",
-      "name": "水杰拉德合击强化弹射通用化 1.4.265（需 APK 1008011 v35l）",
+      "name": "(测试服) 水杰拉德合击强化弹射通用化 1.4.265（需 APK 1008011 v35l）",
       "description": "",
       "version": "1.4.265",
       "depends_on": "1.4.264",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.264-1.4.265-1-water-gerald-unison-pf.zip",
       "archive_size": 139340,
       "chain": [
@@ -35189,11 +35196,12 @@
     {
       "id": "hell-pumpkin-regress-1.4.266",
       "type": "patch",
-      "name": "地狱南瓜 回归修复：P1 小南瓜改回刷新组召唤+两段 GeneralFunnelDead 门 / P3 取消脚下掉落、同屏南瓜≤4、节奏回 ×1.0",
+      "name": "(测试服) 地狱南瓜 回归修复：P1 小南瓜改回刷新组召唤+两段 GeneralFunnelDead 门 / P3 取消脚下掉落、同屏南瓜≤4、节奏回 ×1.0",
       "description": "",
       "version": "1.4.266",
       "depends_on": "1.4.265",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.265-1.4.266-1-hell-pumpkin-regress-local.zip",
       "archive_size": 3293568,
       "chain": [
@@ -35240,11 +35248,12 @@
     {
       "id": "hell-pumpkin-p1pre-1.4.267",
       "type": "patch",
-      "name": "地狱南瓜 P1 出场即无敌+弱体耐性100并直接飞走 / P1 清麻痹守卫 / P2 只吃技能伤害 / P3 开场清技能槽+50%底座+20层可驱散耐性 / P3 狂暴改出招加速 / 冲击波 P1 20% P2 15%",
+      "name": "(测试服) 地狱南瓜 P1 出场即无敌+弱体耐性100并直接飞走 / P1 清麻痹守卫 / P2 只吃技能伤害 / P3 开场清技能槽+50%底座+20层可驱散耐性 / P3 狂暴改出招加速 / 冲击波 P1 20% P2 15%",
       "description": "",
       "version": "1.4.267",
       "depends_on": "1.4.266",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.266-1.4.267-1-hell-pumpkin-p1pre-local.zip",
       "archive_size": 3883967,
       "chain": [
@@ -35303,11 +35312,12 @@
     {
       "id": "balance-1021-ol-1.4.268",
       "type": "patch",
-      "name": "平衡表10-21：瓦格纳超限觉醒后调整/光暗龙觉醒后去视为光暗属性/万圣稻穗词条合并",
+      "name": "(测试服) 平衡表1021：瓦格纳超限觉醒后调整 / 光暗龙觉醒后删去视为光暗属性 / 万圣稻穗词条合并",
       "description": "",
       "version": "1.4.268",
       "depends_on": "1.4.267",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.267-1.4.268-1-balance-1021-ol-local.zip",
       "archive_size": 289011,
       "chain": [
@@ -35336,11 +35346,12 @@
     {
       "id": "hell-pumpkin-dispel30-1.4.269",
       "type": "patch",
-      "name": "地狱南瓜 P3 可驱散层 30 + 每 30 秒补 2 层 / 四色召唤与鬼火改确定性定点 / P1 第 3 轮 PF 南瓜下移",
+      "name": "(测试服) 地狱南瓜 P3 可驱散层 30 + 每 30 秒补 2 层 / 四色召唤与鬼火改确定性定点 / P1 第 3 轮 PF 南瓜下移",
       "description": "",
       "version": "1.4.269",
       "depends_on": "1.4.268",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.268-1.4.269-1-hell-pumpkin-dispel30-local.zip",
       "archive_size": 17578,
       "chain": [
@@ -35427,11 +35438,12 @@
     {
       "id": "balance-1021b-1.4.270",
       "type": "patch",
-      "name": "平衡表10-21第二批：斩铁/瓦格纳超限/光暗龙/杰拉德/中秋稻穗/夏日莉莉丝/护花使龙超限/拉姆斯",
+      "name": "(测试服) 平衡表10-21第二批：斩铁/瓦格纳超限/光暗龙/杰拉德/中秋稻穗/夏日莉莉丝/护花使龙超限/拉姆斯",
       "description": "",
       "version": "1.4.270",
       "depends_on": "1.4.269",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.269-1.4.270-1-balance-1021b-local.zip",
       "archive_size": 365814,
       "chain": [
@@ -35468,11 +35480,12 @@
     {
       "id": "wagner-limit-fix-1.4.271",
       "type": "patch",
-      "name": "瓦格纳超限觉醒后能力6 次数上限热修",
+      "name": "(测试服) 瓦格纳超限觉醒后能力6 次数上限热修",
       "description": "",
       "version": "1.4.271",
       "depends_on": "1.4.270",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.270-1.4.271-1-wagner-limit-fix-local.zip",
       "archive_size": 225613,
       "chain": [
@@ -35497,11 +35510,12 @@
     {
       "id": "hell-pumpkin-lite-1.4.272",
       "type": "patch",
-      "name": "南瓜 普通~超级+ 改精简 boss（P1 6 只小南瓜 → P2 原版循环；麻痹逃课）/ 超级+ 掉落 = 地狱 1/3 / 糖果图标换南瓜",
+      "name": "(测试服) 南瓜 普通~超级+ 改精简 boss（P1 6 只小南瓜 → P2 原版循环；麻痹逃课）/ 超级+ 掉落 = 地狱 1/3 / 糖果图标换南瓜",
       "description": "",
       "version": "1.4.272",
       "depends_on": "1.4.271",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.271-1.4.272-1-hell-pumpkin-lite-local.zip",
       "archive_size": 4583321,
       "chain": [
@@ -35569,11 +35583,12 @@
     {
       "id": "balance-1022-1.4.273",
       "type": "patch",
-      "name": "平衡表10-22：瓦格纳超限/水杰拉德/杰拉尔/水灵幽魂/红蝮蛇/小动物8只",
+      "name": "(测试服) 平衡表10-22：瓦格纳超限/水杰拉德/杰拉尔/水灵幽魂/红蝮蛇/小动物8只",
       "description": "",
       "version": "1.4.273",
       "depends_on": "1.4.272",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.272-1.4.273-1-balance-1022-local.zip",
       "archive_size": 952112,
       "chain": [
@@ -35644,11 +35659,12 @@
     {
       "id": "abyss-hp-balance-1023-1.4.274",
       "type": "patch",
-      "name": "深渊boss血量（普通×0.1/EX×0.2）+ 平衡表10-22晚：莫弥亚/瓦格纳超限/万圣稻穗",
+      "name": "(测试服) 深渊boss血量（普通×0.1/EX×0.2）+ 平衡表10-22晚：莫弥亚/瓦格纳超限/万圣稻穗",
       "description": "",
       "version": "1.4.274",
       "depends_on": "1.4.273",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.273-1.4.274-1-abyss-hp-balance-1023-local.zip",
       "archive_size": 1012476,
       "chain": [
@@ -35701,11 +35717,12 @@
     {
       "id": "balance-1023-1.4.275",
       "type": "patch",
-      "name": "平衡表10-23：光暗龙抗降/白狼杰拉德/中秋稻穗/星川莉莉/克劳斯/水杰拉德/瓦格纳超限",
+      "name": "(测试服) 平衡表10-23：光暗龙抗降/白狼杰拉德/中秋稻穗/星川莉莉/克劳斯/水杰拉德/瓦格纳超限",
       "description": "",
       "version": "1.4.275",
       "depends_on": "1.4.274",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.274-1.4.275-1-balance-1023-local.zip",
       "archive_size": 948847,
       "chain": [
@@ -35770,11 +35787,12 @@
     {
       "id": "balance-1024-1.4.276",
       "type": "patch",
-      "name": "平衡表10-24：白虎小重做/莫弥亚/普莉姆拉/赛瑞斯/冲浪板武器/八岐大蛇超级+血量",
+      "name": "(测试服) 平衡表10-24：白虎小重做/莫弥亚/普莉姆拉/赛瑞斯/冲浪板武器/八岐大蛇超级+血量",
       "description": "",
       "version": "1.4.276",
       "depends_on": "1.4.275",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.275-1.4.276-1-balance-1024-local.zip",
       "archive_size": 729242,
       "chain": [
@@ -35823,11 +35841,12 @@
     {
       "id": "nova-levi-zones-1.4.277",
       "type": "patch",
-      "name": "诺瓦/蕾薇 乘区副本22人：光暗×乘区5/6/7/8/9 + 共鸣特别版",
+      "name": "(测试服) 诺瓦/蕾薇 乘区副本22人：光暗×乘区5/6/7/8/9 + 共鸣特别版",
       "description": "",
       "version": "1.4.277",
       "depends_on": "1.4.276",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.276-1.4.277-1-nova-levi-zones-local.zip",
       "archive_size": 2705244,
       "chain": [
@@ -35970,11 +35989,12 @@
     {
       "id": "nova-levi-zones-fix-1.4.278",
       "type": "patch",
-      "name": "诺瓦/蕾薇 乘区副本热修：全队加成角色组空串→(None)",
+      "name": "(测试服) 诺瓦/蕾薇 乘区副本热修：全队加成角色组空串→(None)，修 null 角色不生效",
       "description": "",
       "version": "1.4.278",
       "depends_on": "1.4.277",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.277-1.4.278-1-nova-levi-zones-fix-local.zip",
       "archive_size": 282920,
       "chain": [
@@ -36001,11 +36021,12 @@
     {
       "id": "balance-1024b-1.4.279",
       "type": "patch",
-      "name": "平衡表10-24下午：莫弥亚/墨斯伊克/午后奈芙提姆/普莉姆拉",
+      "name": "(测试服) 平衡表10-24下午：莫弥亚/墨斯伊克/午后奈芙提姆/普莉姆拉",
       "description": "",
       "version": "1.4.279",
       "depends_on": "1.4.278",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.278-1.4.279-1-balance-1024b-local.zip",
       "archive_size": 383675,
       "chain": [
@@ -36204,11 +36225,12 @@
     {
       "id": "balance-1025-1.4.281",
       "type": "patch",
-      "name": "平衡表10-24晚：秋灯稻穗/白虎/莫弥亚/拉姆斯/克劳斯/贝尔赛蒂亚/八岐大蛇超级+血量分配",
+      "name": "(测试服) 平衡表10-24晚：秋灯稻穗/白虎/莫弥亚/拉姆斯/克劳斯/贝尔赛蒂亚/八岐大蛇超级+血量分配",
       "description": "",
       "version": "1.4.281",
       "depends_on": "1.4.280",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.280-1.4.281-1-balance-1025-local.zip",
       "archive_size": 986656,
       "chain": [
@@ -36264,6 +36286,7 @@
       "version": "1.4.282",
       "depends_on": "1.4.281",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.281-1.4.282-1-boss-limit-text-local.zip",
       "archive_size": 93693,
       "chain": [
@@ -36730,11 +36753,12 @@
     {
       "id": "balance-1025b-1.4.285",
       "type": "patch",
-      "name": "平衡表10-25：克劳斯/贝尔赛蒂亚/白虎/赛瑞斯/莉莉丝/雷吉斯/特克托",
+      "name": "(测试服) 平衡表10-25：克劳斯/贝尔赛蒂亚/白虎/赛瑞斯/莉莉丝/雷吉斯/特克托",
       "description": "",
       "version": "1.4.285",
       "depends_on": "1.4.284",
       "enabled": true,
+      "local_test_only": true,
       "archive": "pinball-1.4.284-1.4.285-1-balance-1025b-local.zip",
       "archive_size": 983724,
       "chain": [
@@ -43236,6 +43260,1751 @@
         }
       ],
       "created_at": "2026-10-27"
+    },
+    {
+      "id": "fiveboss-a13-1101",
+      "type": "patch",
+      "name": "五重防御阶梯50起与血攻下调",
+      "description": "",
+      "version": "1.4.352",
+      "depends_on": "1.4.351",
+      "enabled": true,
+      "archive": "pinball-1.4.351-1.4.352-1-fiveboss-a13-1101-local.zip",
+      "archive_size": 94449,
+      "chain": [
+        "pinball-1.4.351-1.4.352-1-fiveboss-a13-1101-local.zip"
+      ],
+      "files": [
+        "production/upload/77/d39547cee5052ce00f4fcf952874cb651aaf36",
+        "production/upload/c2/8880c7c16edbda663cdf2ccb0f82a0e2f8ec4b",
+        "production/upload/cd/84cfd1deb4c6344183e82bcc8c380d26a120e5",
+        "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.351-1.4.352-1-fiveboss-a13-1101-local.zip",
+          "size": 94449,
+          "sha256": "e067c60f162608934359481789aac3e392fdb1cdd0080c13088fe3eed4bfaf43",
+          "members": 4,
+          "files": [
+            "production/upload/77/d39547cee5052ce00f4fcf952874cb651aaf36",
+            "production/upload/c2/8880c7c16edbda663cdf2ccb0f82a0e2f8ec4b",
+            "production/upload/cd/84cfd1deb4c6344183e82bcc8c380d26a120e5",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64"
+          ],
+          "member_sha256": {
+            "production/upload/77/d39547cee5052ce00f4fcf952874cb651aaf36": "2db96c044fb7b5596b51dd28948e66190f9301982371c2c6f0b2388ad5cc1667",
+            "production/upload/c2/8880c7c16edbda663cdf2ccb0f82a0e2f8ec4b": "8716081c18a5294b00632038401072c742f09c5e340ee21f339aede1a0c0707f",
+            "production/upload/cd/84cfd1deb4c6344183e82bcc8c380d26a120e5": "d33d090ad090dcf3c438cc6b3f52174f020742f47d5b04485e453de8fa2361df",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "484765d6ccee0062f89f9f723bba48efcba300d49d3bdff261818517d1b0542a"
+          },
+          "logical_paths": {
+            "production/upload/77/d39547cee5052ce00f4fcf952874cb651aaf36": "battle/action/enemy/action/mod/five_boss_v3/fb3_buff$entrance.action.dsl.amf3.deflate",
+            "production/upload/c2/8880c7c16edbda663cdf2ccb0f82a0e2f8ec4b": "battle/action/enemy/action/mod/five_boss_v2/fb2_affix$purge_r1.action.dsl.amf3.deflate",
+            "production/upload/cd/84cfd1deb4c6344183e82bcc8c380d26a120e5": "battle/action/enemy/action/mod/five_boss_v3/fb3_buff$entrance_self.action.dsl.amf3.deflate",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "master/quest/boss_battle_quest.orderedmap"
+          },
+          "applies_on": "1.4.351",
+          "version": "1.4.352",
+          "server_files": {},
+          "log": [
+            "[r_fiveboss_a13] 防御 up 层值 [0.1111, 0.1389, 0.1786, 0.2381, 0.3333]：50% → 60/70/80/90/100%",
+            "[r_fiveboss_a13] purge_r1：去掉清空技能槽",
+            "[r_fiveboss_a13] 39 关 boss 血量 ×0.7、攻击 ×0.8：1099001 hp 9.397912145523→6.578538501866 atk 1.5→1.2；1099031 hp 0.04375→0.030625 atk 1.5→1.2；1099057 hp 0.04375→0.030625 atk 2→1.6"
+          ]
+        }
+      ],
+      "created_at": "2026-10-27"
+    },
+    {
+      "id": "boss-cv-fix-1101",
+      "type": "patch",
+      "name": "白虎深渊之兽歼灭者CV修正",
+      "description": "",
+      "version": "1.4.353",
+      "depends_on": "1.4.352",
+      "enabled": true,
+      "archive": "pinball-1.4.352-1.4.353-1-boss-cv-fix-1101-local.zip",
+      "archive_size": 234607,
+      "chain": [
+        "pinball-1.4.352-1.4.353-1-boss-cv-fix-1101-local.zip"
+      ],
+      "files": [
+        "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.352-1.4.353-1-boss-cv-fix-1101-local.zip",
+          "size": 234607,
+          "sha256": "101dc8c274b2ac93d43832d714f50dedc5785eb47274cbde4c0e8811a6576e70",
+          "members": 1,
+          "files": [
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab"
+          ],
+          "member_sha256": {
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab": "656d8118e7b17335273c888b0d216424d59beb6760e806392334793284a03bb8"
+          },
+          "logical_paths": {
+            "production/upload/8b/035728b2151de044fb245988ec5f33ebb544ab": "master/character/character_text.orderedmap"
+          },
+          "applies_on": "1.4.352",
+          "version": "1.4.353",
+          "server_files": {},
+          "log": [
+            "白虎/深渊之兽/歼灭者 CV 列改 (None)"
+          ]
+        }
+      ],
+      "created_at": "2026-10-27"
+    },
+    {
+      "id": "fiveboss-purge-1102",
+      "type": "patch",
+      "name": "五重王之肃清只驱散可驱散增益",
+      "description": "",
+      "version": "1.4.354",
+      "depends_on": "1.4.353",
+      "enabled": true,
+      "archive": "pinball-1.4.353-1.4.354-1-fiveboss-purge-1102-local.zip",
+      "archive_size": 12772,
+      "chain": [
+        "pinball-1.4.353-1.4.354-1-fiveboss-purge-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+        "production/upload/55/0e78143229f8bac85b8c33a0b9563c857d108e"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.353-1.4.354-1-fiveboss-purge-1102-local.zip",
+          "size": 12772,
+          "sha256": "62e8a67691e30c0e349f4050d43bc05d523c8e1efd2ce1e7ab9a47a726234eb0",
+          "members": 2,
+          "files": [
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4",
+            "production/upload/55/0e78143229f8bac85b8c33a0b9563c857d108e"
+          ],
+          "member_sha256": {
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4": "e45955d6b2aac5b56b2dd103dc7227cf14aa61b46f1b81558d65a0e9ee976131",
+            "production/upload/55/0e78143229f8bac85b8c33a0b9563c857d108e": "31d19324617b312ce64de34cbffa427a3b24fb7c1282d65fe8987efa1185889b"
+          },
+          "logical_paths": {
+            "production/upload/30/cbcd99de1aa6e8d245221619b393721df551b4": "master/character/unique_condition.orderedmap",
+            "production/upload/55/0e78143229f8bac85b8c33a0b9563c857d108e": "battle/action/enemy/action/mod/five_boss_v2/fb2_affix$sig_king_purge.action.dsl.amf3.deflate"
+          },
+          "applies_on": "1.4.353",
+          "version": "1.4.354",
+          "server_files": {},
+          "log": [
+            "[r_fiveboss_b001] 王之肃清：只驱散可驱散增益，不再删除不可驱散状态",
+            "[r_fiveboss_b001] 15 个永续隐藏状态改为不可驱散：16998502,12995201,12995202,12999702,12999703,12998901,12998902,12998903,12998904,12998905,12995203,16998503,12998919,1399819,1399820"
+          ]
+        }
+      ],
+      "created_at": "2026-10-27"
+    },
+    {
+      "id": "water-gerald-regrant-1102",
+      "type": "patch",
+      "name": "水杰拉德隐藏状态跨面补发",
+      "description": "",
+      "version": "1.4.355",
+      "depends_on": "1.4.354",
+      "enabled": true,
+      "archive": "pinball-1.4.354-1.4.355-1-water-gerald-regrant-1102-local.zip",
+      "archive_size": 284790,
+      "chain": [
+        "pinball-1.4.354-1.4.355-1-water-gerald-regrant-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.354-1.4.355-1-water-gerald-regrant-1102-local.zip",
+          "size": 284790,
+          "sha256": "4d6f867e58dd250b4b048a4cece58bf429bd755c4b99ad3979a08c861e560ccc",
+          "members": 2,
+          "files": [
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ],
+          "member_sha256": {
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001": "e2d80e394514d212904fe8924721f22a99343e32be64fd487424bc7faab539a9",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5": "4b07e1978ee184426e707018a9ba936d4ae75cae2627707eb55e0a5fe3f1c8c0"
+          },
+          "logical_paths": {
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001": "master/ability/ability.orderedmap",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5": "master/ability/leader_ability.orderedmap"
+          },
+          "applies_on": "1.4.354",
+          "version": "1.4.355",
+          "server_files": {},
+          "log": [
+            "[r_fiveboss_b001b] 水杰拉德隐藏状态每次弹射补发（第二面开局不再发）：12998919,12998903"
+          ]
+        }
+      ],
+      "created_at": "2026-10-27"
+    },
+    {
+      "id": "wfx-regrant-others-1102",
+      "type": "patch",
+      "name": "克劳斯贝尔赛蒂亚莫弥亚隐藏状态跨面补发",
+      "description": "",
+      "version": "1.4.356",
+      "depends_on": "1.4.355",
+      "enabled": true,
+      "archive": "pinball-1.4.355-1.4.356-1-wfx-regrant-others-1102-local.zip",
+      "archive_size": 284827,
+      "chain": [
+        "pinball-1.4.355-1.4.356-1-wfx-regrant-others-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+        "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.355-1.4.356-1-wfx-regrant-others-1102-local.zip",
+          "size": 284827,
+          "sha256": "c7cc64133b08a6bdd10ac2fcca419387a4f23ff0338640d0bffbc75cf7cb3691",
+          "members": 2,
+          "files": [
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5"
+          ],
+          "member_sha256": {
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001": "0adf5a50d0ea1aaa7220b7ab6c472401b52d7d798136c468eeaaeb35a21c16dd",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5": "1ea2c420c143d6bfff7548a8f8e5cbc7ece0afb8dd3075e29c2c8f33a2fbd504"
+          },
+          "logical_paths": {
+            "production/upload/1e/664c1cc8d80f4f9a69aae2c49ae8c01d1c4001": "master/ability/ability.orderedmap",
+            "production/upload/ff/84353774cb95e8d7dc90c679f96a5bca7f42e5": "master/ability/leader_ability.orderedmap"
+          },
+          "applies_on": "1.4.355",
+          "version": "1.4.356",
+          "server_files": {},
+          "log": [
+            "[r_wfx_regrant_others] 129997：12999702,12999703 每次弹射补发",
+            "[r_wfx_regrant_others] 129952：12995201,12995202,12995203 每次弹射补发",
+            "[r_wfx_regrant_others] 1699853：16998502 每次弹射补发"
+          ]
+        }
+      ],
+      "created_at": "2026-10-27"
+    },
+    {
+      "id": "kaihuang-daily-1102",
+      "type": "patch",
+      "name": "开荒每日任务",
+      "description": "",
+      "version": "1.4.357",
+      "depends_on": "1.4.356",
+      "enabled": true,
+      "archive": "pinball-1.4.356-1.4.357-1-kaihuang-daily-1102-local.zip",
+      "archive_size": 40649,
+      "chain": [
+        "pinball-1.4.356-1.4.357-1-kaihuang-daily-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/76/bc536a599e39f890bb8de4b255ac70f529fffa",
+        "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.356-1.4.357-1-kaihuang-daily-1102-local.zip",
+          "size": 40649,
+          "sha256": "26ff8821f792eda05eed1c9c490304d8ba260925c18fa117461cee6847a254c2",
+          "members": 2,
+          "files": [
+            "production/upload/76/bc536a599e39f890bb8de4b255ac70f529fffa",
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836"
+          ],
+          "member_sha256": {
+            "production/upload/76/bc536a599e39f890bb8de4b255ac70f529fffa": "25c8bf64bf74fcd4c37da30eebe7a3a03361bba5823aac1245b49fb3a63bfd9f",
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836": "da9253c5cfc32c36cfdb33abf103b6919506bbf678755d4aa277bc0e228828a5"
+          },
+          "logical_paths": {
+            "production/upload/76/bc536a599e39f890bb8de4b255ac70f529fffa": "master/mission/daily_mission.orderedmap",
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836": "master/mission/daily_mission_reward.orderedmap"
+          },
+          "applies_on": "1.4.356",
+          "version": "1.4.357",
+          "server_files": {},
+          "log": [
+            "新增 3 个开荒每日任务及奖励；既有任务行的原始压缩块逐字节保留"
+          ]
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "gacha-extend-1102",
+      "type": "patch",
+      "name": "常驻卡池延期",
+      "description": "",
+      "version": "1.4.358",
+      "depends_on": "1.4.357",
+      "enabled": true,
+      "archive": "pinball-1.4.357-1.4.358-1-gacha-extend-1102-local.zip",
+      "archive_size": 129561,
+      "chain": [
+        "pinball-1.4.357-1.4.358-1-gacha-extend-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/15/83d96aad4b9a46d19d19b6555d3f4232b29e25"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.357-1.4.358-1-gacha-extend-1102-local.zip",
+          "size": 129561,
+          "sha256": "3853008a2554e0cb291ac6dad1f9872abdf9d5964eb019926455de8df1487ed6",
+          "members": 1,
+          "files": [
+            "production/upload/15/83d96aad4b9a46d19d19b6555d3f4232b29e25"
+          ],
+          "member_sha256": {
+            "production/upload/15/83d96aad4b9a46d19d19b6555d3f4232b29e25": "cee976f5304453d3f9b546da67464993ec3acd27e8ac1765a8018cfa32059ad0"
+          },
+          "logical_paths": {
+            "production/upload/15/83d96aad4b9a46d19d19b6555d3f4232b29e25": "master/gacha/gacha.orderedmap"
+          },
+          "applies_on": "1.4.357",
+          "version": "1.4.358",
+          "server_files": {},
+          "log": [
+            "8 个常驻卡池结束日期延到 2199；其余行压缩块逐字节保留"
+          ]
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "kaihuang-skip-1102",
+      "type": "patch",
+      "name": "按章跳过主线及每日协力20瓶",
+      "version": "1.4.359",
+      "depends_on": "1.4.358",
+      "enabled": true,
+      "archive": "pinball-1.4.358-1.4.359-1-kaihuang-skip-1102-local.zip",
+      "archive_size": 205332,
+      "chain": [
+        "pinball-1.4.358-1.4.359-1-kaihuang-skip-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/6c/311426aaa72da45d6a1812e139fab2273f5cc3",
+        "production/upload/23/441f073a4d0ada9e40f0af5e8efed11e7aaf01",
+        "production/upload/89/584803801a50c70c5756482498edf4f91be741",
+        "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.358-1.4.359-1-kaihuang-skip-1102-local.zip",
+          "size": 205332,
+          "sha256": "f9f0cade67d0da3d3260f568bff3a486a3255acef12b3d662e52c116531c6854",
+          "members": 4,
+          "files": [
+            "production/upload/6c/311426aaa72da45d6a1812e139fab2273f5cc3",
+            "production/upload/23/441f073a4d0ada9e40f0af5e8efed11e7aaf01",
+            "production/upload/89/584803801a50c70c5756482498edf4f91be741",
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836"
+          ],
+          "member_sha256": {
+            "production/upload/6c/311426aaa72da45d6a1812e139fab2273f5cc3": "e1cf2e2a0f723b4014c8f208de7bbf26061eda019c987f71a29fcdf01fd4a751",
+            "production/upload/23/441f073a4d0ada9e40f0af5e8efed11e7aaf01": "eec62729dda8be5ab2cfa91b1e1aca73b7b6c0be6bb2b01932dff292c4d10413",
+            "production/upload/89/584803801a50c70c5756482498edf4f91be741": "d4e1778ba2f558863b8c87e8642c53388820bec494a4124036670c152f2c3d73",
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836": "abd667991c6e8e3b28c4ecd8a5b62495caf43117f6e1cfec973199adb5e857c8"
+          },
+          "applies_on": "1.4.358",
+          "version": "1.4.359",
+          "logical_paths": {
+            "production/upload/6c/311426aaa72da45d6a1812e139fab2273f5cc3": "master/quest/main_quest.orderedmap",
+            "production/upload/23/441f073a4d0ada9e40f0af5e8efed11e7aaf01": "master/quest/ex_quest.orderedmap",
+            "production/upload/89/584803801a50c70c5756482498edf4f91be741": "master/reward/clear_reward.orderedmap",
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836": "master/mission/daily_mission_reward.orderedmap"
+          }
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "launchprep-fix-1102",
+      "type": "patch",
+      "name": "乐享卡池与每日武器券修复",
+      "description": "",
+      "version": "1.4.360",
+      "depends_on": "1.4.359",
+      "enabled": true,
+      "archive": "pinball-1.4.359-1.4.360-1-launchprep-fix-1102-local.zip",
+      "archive_size": 15029,
+      "chain": [
+        "pinball-1.4.359-1.4.360-1-launchprep-fix-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.359-1.4.360-1-launchprep-fix-1102-local.zip",
+          "size": 15029,
+          "sha256": "b57eebd0038345e3a45e0d4d7658d01a0ddb0aa2b21f52d7548e6d3ebd244840",
+          "members": 1,
+          "files": [
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836"
+          ],
+          "member_sha256": {
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836": "6482b92faf2bfa0bc76c70af1e7de06e0dd1899cb7e578c0f0fd8656c3870986"
+          },
+          "logical_paths": {
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836": "master/mission/daily_mission_reward.orderedmap"
+          },
+          "applies_on": "1.4.359",
+          "version": "1.4.360",
+          "server_files": {
+            "assets/gacha.json": "c007689f6b015f4be54e38b84622ba1333b0234ae3b5c009dfc7aa5fd366cf62",
+            "assets/mission_daily_reward.json": "17004d5d4ccec0f5e47ec7602a733dae6a429d43251251488dc334f96b5f055a"
+          },
+          "log": [
+            "每日单人任务奖励改为通用装备十连券 999004×10（B002）；服务端乐享扭蛋配置十连券 999012（W021）"
+          ]
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "boss-shop-potion-1102",
+      "type": "patch",
+      "name": "领主战商店加大体力药",
+      "description": "",
+      "version": "1.4.361",
+      "depends_on": "1.4.360",
+      "enabled": true,
+      "archive": "pinball-1.4.360-1.4.361-1-boss-shop-potion-1102-local.zip",
+      "archive_size": 1312162,
+      "chain": [
+        "pinball-1.4.360-1.4.361-1-boss-shop-potion-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.360-1.4.361-1-boss-shop-potion-1102-local.zip",
+          "size": 1312162,
+          "sha256": "c679d3f634639704e5a34dc13fdfd852cc58420300d7a33f21973502870959d9",
+          "members": 1,
+          "files": [
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0"
+          ],
+          "member_sha256": {
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "09abf05773c7e22dcc98972937c69265087bac51f304aa799c3f4b967bf2c5b3"
+          },
+          "logical_paths": {
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "master/shop/boss_coin_shop.orderedmap"
+          },
+          "applies_on": "1.4.360",
+          "version": "1.4.361",
+          "server_files": {
+            "assets/boss_coin_shop.json": "58aa1595de476132da7b57011f1f5472b823faa58e146c7fc7f107d9847270d2",
+            "assets/boss_coin_shop_item_category_map.json": "063d2fc77edf2da42feb39c469016b90446f31015023657a2e252fa62d5f5bb5"
+          },
+          "log": [
+            "17 个领主战商店各加 体力回复药（大）×5，25 金币，限购 9999；既有行原始压缩块逐字节保留"
+          ]
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "dual-baseline-trigger-1102",
+      "type": "patch",
+      "name": "双语包基线触发空边",
+      "description": "",
+      "version": "1.4.362",
+      "depends_on": "1.4.361",
+      "enabled": true,
+      "archive": "pinball-1.4.361-1.4.362-1-dual-baseline-1102-local.zip",
+      "archive_size": 111,
+      "chain": [
+        "pinball-1.4.361-1.4.362-1-dual-baseline-1102-local.zip"
+      ],
+      "files": [
+        ".empty"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.361-1.4.362-1-dual-baseline-1102-local.zip",
+          "size": 111,
+          "sha256": "5655d6dc40362b995bc741553f9416ac6d8c35ed860960b528dea720d49ab9b0",
+          "members": 1,
+          "files": [
+            ".empty"
+          ],
+          "member_sha256": {
+            ".empty": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+          },
+          "applies_on": "1.4.361",
+          "version": "1.4.362"
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "sidestory-open-1102",
+      "type": "patch",
+      "name": "外传关卡全部展开",
+      "description": "",
+      "version": "1.4.363",
+      "depends_on": "1.4.362",
+      "enabled": true,
+      "archive": "pinball-1.4.362-1.4.363-1-sidestory-open-1102-local.zip",
+      "archive_size": 337089,
+      "chain": [
+        "pinball-1.4.362-1.4.363-1-sidestory-open-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/a9/efe8ddcac7d321b952dc312b692f994c12bf31",
+        "production/upload/97/0836cfd6d98d92e920107fa178a00149dc098e"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.362-1.4.363-1-sidestory-open-1102-local.zip",
+          "size": 337089,
+          "sha256": "63922e3473630509b16453a6ad39b4fd3efb27a585320cd40193fcbcd86815fc",
+          "members": 2,
+          "files": [
+            "production/upload/a9/efe8ddcac7d321b952dc312b692f994c12bf31",
+            "production/upload/97/0836cfd6d98d92e920107fa178a00149dc098e"
+          ],
+          "member_sha256": {
+            "production/upload/a9/efe8ddcac7d321b952dc312b692f994c12bf31": "d699a5da15bd3a039fc8a0c00df60468037c14e520de2ea70e740b7447b46393",
+            "production/upload/97/0836cfd6d98d92e920107fa178a00149dc098e": "53f8597f300e2b5cca623a227520700e4ab27390e29798f608c7de8fd6737caa"
+          },
+          "logical_paths": {
+            "production/upload/a9/efe8ddcac7d321b952dc312b692f994c12bf31": "master/quest/event/world_story_event_quest.orderedmap",
+            "production/upload/97/0836cfd6d98d92e920107fa178a00149dc098e": "master/quest/event/world_story_event_boss_battle_quest.orderedmap"
+          },
+          "applies_on": "1.4.362",
+          "version": "1.4.363",
+          "server_files": {},
+          "log": [
+            "16 个外传关卡去掉前置通关的显示/可进条件，奖励与角色条件不变"
+          ]
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "exclusive-weapon-shop-node-1102",
+      "type": "patch",
+      "name": "专属武器兑换页修复",
+      "description": "",
+      "version": "1.4.364",
+      "depends_on": "1.4.363",
+      "enabled": true,
+      "archive": "pinball-1.4.363-1.4.364-1-exclusive-weapon-shop-node-1102-local.zip",
+      "archive_size": 5703,
+      "chain": [
+        "pinball-1.4.363-1.4.364-1-exclusive-weapon-shop-node-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.363-1.4.364-1-exclusive-weapon-shop-node-1102-local.zip",
+          "size": 5703,
+          "sha256": "dd6044e3a5737071993d0f7613dddf1c86b17cafa9163e5e399363678581838d",
+          "members": 1,
+          "files": [
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b"
+          ],
+          "member_sha256": {
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "d814ef8ea03d4b396fdb158face93b59ff7b180a6dca9e35120a532ee4ee252b"
+          },
+          "logical_paths": {
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "master/quest/boss_battle_stage_node.orderedmap"
+          },
+          "applies_on": "1.4.363",
+          "version": "1.4.364",
+          "server_files": {},
+          "log": [
+            "领主商店分类 97 专属武器兑换补 boss_battle_stage_node 行（修 C3431）"
+          ]
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "event-open-1102",
+      "type": "patch",
+      "name": "单人挑战追忆极时全部开放",
+      "description": "",
+      "version": "1.4.365",
+      "depends_on": "1.4.364",
+      "enabled": true,
+      "archive": "pinball-1.4.364-1.4.365-1-event-open-1102-local.zip",
+      "archive_size": 9076,
+      "chain": [
+        "pinball-1.4.364-1.4.365-1-event-open-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/ea/a696d2930b207eaa004627bcd8032f72c2c014",
+        "production/upload/4d/ddfc9f3101ca83075ea99fa681aa239e15d066"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.364-1.4.365-1-event-open-1102-local.zip",
+          "size": 9076,
+          "sha256": "2bd0ac491ac2c588cce565eeb819dd5b9149b56312bcf40b05dfc33ed37e177b",
+          "members": 2,
+          "files": [
+            "production/upload/ea/a696d2930b207eaa004627bcd8032f72c2c014",
+            "production/upload/4d/ddfc9f3101ca83075ea99fa681aa239e15d066"
+          ],
+          "member_sha256": {
+            "production/upload/ea/a696d2930b207eaa004627bcd8032f72c2c014": "3cb2fb0122eb97867d8f502e1766b79001030b00711f75798cb8291abc13534c",
+            "production/upload/4d/ddfc9f3101ca83075ea99fa681aa239e15d066": "484f6a85907600e2c3a91258c1e1a8adce65673c40bdcd0190c08ffebf902e2d"
+          },
+          "logical_paths": {
+            "production/upload/ea/a696d2930b207eaa004627bcd8032f72c2c014": "master/game_system_unlock/game_system_unlock_condition.orderedmap",
+            "production/upload/4d/ddfc9f3101ca83075ea99fa681aa239e15d066": "master/quest/event/expert_single_event_quest.orderedmap"
+          },
+          "applies_on": "1.4.364",
+          "version": "1.4.365",
+          "server_files": {},
+          "log": [
+            "单人挑战/追忆试炼/极时试炼入口条件改为主线 1-1-1，单人挑战两活动关卡去掉前置"
+          ]
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "revert-stage-node-1102",
+      "type": "patch",
+      "name": "回退专属武器兑换入口",
+      "description": "",
+      "version": "1.4.366",
+      "depends_on": "1.4.365",
+      "enabled": true,
+      "archive": "pinball-1.4.365-1.4.366-1-revert-stage-node-1102-local.zip",
+      "archive_size": 5583,
+      "chain": [
+        "pinball-1.4.365-1.4.366-1-revert-stage-node-1102-local.zip"
+      ],
+      "files": [
+        "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.365-1.4.366-1-revert-stage-node-1102-local.zip",
+          "size": 5583,
+          "sha256": "81cbaa64de46bfb7ff812fe28bc94936ede650f61d2843073dbba788601de833",
+          "members": 1,
+          "files": [
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b"
+          ],
+          "member_sha256": {
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "b803477efbc3059d70e319f19305065ece333d2aa07e58e9ccc29d80d2e103f4"
+          },
+          "logical_paths": {
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "master/quest/boss_battle_stage_node.orderedmap"
+          },
+          "applies_on": "1.4.365",
+          "version": "1.4.366",
+          "server_files": {},
+          "log": [
+            "回退 1.4.364 的 boss_battle_stage_node（分类 97 节点致领主战 F1009），恢复 1.4.204 版"
+          ]
+        }
+      ],
+      "created_at": "2026-11-02"
+    },
+    {
+      "id": "starview-gacha-1103",
+      "type": "patch",
+      "name": "星见镇奇遇与摇曳扭蛋",
+      "description": "本地候选",
+      "version": "1.4.367",
+      "depends_on": "1.4.366",
+      "enabled": true,
+      "archive": "pinball-1.4.366-1.4.367-1-starview-gacha-1103-local.zip",
+      "archive_size": 1755955,
+      "chain": [
+        "pinball-1.4.366-1.4.367-1-starview-gacha-1103-local.zip",
+        "pinball-1.4.366-1.4.367-2-starview-gacha-1103-local.zip",
+        "pinball-1.4.366-1.4.367-3-starview-gacha-1103-local.zip",
+        "pinball-1.4.366-1.4.367-4-starview-gacha-1103-local.zip",
+        "pinball-1.4.366-1.4.367-5-starview-gacha-1103-local.zip",
+        "pinball-1.4.366-1.4.367-6-starview-gacha-1103-local.zip",
+        "pinball-1.4.366-1.4.367-7-starview-gacha-1103-local.zip",
+        "pinball-1.4.366-1.4.367-8-starview-gacha-1103-local.zip",
+        "pinball-1.4.366-1.4.367-9-starview-gacha-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/15/83d96aad4b9a46d19d19b6555d3f4232b29e25",
+        "production/upload/44/b7fa57b0ddbfaa5f502d13111d23ce5c2968bd",
+        "production/upload/72/2a8a0dbb6bb1386faa4d29bcdf0064c64bc03e",
+        "production/upload/7d/3b95ecab32708df6533e75fc268cc81bffc5b6",
+        "production/upload/81/e5b6fea365c49cab0eeb04e51ad9934a32d1d0",
+        "production/upload/87/acbef8ae0cac589abd2ee335f597c4dcd9c687",
+        "production/upload/93/8eedbdf9f48ace3efb5d356013937c057f5e21",
+        "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa",
+        "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0",
+        "production/upload/b2/87428ee1e633856296b9f2f47e879f39010608",
+        "production/upload/c5/f3bfbf8a1c4537f47f7edd953c94cd571cc861",
+        "production/upload/c8/79a1b712ae753afb0b5e796737fd141c8fa0ea",
+        "production/upload/d2/8e91d747b459366411b07fe9797bb3654bacf8",
+        "production/upload/d2/b106895dd5b77d950bfea15bfff8697cc15891",
+        "production/upload/e8/44adb4ae8a1db50926b65cbd4f8ccc905f801c",
+        "production/medium_upload/85/7b4ebb8c68d5ee6a1e57a3692b728f5e339e9c",
+        "production/upload/85/7b4ebb8c68d5ee6a1e57a3692b728f5e339e9c",
+        "production/upload/9a/d6eabb0d0394a215515c14452277db25c294f0",
+        "production/medium_upload/be/9a35f3842e98a83fe78b4d74f5a33733e546a7",
+        "production/upload/be/9a35f3842e98a83fe78b4d74f5a33733e546a7",
+        "production/upload/c7/64b4375db658468269f93e4f1255935b78350e",
+        "production/upload/59/569af17085139fcca5a03eed8ffe1833c9c906",
+        "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3",
+        "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3",
+        "production/upload/60/32a926f157f1fce1340f299b4bbf18d333aadc",
+        "production/upload/6a/17d0505d2faa563f7d8fd7c22bab98d8f63e7a",
+        "production/upload/8f/124c2bfb4b2ad182b29093ca721fe93b36dfb7",
+        "production/upload/ab/239a05282098ce2a38fb25d63f03d3e607f06c",
+        "production/upload/1e/4a14fe9e8603fa0ee24530daf2414942b50a3e",
+        "production/upload/b7/4464dd88f15ea03d9c3a3a8a54661d2f1d46d3",
+        "production/upload/d0/da51804e2e707880244f7d50d879f6fccbbc91",
+        "production/upload/fd/061f4d7780acc40af214dc9a474e65540582c4"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.366-1.4.367-1-starview-gacha-1103-local.zip",
+          "size": 1755955,
+          "sha256": "c5c71c7a8a465e20c046f3999c2f52d7eefd5b73875d02b19f27cfc7c3d16853",
+          "members": 15,
+          "files": [
+            "production/upload/15/83d96aad4b9a46d19d19b6555d3f4232b29e25",
+            "production/upload/44/b7fa57b0ddbfaa5f502d13111d23ce5c2968bd",
+            "production/upload/72/2a8a0dbb6bb1386faa4d29bcdf0064c64bc03e",
+            "production/upload/7d/3b95ecab32708df6533e75fc268cc81bffc5b6",
+            "production/upload/81/e5b6fea365c49cab0eeb04e51ad9934a32d1d0",
+            "production/upload/87/acbef8ae0cac589abd2ee335f597c4dcd9c687",
+            "production/upload/93/8eedbdf9f48ace3efb5d356013937c057f5e21",
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0",
+            "production/upload/b2/87428ee1e633856296b9f2f47e879f39010608",
+            "production/upload/c5/f3bfbf8a1c4537f47f7edd953c94cd571cc861",
+            "production/upload/c8/79a1b712ae753afb0b5e796737fd141c8fa0ea",
+            "production/upload/d2/8e91d747b459366411b07fe9797bb3654bacf8",
+            "production/upload/d2/b106895dd5b77d950bfea15bfff8697cc15891",
+            "production/upload/e8/44adb4ae8a1db50926b65cbd4f8ccc905f801c"
+          ],
+          "member_sha256": {
+            "production/upload/15/83d96aad4b9a46d19d19b6555d3f4232b29e25": "0eb0385b4397591fdfbf026567129f3f3199bc05984d51d8e2ba3d1d353ababc",
+            "production/upload/44/b7fa57b0ddbfaa5f502d13111d23ce5c2968bd": "bfe5cda35329567375e3bc4593327f0f3e93a246c0d3cbd0ccd3505569cf70bc",
+            "production/upload/72/2a8a0dbb6bb1386faa4d29bcdf0064c64bc03e": "fe9ba0c34156bc8bb9385c3c0d00371f7b81a98771524c894834dbf71133990f",
+            "production/upload/7d/3b95ecab32708df6533e75fc268cc81bffc5b6": "e86b838d0475eba63c311ec7c452060b602e7e6906c4bae72a3133f21131ebdd",
+            "production/upload/81/e5b6fea365c49cab0eeb04e51ad9934a32d1d0": "8d0054012ef2f9c30179afe031ad2832678049154b889199e3d4f95ba479262c",
+            "production/upload/87/acbef8ae0cac589abd2ee335f597c4dcd9c687": "871a7e98f854d26f5628cd47e2a597b422952d1d45741a0dea53aa1da9d8a08b",
+            "production/upload/93/8eedbdf9f48ace3efb5d356013937c057f5e21": "72663e2740033bff5d07f63ad995de8fcd155e30fdd0e369cc9afb68e45dd9fd",
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "531098841f1d719329065de153a785e070e2d6a8411fdc3ec2b2844b4020bae1",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "5db91625fe5d5736b121c8fbbf1dbc2f672acf55531ed0f87cddfb466a478dd0",
+            "production/upload/b2/87428ee1e633856296b9f2f47e879f39010608": "c4dc3079f158544540474d32ce19bf6885c0124761e465b30395d002c0bc498b",
+            "production/upload/c5/f3bfbf8a1c4537f47f7edd953c94cd571cc861": "e31abdab329bb5f32ae9ecad5818956c4350e94ca53fd35f85031fa02c3ce6ba",
+            "production/upload/c8/79a1b712ae753afb0b5e796737fd141c8fa0ea": "dc3715b4cf5188044a89895ff882f6f68833dfc55a16316ac6d3129bc49405d7",
+            "production/upload/d2/8e91d747b459366411b07fe9797bb3654bacf8": "baf3bed3a6861039fb53f141538842a00c4051fab8f5043ae2b089528e6c0be1",
+            "production/upload/d2/b106895dd5b77d950bfea15bfff8697cc15891": "e4492c3fc4e8d2f1069fd996d476697fb24bf36945d687654a4546d68779cfd6",
+            "production/upload/e8/44adb4ae8a1db50926b65cbd4f8ccc905f801c": "29cb449c57ac5c2139e9959b9eaaacd0ea3e7a9c6032c5c5595a70c05e883877"
+          },
+          "logical_paths": {
+            "production/upload/15/83d96aad4b9a46d19d19b6555d3f4232b29e25": "master/gacha/gacha.orderedmap",
+            "production/upload/44/b7fa57b0ddbfaa5f502d13111d23ce5c2968bd": "master/gacha_odds/cnmod_starview_sway_character_3.orderedmap",
+            "production/upload/72/2a8a0dbb6bb1386faa4d29bcdf0064c64bc03e": "master/rich_text/rich_text_html.orderedmap",
+            "production/upload/7d/3b95ecab32708df6533e75fc268cc81bffc5b6": "master/gacha_odds/cnmod_starview_encounter_rarity.orderedmap",
+            "production/upload/81/e5b6fea365c49cab0eeb04e51ad9934a32d1d0": "master/gacha_odds/cnmod_starview_sway_character_5.orderedmap",
+            "production/upload/87/acbef8ae0cac589abd2ee335f597c4dcd9c687": "rich_text/cnmod_starview_encounter_note.html.deflate",
+            "production/upload/93/8eedbdf9f48ace3efb5d356013937c057f5e21": "master/gacha_odds/cnmod_starview_sway_character_4.orderedmap",
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "master/item/item.orderedmap",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "master/shop/boss_coin_shop.orderedmap",
+            "production/upload/b2/87428ee1e633856296b9f2f47e879f39010608": "master/gacha_odds/cnmod_starview_encounter_character_5.orderedmap",
+            "production/upload/c5/f3bfbf8a1c4537f47f7edd953c94cd571cc861": "rich_text/cnmod_starview_sway_note.html.deflate",
+            "production/upload/c8/79a1b712ae753afb0b5e796737fd141c8fa0ea": "master/gacha/gacha_feature_content.orderedmap",
+            "production/upload/d2/8e91d747b459366411b07fe9797bb3654bacf8": "master/gacha_odds/cnmod_starview_encounter_character_3.orderedmap",
+            "production/upload/d2/b106895dd5b77d950bfea15bfff8697cc15891": "master/gacha_odds/cnmod_starview_encounter_character_4.orderedmap",
+            "production/upload/e8/44adb4ae8a1db50926b65cbd4f8ccc905f801c": "master/gacha_odds/cnmod_starview_sway_rarity.orderedmap"
+          },
+          "applies_on": "1.4.366",
+          "version": "1.4.367",
+          "server_files": {
+            "assets/boss_coin_shop.json": "edcdeb1681180ec536234fed40ebbbd0d1d8c69bb25deb39b3d5b1a9937fdec8",
+            "assets/boss_coin_shop_item_category_map.json": "144eafb52071ce88bed53ca458e0d3794e7a2ce494cbb14faebb73095df640c9",
+            "assets/cdndata/gacha.json": "d014fa375aa49a4bb4f771b456ce30a83bf0ab0f982b76a5c414acd4a6f4287c",
+            "assets/cdndata/gacha_feature_content.json": "e003297ac5f98dfc4b7a970167604fbd4ba2e677bcbebc97d8bc07bad8256c2f",
+            "assets/gacha_cnmod.json": "e9bfaa842d187e0f38026138af28e6ae84c80aa7bf8115d5ab57c4a9c42a9f8c",
+            "assets/item_ids.json": "0c4f3514bb09b2a31c4cf99ebc39aa5b9187e737847f528c484d123300ad4fb7",
+            "assets/item_lookup.json": "b52ae46f727da1c23861fa44dd3ba70e067eba95ca5d065e2cc2384265a78bae",
+            "assets/item_lookup_cnmod.json": "d56ae572a5c91635c609c0c4d49f447fcde00de27c55b0017b09cfc470550f46",
+            "assets/item_sale.json": "7c038e5da916e815ce3daadb8a70674daeaef12d5cb46e36192730c3b47f7d1e"
+          },
+          "log": [
+            "星见镇两池、摇曳十连券、17领主商店；旧表压缩块与旧图集像素保留"
+          ]
+        },
+        {
+          "name": "pinball-1.4.366-1.4.367-2-starview-gacha-1103-local.zip",
+          "size": 1485145,
+          "sha256": "1c59114e7b08c8e0e42b158ebef03dccaafa8f8300f346cae274e8fdbff4ce15",
+          "members": 1,
+          "files": [
+            "production/medium_upload/85/7b4ebb8c68d5ee6a1e57a3692b728f5e339e9c"
+          ],
+          "member_sha256": {
+            "production/medium_upload/85/7b4ebb8c68d5ee6a1e57a3692b728f5e339e9c": "5d80ed587dc9d3f7480a9078e6f75cdce053b58c19c3ed2b790d2b860a65f7d7"
+          },
+          "logical_paths": {
+            "production/medium_upload/85/7b4ebb8c68d5ee6a1e57a3692b728f5e339e9c": "dynamic/gacha_banner/cnmod_starview_encounter.png"
+          },
+          "applies_on": "1.4.366",
+          "version": "1.4.367",
+          "server_files": {
+            "assets/boss_coin_shop.json": "edcdeb1681180ec536234fed40ebbbd0d1d8c69bb25deb39b3d5b1a9937fdec8",
+            "assets/boss_coin_shop_item_category_map.json": "144eafb52071ce88bed53ca458e0d3794e7a2ce494cbb14faebb73095df640c9",
+            "assets/cdndata/gacha.json": "d014fa375aa49a4bb4f771b456ce30a83bf0ab0f982b76a5c414acd4a6f4287c",
+            "assets/cdndata/gacha_feature_content.json": "e003297ac5f98dfc4b7a970167604fbd4ba2e677bcbebc97d8bc07bad8256c2f",
+            "assets/gacha_cnmod.json": "e9bfaa842d187e0f38026138af28e6ae84c80aa7bf8115d5ab57c4a9c42a9f8c",
+            "assets/item_ids.json": "0c4f3514bb09b2a31c4cf99ebc39aa5b9187e737847f528c484d123300ad4fb7",
+            "assets/item_lookup.json": "b52ae46f727da1c23861fa44dd3ba70e067eba95ca5d065e2cc2384265a78bae",
+            "assets/item_lookup_cnmod.json": "d56ae572a5c91635c609c0c4d49f447fcde00de27c55b0017b09cfc470550f46",
+            "assets/item_sale.json": "7c038e5da916e815ce3daadb8a70674daeaef12d5cb46e36192730c3b47f7d1e"
+          },
+          "log": [
+            "星见镇两池、摇曳十连券、17领主商店；旧表压缩块与旧图集像素保留"
+          ]
+        },
+        {
+          "name": "pinball-1.4.366-1.4.367-3-starview-gacha-1103-local.zip",
+          "size": 5227592,
+          "sha256": "5ed91e47ca903f50e43e07831cfa56b860c6930c205d75871683189eef01f50c",
+          "members": 2,
+          "files": [
+            "production/upload/85/7b4ebb8c68d5ee6a1e57a3692b728f5e339e9c",
+            "production/upload/9a/d6eabb0d0394a215515c14452277db25c294f0"
+          ],
+          "member_sha256": {
+            "production/upload/85/7b4ebb8c68d5ee6a1e57a3692b728f5e339e9c": "237e255bd7f1066b2b474c92005f6658d6afb90383cc014a17ee67504c82a8ac",
+            "production/upload/9a/d6eabb0d0394a215515c14452277db25c294f0": "957d0bb85cf6eab69f346adfde40b31efed2b52a0652670ba70103eb7c900441"
+          },
+          "logical_paths": {
+            "production/upload/85/7b4ebb8c68d5ee6a1e57a3692b728f5e339e9c": "dynamic/gacha_banner/cnmod_starview_encounter.png",
+            "production/upload/9a/d6eabb0d0394a215515c14452277db25c294f0": "dynamic/gacha_list_banner/cnmod_starview_encounter.png"
+          },
+          "applies_on": "1.4.366",
+          "version": "1.4.367",
+          "server_files": {
+            "assets/boss_coin_shop.json": "edcdeb1681180ec536234fed40ebbbd0d1d8c69bb25deb39b3d5b1a9937fdec8",
+            "assets/boss_coin_shop_item_category_map.json": "144eafb52071ce88bed53ca458e0d3794e7a2ce494cbb14faebb73095df640c9",
+            "assets/cdndata/gacha.json": "d014fa375aa49a4bb4f771b456ce30a83bf0ab0f982b76a5c414acd4a6f4287c",
+            "assets/cdndata/gacha_feature_content.json": "e003297ac5f98dfc4b7a970167604fbd4ba2e677bcbebc97d8bc07bad8256c2f",
+            "assets/gacha_cnmod.json": "e9bfaa842d187e0f38026138af28e6ae84c80aa7bf8115d5ab57c4a9c42a9f8c",
+            "assets/item_ids.json": "0c4f3514bb09b2a31c4cf99ebc39aa5b9187e737847f528c484d123300ad4fb7",
+            "assets/item_lookup.json": "b52ae46f727da1c23861fa44dd3ba70e067eba95ca5d065e2cc2384265a78bae",
+            "assets/item_lookup_cnmod.json": "d56ae572a5c91635c609c0c4d49f447fcde00de27c55b0017b09cfc470550f46",
+            "assets/item_sale.json": "7c038e5da916e815ce3daadb8a70674daeaef12d5cb46e36192730c3b47f7d1e"
+          },
+          "log": [
+            "星见镇两池、摇曳十连券、17领主商店；旧表压缩块与旧图集像素保留"
+          ]
+        },
+        {
+          "name": "pinball-1.4.366-1.4.367-4-starview-gacha-1103-local.zip",
+          "size": 1512442,
+          "sha256": "b9f49fde848863454ba04139df53824d037aedf3a57eca90def1b4624b852947",
+          "members": 1,
+          "files": [
+            "production/medium_upload/be/9a35f3842e98a83fe78b4d74f5a33733e546a7"
+          ],
+          "member_sha256": {
+            "production/medium_upload/be/9a35f3842e98a83fe78b4d74f5a33733e546a7": "a6a8f3943232e7a36be3fc88068088e3117bd4273ffd412a021a23809922d30d"
+          },
+          "logical_paths": {
+            "production/medium_upload/be/9a35f3842e98a83fe78b4d74f5a33733e546a7": "dynamic/gacha_banner/cnmod_starview_sway.png"
+          },
+          "applies_on": "1.4.366",
+          "version": "1.4.367",
+          "server_files": {
+            "assets/boss_coin_shop.json": "edcdeb1681180ec536234fed40ebbbd0d1d8c69bb25deb39b3d5b1a9937fdec8",
+            "assets/boss_coin_shop_item_category_map.json": "144eafb52071ce88bed53ca458e0d3794e7a2ce494cbb14faebb73095df640c9",
+            "assets/cdndata/gacha.json": "d014fa375aa49a4bb4f771b456ce30a83bf0ab0f982b76a5c414acd4a6f4287c",
+            "assets/cdndata/gacha_feature_content.json": "e003297ac5f98dfc4b7a970167604fbd4ba2e677bcbebc97d8bc07bad8256c2f",
+            "assets/gacha_cnmod.json": "e9bfaa842d187e0f38026138af28e6ae84c80aa7bf8115d5ab57c4a9c42a9f8c",
+            "assets/item_ids.json": "0c4f3514bb09b2a31c4cf99ebc39aa5b9187e737847f528c484d123300ad4fb7",
+            "assets/item_lookup.json": "b52ae46f727da1c23861fa44dd3ba70e067eba95ca5d065e2cc2384265a78bae",
+            "assets/item_lookup_cnmod.json": "d56ae572a5c91635c609c0c4d49f447fcde00de27c55b0017b09cfc470550f46",
+            "assets/item_sale.json": "7c038e5da916e815ce3daadb8a70674daeaef12d5cb46e36192730c3b47f7d1e"
+          },
+          "log": [
+            "星见镇两池、摇曳十连券、17领主商店；旧表压缩块与旧图集像素保留"
+          ]
+        },
+        {
+          "name": "pinball-1.4.366-1.4.367-5-starview-gacha-1103-local.zip",
+          "size": 5134731,
+          "sha256": "566f3c64031c9333ede32254ddb8b7e71393c4a5f1eecfc587991e2487e97e82",
+          "members": 1,
+          "files": [
+            "production/upload/be/9a35f3842e98a83fe78b4d74f5a33733e546a7"
+          ],
+          "member_sha256": {
+            "production/upload/be/9a35f3842e98a83fe78b4d74f5a33733e546a7": "7cbbe8c4015ff1db64711da463a8c66c366b50c9b37bb0d7eaa01f73cfb33fb6"
+          },
+          "logical_paths": {
+            "production/upload/be/9a35f3842e98a83fe78b4d74f5a33733e546a7": "dynamic/gacha_banner/cnmod_starview_sway.png"
+          },
+          "applies_on": "1.4.366",
+          "version": "1.4.367",
+          "server_files": {
+            "assets/boss_coin_shop.json": "edcdeb1681180ec536234fed40ebbbd0d1d8c69bb25deb39b3d5b1a9937fdec8",
+            "assets/boss_coin_shop_item_category_map.json": "144eafb52071ce88bed53ca458e0d3794e7a2ce494cbb14faebb73095df640c9",
+            "assets/cdndata/gacha.json": "d014fa375aa49a4bb4f771b456ce30a83bf0ab0f982b76a5c414acd4a6f4287c",
+            "assets/cdndata/gacha_feature_content.json": "e003297ac5f98dfc4b7a970167604fbd4ba2e677bcbebc97d8bc07bad8256c2f",
+            "assets/gacha_cnmod.json": "e9bfaa842d187e0f38026138af28e6ae84c80aa7bf8115d5ab57c4a9c42a9f8c",
+            "assets/item_ids.json": "0c4f3514bb09b2a31c4cf99ebc39aa5b9187e737847f528c484d123300ad4fb7",
+            "assets/item_lookup.json": "b52ae46f727da1c23861fa44dd3ba70e067eba95ca5d065e2cc2384265a78bae",
+            "assets/item_lookup_cnmod.json": "d56ae572a5c91635c609c0c4d49f447fcde00de27c55b0017b09cfc470550f46",
+            "assets/item_sale.json": "7c038e5da916e815ce3daadb8a70674daeaef12d5cb46e36192730c3b47f7d1e"
+          },
+          "log": [
+            "星见镇两池、摇曳十连券、17领主商店；旧表压缩块与旧图集像素保留"
+          ]
+        },
+        {
+          "name": "pinball-1.4.366-1.4.367-6-starview-gacha-1103-local.zip",
+          "size": 222464,
+          "sha256": "4056b51e33b350f523f34374c4ccf2b0bb82969278e280e9e32e57f53ae7344a",
+          "members": 1,
+          "files": [
+            "production/upload/c7/64b4375db658468269f93e4f1255935b78350e"
+          ],
+          "member_sha256": {
+            "production/upload/c7/64b4375db658468269f93e4f1255935b78350e": "a6a94272955d2b7193ef8961800b332ba2687fc5fc4e978dc229e29b8fd69fc3"
+          },
+          "logical_paths": {
+            "production/upload/c7/64b4375db658468269f93e4f1255935b78350e": "dynamic/gacha_list_banner/cnmod_starview_sway.png"
+          },
+          "applies_on": "1.4.366",
+          "version": "1.4.367",
+          "server_files": {
+            "assets/boss_coin_shop.json": "edcdeb1681180ec536234fed40ebbbd0d1d8c69bb25deb39b3d5b1a9937fdec8",
+            "assets/boss_coin_shop_item_category_map.json": "144eafb52071ce88bed53ca458e0d3794e7a2ce494cbb14faebb73095df640c9",
+            "assets/cdndata/gacha.json": "d014fa375aa49a4bb4f771b456ce30a83bf0ab0f982b76a5c414acd4a6f4287c",
+            "assets/cdndata/gacha_feature_content.json": "e003297ac5f98dfc4b7a970167604fbd4ba2e677bcbebc97d8bc07bad8256c2f",
+            "assets/gacha_cnmod.json": "e9bfaa842d187e0f38026138af28e6ae84c80aa7bf8115d5ab57c4a9c42a9f8c",
+            "assets/item_ids.json": "0c4f3514bb09b2a31c4cf99ebc39aa5b9187e737847f528c484d123300ad4fb7",
+            "assets/item_lookup.json": "b52ae46f727da1c23861fa44dd3ba70e067eba95ca5d065e2cc2384265a78bae",
+            "assets/item_lookup_cnmod.json": "d56ae572a5c91635c609c0c4d49f447fcde00de27c55b0017b09cfc470550f46",
+            "assets/item_sale.json": "7c038e5da916e815ce3daadb8a70674daeaef12d5cb46e36192730c3b47f7d1e"
+          },
+          "log": [
+            "星见镇两池、摇曳十连券、17领主商店；旧表压缩块与旧图集像素保留"
+          ]
+        },
+        {
+          "name": "pinball-1.4.366-1.4.367-7-starview-gacha-1103-local.zip",
+          "size": 856135,
+          "sha256": "55c8cf2671ff81d0a8e25042c8f0a7eca1e592989f941f21f43cb92fda14335d",
+          "members": 3,
+          "files": [
+            "production/upload/59/569af17085139fcca5a03eed8ffe1833c9c906",
+            "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3",
+            "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3"
+          ],
+          "member_sha256": {
+            "production/upload/59/569af17085139fcca5a03eed8ffe1833c9c906": "775300aedb03ed32e410aa4b5d1fb6f221c48db3c2e28eec160dbc87def36d0d",
+            "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3": "00ffb323f596f55c25871cf53391f2b55449c23e28f3049f92c2909b4b953c62",
+            "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3": "fe1c0d66df76c878f3ef89de1515b0fedcccd33cc9fa263d8c05dc334ff6bc57"
+          },
+          "logical_paths": {
+            "production/upload/59/569af17085139fcca5a03eed8ffe1833c9c906": "item/spends/tickets/starview_sway_ten_ticket.png",
+            "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3": "item/sprite_sheet.png",
+            "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3": "item/sprite_sheet.atlas.amf3.deflate"
+          },
+          "applies_on": "1.4.366",
+          "version": "1.4.367",
+          "server_files": {
+            "assets/boss_coin_shop.json": "edcdeb1681180ec536234fed40ebbbd0d1d8c69bb25deb39b3d5b1a9937fdec8",
+            "assets/boss_coin_shop_item_category_map.json": "144eafb52071ce88bed53ca458e0d3794e7a2ce494cbb14faebb73095df640c9",
+            "assets/cdndata/gacha.json": "d014fa375aa49a4bb4f771b456ce30a83bf0ab0f982b76a5c414acd4a6f4287c",
+            "assets/cdndata/gacha_feature_content.json": "e003297ac5f98dfc4b7a970167604fbd4ba2e677bcbebc97d8bc07bad8256c2f",
+            "assets/gacha_cnmod.json": "e9bfaa842d187e0f38026138af28e6ae84c80aa7bf8115d5ab57c4a9c42a9f8c",
+            "assets/item_ids.json": "0c4f3514bb09b2a31c4cf99ebc39aa5b9187e737847f528c484d123300ad4fb7",
+            "assets/item_lookup.json": "b52ae46f727da1c23861fa44dd3ba70e067eba95ca5d065e2cc2384265a78bae",
+            "assets/item_lookup_cnmod.json": "d56ae572a5c91635c609c0c4d49f447fcde00de27c55b0017b09cfc470550f46",
+            "assets/item_sale.json": "7c038e5da916e815ce3daadb8a70674daeaef12d5cb46e36192730c3b47f7d1e"
+          },
+          "log": [
+            "星见镇两池、摇曳十连券、17领主商店；旧表压缩块与旧图集像素保留"
+          ]
+        },
+        {
+          "name": "pinball-1.4.366-1.4.367-8-starview-gacha-1103-local.zip",
+          "size": 3717708,
+          "sha256": "e1182886d0dff3c296fbee4341cef6a03ab8d2b61b60d3fb10a6d1d9e917572c",
+          "members": 4,
+          "files": [
+            "production/upload/60/32a926f157f1fce1340f299b4bbf18d333aadc",
+            "production/upload/6a/17d0505d2faa563f7d8fd7c22bab98d8f63e7a",
+            "production/upload/8f/124c2bfb4b2ad182b29093ca721fe93b36dfb7",
+            "production/upload/ab/239a05282098ce2a38fb25d63f03d3e607f06c"
+          ],
+          "member_sha256": {
+            "production/upload/60/32a926f157f1fce1340f299b4bbf18d333aadc": "9e8d77c9d5bbeb0761cbc6467d52d0d9e1e014bf838a11e2d58f76363d412c7f",
+            "production/upload/6a/17d0505d2faa563f7d8fd7c22bab98d8f63e7a": "de4b2f46bdae0af4c006503f55f8f37845a66d60092dd9d92252a1688d8f0772",
+            "production/upload/8f/124c2bfb4b2ad182b29093ca721fe93b36dfb7": "8df62197dae0d78ae6033dad2f5456fd192ed02e0dcf73b06edecd0809387834",
+            "production/upload/ab/239a05282098ce2a38fb25d63f03d3e607f06c": "592a3fca2bf5ba0e607c4471bb4c596b19166ae59e5977c7e59123765bd97c74"
+          },
+          "logical_paths": {
+            "production/upload/60/32a926f157f1fce1340f299b4bbf18d333aadc": "gacha/feature_movie/cnmod_starview_encounter/top/feature.timeline.amf3.deflate",
+            "production/upload/6a/17d0505d2faa563f7d8fd7c22bab98d8f63e7a": "gacha/feature_movie/cnmod_starview_encounter/top/sprite_sheet.png",
+            "production/upload/8f/124c2bfb4b2ad182b29093ca721fe93b36dfb7": "gacha/feature_movie/cnmod_starview_encounter/top/sprite_sheet.atlas.amf3.deflate",
+            "production/upload/ab/239a05282098ce2a38fb25d63f03d3e607f06c": "gacha/feature_movie/cnmod_starview_encounter/top/feature.movie.amf3.deflate"
+          },
+          "applies_on": "1.4.366",
+          "version": "1.4.367",
+          "server_files": {
+            "assets/boss_coin_shop.json": "edcdeb1681180ec536234fed40ebbbd0d1d8c69bb25deb39b3d5b1a9937fdec8",
+            "assets/boss_coin_shop_item_category_map.json": "144eafb52071ce88bed53ca458e0d3794e7a2ce494cbb14faebb73095df640c9",
+            "assets/cdndata/gacha.json": "d014fa375aa49a4bb4f771b456ce30a83bf0ab0f982b76a5c414acd4a6f4287c",
+            "assets/cdndata/gacha_feature_content.json": "e003297ac5f98dfc4b7a970167604fbd4ba2e677bcbebc97d8bc07bad8256c2f",
+            "assets/gacha_cnmod.json": "e9bfaa842d187e0f38026138af28e6ae84c80aa7bf8115d5ab57c4a9c42a9f8c",
+            "assets/item_ids.json": "0c4f3514bb09b2a31c4cf99ebc39aa5b9187e737847f528c484d123300ad4fb7",
+            "assets/item_lookup.json": "b52ae46f727da1c23861fa44dd3ba70e067eba95ca5d065e2cc2384265a78bae",
+            "assets/item_lookup_cnmod.json": "d56ae572a5c91635c609c0c4d49f447fcde00de27c55b0017b09cfc470550f46",
+            "assets/item_sale.json": "7c038e5da916e815ce3daadb8a70674daeaef12d5cb46e36192730c3b47f7d1e"
+          },
+          "log": [
+            "星见镇两池、摇曳十连券、17领主商店；旧表压缩块与旧图集像素保留"
+          ]
+        },
+        {
+          "name": "pinball-1.4.366-1.4.367-9-starview-gacha-1103-local.zip",
+          "size": 4348449,
+          "sha256": "254e954bf133f00bb9ba217b323eb0fa0011c574396e234df2dccc29489d7af8",
+          "members": 4,
+          "files": [
+            "production/upload/1e/4a14fe9e8603fa0ee24530daf2414942b50a3e",
+            "production/upload/b7/4464dd88f15ea03d9c3a3a8a54661d2f1d46d3",
+            "production/upload/d0/da51804e2e707880244f7d50d879f6fccbbc91",
+            "production/upload/fd/061f4d7780acc40af214dc9a474e65540582c4"
+          ],
+          "member_sha256": {
+            "production/upload/1e/4a14fe9e8603fa0ee24530daf2414942b50a3e": "aa7a141ead36572f9a3a9b5e7bc09c37bb438a8e373621c399c8b999e7904a09",
+            "production/upload/b7/4464dd88f15ea03d9c3a3a8a54661d2f1d46d3": "9e8d77c9d5bbeb0761cbc6467d52d0d9e1e014bf838a11e2d58f76363d412c7f",
+            "production/upload/d0/da51804e2e707880244f7d50d879f6fccbbc91": "5d715225c28fe05ed54523692bde9b0c7797ce0d2af64d0fceae7cfbc5fd61fd",
+            "production/upload/fd/061f4d7780acc40af214dc9a474e65540582c4": "7acdcfeba2e63b39595e685d366cbac4d080f4d357582d6ef57635ba0beccd32"
+          },
+          "logical_paths": {
+            "production/upload/1e/4a14fe9e8603fa0ee24530daf2414942b50a3e": "gacha/feature_movie/cnmod_starview_sway/top/sprite_sheet.atlas.amf3.deflate",
+            "production/upload/b7/4464dd88f15ea03d9c3a3a8a54661d2f1d46d3": "gacha/feature_movie/cnmod_starview_sway/top/feature.timeline.amf3.deflate",
+            "production/upload/d0/da51804e2e707880244f7d50d879f6fccbbc91": "gacha/feature_movie/cnmod_starview_sway/top/feature.movie.amf3.deflate",
+            "production/upload/fd/061f4d7780acc40af214dc9a474e65540582c4": "gacha/feature_movie/cnmod_starview_sway/top/sprite_sheet.png"
+          },
+          "applies_on": "1.4.366",
+          "version": "1.4.367",
+          "server_files": {
+            "assets/boss_coin_shop.json": "edcdeb1681180ec536234fed40ebbbd0d1d8c69bb25deb39b3d5b1a9937fdec8",
+            "assets/boss_coin_shop_item_category_map.json": "144eafb52071ce88bed53ca458e0d3794e7a2ce494cbb14faebb73095df640c9",
+            "assets/cdndata/gacha.json": "d014fa375aa49a4bb4f771b456ce30a83bf0ab0f982b76a5c414acd4a6f4287c",
+            "assets/cdndata/gacha_feature_content.json": "e003297ac5f98dfc4b7a970167604fbd4ba2e677bcbebc97d8bc07bad8256c2f",
+            "assets/gacha_cnmod.json": "e9bfaa842d187e0f38026138af28e6ae84c80aa7bf8115d5ab57c4a9c42a9f8c",
+            "assets/item_ids.json": "0c4f3514bb09b2a31c4cf99ebc39aa5b9187e737847f528c484d123300ad4fb7",
+            "assets/item_lookup.json": "b52ae46f727da1c23861fa44dd3ba70e067eba95ca5d065e2cc2384265a78bae",
+            "assets/item_lookup_cnmod.json": "d56ae572a5c91635c609c0c4d49f447fcde00de27c55b0017b09cfc470550f46",
+            "assets/item_sale.json": "7c038e5da916e815ce3daadb8a70674daeaef12d5cb46e36192730c3b47f7d1e"
+          },
+          "log": [
+            "星见镇两池、摇曳十连券、17领主商店；旧表压缩块与旧图集像素保留"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "exclusive-weapon-shop-1103",
+      "type": "patch",
+      "name": "专属武器兑换页修复",
+      "description": "",
+      "version": "1.4.368",
+      "depends_on": "1.4.367",
+      "enabled": true,
+      "archive": "pinball-1.4.367-1.4.368-1-exclusive-weapon-shop-1103-local.zip",
+      "archive_size": 98895,
+      "chain": [
+        "pinball-1.4.367-1.4.368-1-exclusive-weapon-shop-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b",
+        "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.367-1.4.368-1-exclusive-weapon-shop-1103-local.zip",
+          "size": 98895,
+          "sha256": "c204a885356954aa3b29bb92eaf56a4e186f46ce99ed9f016a65975b000eddcb",
+          "members": 2,
+          "files": [
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64"
+          ],
+          "member_sha256": {
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "d814ef8ea03d4b396fdb158face93b59ff7b180a6dca9e35120a532ee4ee252b",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "dc996cb522ea5212a7841d10777270d455a615d6dd5f46e33f63d34160371df5"
+          },
+          "logical_paths": {
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "master/quest/boss_battle_stage_node.orderedmap",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "master/quest/boss_battle_quest.orderedmap"
+          },
+          "applies_on": "1.4.367",
+          "version": "1.4.368",
+          "server_files": {},
+          "log": [
+            "领主商店分类 97 专属武器兑换补 stage_node 行和锚点关卡 1097001（照 98 魂珠兑换），修 C3431 且不再 F1009"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "starview-rates-1103",
+      "type": "patch",
+      "name": "星见镇卡池 up 概率调整",
+      "description": "",
+      "version": "1.4.369",
+      "depends_on": "1.4.368",
+      "enabled": true,
+      "archive": "pinball-1.4.368-1.4.369-1-starview-rates-1103-local.zip",
+      "archive_size": 5679,
+      "chain": [
+        "pinball-1.4.368-1.4.369-1-starview-rates-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/81/e5b6fea365c49cab0eeb04e51ad9934a32d1d0",
+        "production/upload/87/acbef8ae0cac589abd2ee335f597c4dcd9c687",
+        "production/upload/b2/87428ee1e633856296b9f2f47e879f39010608",
+        "production/upload/c5/f3bfbf8a1c4537f47f7edd953c94cd571cc861"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.368-1.4.369-1-starview-rates-1103-local.zip",
+          "size": 5679,
+          "sha256": "ddc0d003a09133974412ac1e64cad5c640be2498d024053208e859267305abc2",
+          "members": 4,
+          "files": [
+            "production/upload/81/e5b6fea365c49cab0eeb04e51ad9934a32d1d0",
+            "production/upload/87/acbef8ae0cac589abd2ee335f597c4dcd9c687",
+            "production/upload/b2/87428ee1e633856296b9f2f47e879f39010608",
+            "production/upload/c5/f3bfbf8a1c4537f47f7edd953c94cd571cc861"
+          ],
+          "member_sha256": {
+            "production/upload/81/e5b6fea365c49cab0eeb04e51ad9934a32d1d0": "a31f40d6ff97b3b2359afea002123a669c2562ba5c4cb28078677c218cb4a2d6",
+            "production/upload/87/acbef8ae0cac589abd2ee335f597c4dcd9c687": "6441fb60c2937cd135c5c1e79d4ebdc1cdd5889dce77d0b70ac97d625de556e5",
+            "production/upload/b2/87428ee1e633856296b9f2f47e879f39010608": "cb32e0e1fc40acccd9ca2f85abebd889979c0b95c75085274dd1f95048889ee7",
+            "production/upload/c5/f3bfbf8a1c4537f47f7edd953c94cd571cc861": "8f64c0167d3fd0c4c19d1b32f28cb2831549231dd0c66b7e0abd7e6945aee616"
+          },
+          "logical_paths": {
+            "production/upload/81/e5b6fea365c49cab0eeb04e51ad9934a32d1d0": "master/gacha_odds/cnmod_starview_sway_character_5.orderedmap",
+            "production/upload/87/acbef8ae0cac589abd2ee335f597c4dcd9c687": "rich_text/cnmod_starview_encounter_note.html.deflate",
+            "production/upload/b2/87428ee1e633856296b9f2f47e879f39010608": "master/gacha_odds/cnmod_starview_encounter_character_5.orderedmap",
+            "production/upload/c5/f3bfbf8a1c4537f47f7edd953c94cd571cc861": "rich_text/cnmod_starview_sway_note.html.deflate"
+          },
+          "applies_on": "1.4.368",
+          "version": "1.4.369",
+          "server_files": {
+            "assets/gacha_cnmod.json": "9b74576e9f6ef55d430fef3be7988ce0fea5b471d8f8eedb171bcaa4fc7c1cb5"
+          },
+          "log": [
+            "星见镇的奇遇 6 位 up 各 0.5%（合计 3%）、星见镇的摇曳 6 位 up 各 0.3%（合计 1.8%）；★5 档仍 7.5%，改概率表与注意事项"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "growth-box-1103",
+      "type": "patch",
+      "name": "培育素材兑换",
+      "description": "",
+      "version": "1.4.370",
+      "depends_on": "1.4.369",
+      "enabled": true,
+      "archive": "pinball-1.4.369-1.4.370-1-growth-box-1103-local.zip",
+      "archive_size": 1445689,
+      "chain": [
+        "pinball-1.4.369-1.4.370-1-growth-box-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64",
+        "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b",
+        "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0",
+        "production/upload/24/eecf0418222b143f11d2839a802a92041af066",
+        "production/upload/b7/001cadfaf1c2fcfe69ef611862329b4fd07f92"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.369-1.4.370-1-growth-box-1103-local.zip",
+          "size": 1445689,
+          "sha256": "18e2ad27659026e12bc35282c50dea49a698a9f9062416236d3e896bb9ed7a19",
+          "members": 5,
+          "files": [
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64",
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0",
+            "production/upload/24/eecf0418222b143f11d2839a802a92041af066",
+            "production/upload/b7/001cadfaf1c2fcfe69ef611862329b4fd07f92"
+          ],
+          "member_sha256": {
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "8f05b8e21aa2051a708367fc0317e83a062f51cc59a7965ef43cbbe7fe43da27",
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "9d6edaa8e95ff33bbc5c66c4e2f043dd770dc58bd7124d5e8c0199e732621935",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "b0a1fbc7605409b1ce53d6fa4a0e22c6e63f472e51dd22318dfb1aa0dd6e498a",
+            "production/upload/24/eecf0418222b143f11d2839a802a92041af066": "5905eef4c43ff85928222cb396f5f11b145231fb85b19a090f6e0c791e3d65ca",
+            "production/upload/b7/001cadfaf1c2fcfe69ef611862329b4fd07f92": "4b20f7366e4b29a243722e279f717ed3625a826b337f9ebab01fbb5db9c8663f"
+          },
+          "logical_paths": {
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "master/quest/boss_battle_quest.orderedmap",
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "master/quest/boss_battle_stage_node.orderedmap",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "master/shop/boss_coin_shop.orderedmap",
+            "production/upload/24/eecf0418222b143f11d2839a802a92041af066": "master/shop/boss_coin_shop_category.orderedmap",
+            "production/upload/b7/001cadfaf1c2fcfe69ef611862329b4fd07f92": "quest/boss_battle/banner/mod_growth_box_exchange.png"
+          },
+          "applies_on": "1.4.369",
+          "version": "1.4.370",
+          "server_files": {
+            "assets/boss_coin_shop.json": "6fe37e2026600d6a31ccba3f660d46692f2769e809b04baf90ab5bc173cc0107",
+            "assets/boss_coin_shop_item_category_map.json": "52699b4b98611a339a73358675a8d9fa1cd7cb33d71fca951fb70a2515e90798"
+          },
+          "log": [
+            "分类96培育素材兑换；6种属性，每箱6奖励；1个大体力药，限购9999；既有行压缩块保留"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "growth-box-fix-1103",
+      "type": "patch",
+      "name": "培育素材兑换图标修复与分类置顶",
+      "description": "",
+      "version": "1.4.371",
+      "depends_on": "1.4.370",
+      "enabled": true,
+      "archive": "pinball-1.4.370-1.4.371-1-growth-box-fix-1103-local.zip",
+      "archive_size": 255163,
+      "chain": [
+        "pinball-1.4.370-1.4.371-1-growth-box-fix-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa",
+        "production/upload/24/eecf0418222b143f11d2839a802a92041af066"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.370-1.4.371-1-growth-box-fix-1103-local.zip",
+          "size": 255163,
+          "sha256": "945ca87647579feea2c0c3940fbb41159757b943f3c3457422f9350c41455a31",
+          "members": 2,
+          "files": [
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa",
+            "production/upload/24/eecf0418222b143f11d2839a802a92041af066"
+          ],
+          "member_sha256": {
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "32fc52fec17182170aa95f3b087d1bacea619e19ad4a0c4b8d4e1426bf0d4e71",
+            "production/upload/24/eecf0418222b143f11d2839a802a92041af066": "571b7dafa5bb7ce6d6962cdf0ec2b9063bd0a8fa538fbfb3c560a1474c378df8"
+          },
+          "logical_paths": {
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "master/item/item.orderedmap",
+            "production/upload/24/eecf0418222b143f11d2839a802a92041af066": "master/shop/boss_coin_shop_category.orderedmap"
+          },
+          "applies_on": "1.4.370",
+          "version": "1.4.371",
+          "server_files": {},
+          "log": [
+            "item 106 仅 c4 修复；13 个自制分类仅 c1 置顶；其他行压缩块保留；无服务端改动"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "banner-style-1103",
+      "type": "patch",
+      "name": "兑换分类横幅官方风格统一",
+      "description": "",
+      "version": "1.4.372",
+      "depends_on": "1.4.371",
+      "enabled": true,
+      "archive": "pinball-1.4.371-1.4.372-1-banner-style-1103-local.zip",
+      "archive_size": 649671,
+      "chain": [
+        "pinball-1.4.371-1.4.372-1-banner-style-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/dc/2a63e9daf79794a0c6c39b30c9e2157f92d849",
+        "production/upload/59/9a322b2b502b17e3ac626be2243e9631d8b630",
+        "production/upload/b7/001cadfaf1c2fcfe69ef611862329b4fd07f92",
+        "production/upload/f1/13879844b8c33f871412fea9472876ffe3e9a7",
+        "production/upload/6e/aaa962a0c8a29ca87b97781b4c232c76b4df77",
+        "production/upload/d8/5393e6e7cdb2c49d3a5333dc7b13a8cedb0d6a",
+        "production/upload/ec/fff0486b55d5591d102ab4b8c2f17ffeced932",
+        "production/upload/44/122c32a154745ab6c6d979deb92bb0912bbc42",
+        "production/upload/ad/363e04a4a3a44957b05317fd395beb11a511f7",
+        "production/upload/e1/c9e8d9c74d7ba6af791e2da77270433a14d1f6",
+        "production/upload/79/3346e830c16ed8abec29cb92e85c83316d095e",
+        "production/upload/4b/048a201e573fc236322a7beac0f8dc0d4c4144"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.371-1.4.372-1-banner-style-1103-local.zip",
+          "size": 649671,
+          "sha256": "48f83dfee48762d359269a8ff63420bddf743d6329c06ceebc1a0165d9e5a93e",
+          "members": 12,
+          "files": [
+            "production/upload/dc/2a63e9daf79794a0c6c39b30c9e2157f92d849",
+            "production/upload/59/9a322b2b502b17e3ac626be2243e9631d8b630",
+            "production/upload/b7/001cadfaf1c2fcfe69ef611862329b4fd07f92",
+            "production/upload/f1/13879844b8c33f871412fea9472876ffe3e9a7",
+            "production/upload/6e/aaa962a0c8a29ca87b97781b4c232c76b4df77",
+            "production/upload/d8/5393e6e7cdb2c49d3a5333dc7b13a8cedb0d6a",
+            "production/upload/ec/fff0486b55d5591d102ab4b8c2f17ffeced932",
+            "production/upload/44/122c32a154745ab6c6d979deb92bb0912bbc42",
+            "production/upload/ad/363e04a4a3a44957b05317fd395beb11a511f7",
+            "production/upload/e1/c9e8d9c74d7ba6af791e2da77270433a14d1f6",
+            "production/upload/79/3346e830c16ed8abec29cb92e85c83316d095e",
+            "production/upload/4b/048a201e573fc236322a7beac0f8dc0d4c4144"
+          ],
+          "member_sha256": {
+            "production/upload/dc/2a63e9daf79794a0c6c39b30c9e2157f92d849": "f00b19b869bf2e239d6168e7ea5e3bbacb348fea1735b3723f2c5119397a4d9c",
+            "production/upload/59/9a322b2b502b17e3ac626be2243e9631d8b630": "7c8b6e2f5c521c6582be3f963e7c45d7edf4cb8c59828381ec805445f93faa01",
+            "production/upload/b7/001cadfaf1c2fcfe69ef611862329b4fd07f92": "07b72ae2a938e5e5b4869967d20c55c9b317cc1cddda5da9a1cadc0675ac2b51",
+            "production/upload/f1/13879844b8c33f871412fea9472876ffe3e9a7": "e64bc92bbfabb04ad128407ae47099bdaa1a1f06424960637afbfb10dbd234ee",
+            "production/upload/6e/aaa962a0c8a29ca87b97781b4c232c76b4df77": "8195ee100501ba38124e1490e3c1def4f77b5fbf6bb921ea275db7aab0962a8a",
+            "production/upload/d8/5393e6e7cdb2c49d3a5333dc7b13a8cedb0d6a": "4353273110e13241eff7deab585867b46c8aa9ae65adde49ee791cf0c7d20954",
+            "production/upload/ec/fff0486b55d5591d102ab4b8c2f17ffeced932": "3491a3f5af56374df26e490a978355ef7bc1a9f53056124f84f3894499505541",
+            "production/upload/44/122c32a154745ab6c6d979deb92bb0912bbc42": "e4c5bf79672dce37264e57f5170ab3c8aa0bfb6509600a9ee5ea218820fb5d12",
+            "production/upload/ad/363e04a4a3a44957b05317fd395beb11a511f7": "6a85aade7c7cce10ffb6317a2549e3711660e6f3a590206121d47772f5c60b4f",
+            "production/upload/e1/c9e8d9c74d7ba6af791e2da77270433a14d1f6": "0cb425d46c2dca3da0b9365f0ad65b688ccff8e85fadb1bad28f1ce55b13dccf",
+            "production/upload/79/3346e830c16ed8abec29cb92e85c83316d095e": "aa03a7d59e8275491d02b2666f5a18b5a793876275b514bb3853a188fcfe9294",
+            "production/upload/4b/048a201e573fc236322a7beac0f8dc0d4c4144": "5e6fdeef504a7e796d1fda0c977753c29d8d695de990b3d4bb86eba45e95e5ac"
+          },
+          "logical_paths": {
+            "production/upload/dc/2a63e9daf79794a0c6c39b30c9e2157f92d849": "quest/boss_battle/banner/mod_exclusive_weapon_exchange.png",
+            "production/upload/59/9a322b2b502b17e3ac626be2243e9631d8b630": "quest/boss_battle/banner/mod_five_boss_exchange.png",
+            "production/upload/b7/001cadfaf1c2fcfe69ef611862329b4fd07f92": "quest/boss_battle/banner/mod_growth_box_exchange.png",
+            "production/upload/f1/13879844b8c33f871412fea9472876ffe3e9a7": "quest/boss_battle/banner/mod_mainboss_benzaiten_exchange.png",
+            "production/upload/6e/aaa962a0c8a29ca87b97781b4c232c76b4df77": "quest/boss_battle/banner/mod_mainboss_cursed_blade_exchange.png",
+            "production/upload/d8/5393e6e7cdb2c49d3a5333dc7b13a8cedb0d6a": "quest/boss_battle/banner/mod_mainboss_epu_exchange.png",
+            "production/upload/ec/fff0486b55d5591d102ab4b8c2f17ffeced932": "quest/boss_battle/banner/mod_mainboss_high_epu_exchange.png",
+            "production/upload/44/122c32a154745ab6c6d979deb92bb0912bbc42": "quest/boss_battle/banner/mod_mainboss_maou2_exchange.png",
+            "production/upload/ad/363e04a4a3a44957b05317fd395beb11a511f7": "quest/boss_battle/banner/mod_mainboss_org_exchange.png",
+            "production/upload/e1/c9e8d9c74d7ba6af791e2da77270433a14d1f6": "quest/boss_battle/banner/mod_mainboss_origin_dragon_exchange.png",
+            "production/upload/79/3346e830c16ed8abec29cb92e85c83316d095e": "quest/boss_battle/banner/mod_mainboss_star_devourer_exchange.png",
+            "production/upload/4b/048a201e573fc236322a7beac0f8dc0d4c4144": "quest/boss_battle/banner/mod_mainboss_variant_epu_exchange.png"
+          },
+          "applies_on": "1.4.371",
+          "version": "1.4.372",
+          "server_files": {},
+          "log": [
+            "仅12张中文兑换横幅；魂珠保持；英文只覆盖已存在的分类96；无表/服务端变更"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "starview-shop-fix-1103",
+      "type": "patch",
+      "name": "领主商店星见镇商品置顶与券图标重描",
+      "description": "",
+      "version": "1.4.373",
+      "depends_on": "1.4.372",
+      "enabled": true,
+      "archive": "pinball-1.4.372-1.4.373-1-starview-shop-fix-1103-local.zip",
+      "archive_size": 2151821,
+      "chain": [
+        "pinball-1.4.372-1.4.373-1-starview-shop-fix-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/59/569af17085139fcca5a03eed8ffe1833c9c906",
+        "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3",
+        "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.372-1.4.373-1-starview-shop-fix-1103-local.zip",
+          "size": 2151821,
+          "sha256": "e65b07fded9b6680150eba5cea0e988fcc5fd643b5d09c0190d932b4d3860a3c",
+          "members": 3,
+          "files": [
+            "production/upload/59/569af17085139fcca5a03eed8ffe1833c9c906",
+            "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0"
+          ],
+          "member_sha256": {
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "934cfd90e103d3741e4341d65385558926e320024c73280c3046ed98495091ee",
+            "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3": "7794edf50e1cf5227115252d8c7ad0f9660d09e17b9388490d24baa58df4be15",
+            "production/upload/59/569af17085139fcca5a03eed8ffe1833c9c906": "e325952f53f73ee9bad6ecd1cea66deb10cc639cd597c83ee19684b372ddd411"
+          },
+          "logical_paths": {
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "master/shop/boss_coin_shop.orderedmap",
+            "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3": "item/sprite_sheet.png",
+            "production/upload/59/569af17085139fcca5a03eed8ffe1833c9c906": "item/spends/tickets/starview_sway_ten_ticket.png"
+          },
+          "base_member_sha256": {
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "b0a1fbc7605409b1ce53d6fa4a0e22c6e63f472e51dd22318dfb1aa0dd6e498a",
+            "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3": "00ffb323f596f55c25871cf53391f2b55449c23e28f3049f92c2909b4b953c62",
+            "production/upload/59/569af17085139fcca5a03eed8ffe1833c9c906": "775300aedb03ed32e410aa4b5d1fb6f221c48db3c2e28eec160dbc87def36d0d"
+          },
+          "applies_on": "1.4.372",
+          "version": "1.4.373",
+          "server_files": {},
+          "log": [
+            "17 个领主商店的摇曳十连券/体力药（大）×5 置顶并去掉期间限定；摇曳十连券图标改为像素重描版"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "extend-0814-1103",
+      "type": "patch",
+      "name": "官方到期内容续期",
+      "description": "",
+      "version": "1.4.374",
+      "depends_on": "1.4.373",
+      "enabled": true,
+      "archive": "pinball-1.4.373-1.4.374-1-extend-0814-1103-local.zip",
+      "archive_size": 1848795,
+      "chain": [
+        "pinball-1.4.373-1.4.374-1-extend-0814-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b",
+        "production/upload/fe/1035fdd920d54f65f6797bad2d4ac054feb10d",
+        "production/upload/b6/595dedd9cfa79b7e6eccab25dd9a2a81b066a2",
+        "production/upload/8e/d3874807da6b5881be725cf6198d7a50ead0e0",
+        "production/upload/92/917c6aeceee7cf73b275883653bcb89a43f3df",
+        "production/upload/c5/593f976d7512eeea2f215c5c974287331f1777",
+        "production/upload/6b/ef338822b2c963eb40c67b3d43a3b3f911ad73",
+        "production/upload/c7/428142e8bf6ca3dcd9445f67d0c882765710c7",
+        "production/upload/ac/de425a8da0664edad2bf99feddc5e97ae6741d",
+        "production/upload/d8/e9686a325a3ed87b15cc9c0845dd566bffc969"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.373-1.4.374-1-extend-0814-1103-local.zip",
+          "size": 1848795,
+          "sha256": "c2ac2f42f10e462962e3943e57e3b7843191f68d2fcb534436f6c5ee24361d19",
+          "members": 10,
+          "files": [
+            "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b",
+            "production/upload/fe/1035fdd920d54f65f6797bad2d4ac054feb10d",
+            "production/upload/b6/595dedd9cfa79b7e6eccab25dd9a2a81b066a2",
+            "production/upload/8e/d3874807da6b5881be725cf6198d7a50ead0e0",
+            "production/upload/92/917c6aeceee7cf73b275883653bcb89a43f3df",
+            "production/upload/c5/593f976d7512eeea2f215c5c974287331f1777",
+            "production/upload/6b/ef338822b2c963eb40c67b3d43a3b3f911ad73",
+            "production/upload/c7/428142e8bf6ca3dcd9445f67d0c882765710c7",
+            "production/upload/ac/de425a8da0664edad2bf99feddc5e97ae6741d",
+            "production/upload/d8/e9686a325a3ed87b15cc9c0845dd566bffc969"
+          ],
+          "member_sha256": {
+            "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b": "0ee62facd7a178241d13a133dbd9fd1439143c148c3eeb48f27ec37705bee3c2",
+            "production/upload/fe/1035fdd920d54f65f6797bad2d4ac054feb10d": "ab5c38699e223048a7391b3063c54fc697b069f543bfc5106a8c065278857f95",
+            "production/upload/b6/595dedd9cfa79b7e6eccab25dd9a2a81b066a2": "536dbc410f1c1f8bb75d0ee3ff5f6bb5822cbdf4caf551c1362bef9b5a1fe194",
+            "production/upload/8e/d3874807da6b5881be725cf6198d7a50ead0e0": "f7c05e9d64b65c72a7de8a0bd1fbdb9f8cccc5d05d2f205802fe7fe0a2468866",
+            "production/upload/92/917c6aeceee7cf73b275883653bcb89a43f3df": "c5d550a7ee411d0759202dfa11e6cd2a7a0b7cc59fc572f14254a6d6ec7edf01",
+            "production/upload/c5/593f976d7512eeea2f215c5c974287331f1777": "17b8cf4168b9027b897b7d1bab954207b361badc789052bd5423bd11b07f26ea",
+            "production/upload/6b/ef338822b2c963eb40c67b3d43a3b3f911ad73": "81b457f3f8e302adb2c8a1ac9837373ecd5d7ab78ebf83c89bce81fc613959dd",
+            "production/upload/c7/428142e8bf6ca3dcd9445f67d0c882765710c7": "111fdca3400748744405cfed2b24067f677886e3eaa16b3b2cc876341f5a27d0",
+            "production/upload/ac/de425a8da0664edad2bf99feddc5e97ae6741d": "040da70ce3f643b92d9cf8fed545d5568633a84e78c8ddde29efa152eb916bef",
+            "production/upload/d8/e9686a325a3ed87b15cc9c0845dd566bffc969": "b61e5fd9c7a65fb7d632fef1a107e86654a2aef882ec1a9f73169e45b5cddac3"
+          },
+          "logical_paths": {
+            "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b": "master/shop/star_crumb_exchange.orderedmap",
+            "production/upload/fe/1035fdd920d54f65f6797bad2d4ac054feb10d": "master/shop/event_item_shop.orderedmap",
+            "production/upload/b6/595dedd9cfa79b7e6eccab25dd9a2a81b066a2": "master/quest/event/rush_event_quest.orderedmap",
+            "production/upload/8e/d3874807da6b5881be725cf6198d7a50ead0e0": "master/quest/event/carnival_event_quest.orderedmap",
+            "production/upload/92/917c6aeceee7cf73b275883653bcb89a43f3df": "master/quest/event/carnival_event.orderedmap",
+            "production/upload/c5/593f976d7512eeea2f215c5c974287331f1777": "master/quest/event/raid_event_quest.orderedmap",
+            "production/upload/6b/ef338822b2c963eb40c67b3d43a3b3f911ad73": "master/quest/event/advent_event_quest.orderedmap",
+            "production/upload/c7/428142e8bf6ca3dcd9445f67d0c882765710c7": "master/quest/event/advent_event.orderedmap",
+            "production/upload/ac/de425a8da0664edad2bf99feddc5e97ae6741d": "master/mission/event_mission.orderedmap",
+            "production/upload/d8/e9686a325a3ed87b15cc9c0845dd566bffc969": "master/gacha/tutorial_gacha.orderedmap"
+          },
+          "applies_on": "1.4.373",
+          "version": "1.4.374",
+          "server_files": {},
+          "log": [
+            "官方 2025-08-14 到期的商店/活动关卡/活动任务/教程扭蛋续期到 2099-12-31"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "star-crumb-items-1103",
+      "type": "patch",
+      "name": "星碎商店新道具",
+      "description": "",
+      "version": "1.4.375",
+      "depends_on": "1.4.374",
+      "enabled": true,
+      "archive": "pinball-1.4.374-1.4.375-1-star-crumb-items-1103-local.zip",
+      "archive_size": 54464,
+      "chain": [
+        "pinball-1.4.374-1.4.375-1-star-crumb-items-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.374-1.4.375-1-star-crumb-items-1103-local.zip",
+          "size": 54464,
+          "sha256": "3fbcfcff2b619c5ea3d8cfec184d3b2514ddd1eadafe8e68443ec85ee570e969",
+          "members": 1,
+          "files": [
+            "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b"
+          ],
+          "member_sha256": {
+            "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b": "7eecdd8287c464fb0a7d7092a947f333320e9256ba4aaf7f99e06669d11bc018"
+          },
+          "logical_paths": {
+            "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b": "master/shop/star_crumb_exchange.orderedmap"
+          },
+          "applies_on": "1.4.374",
+          "version": "1.4.375",
+          "server_files": {},
+          "log": [
+            "星碎商店加体力回复药（中）、紫币碎片两件常驻道具"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "star-crumb-items-revert-1103",
+      "type": "patch",
+      "name": "撤掉星碎商店新道具",
+      "description": "",
+      "version": "1.4.376",
+      "depends_on": "1.4.375",
+      "enabled": true,
+      "archive": "pinball-1.4.375-1.4.376-1-star-crumb-items-revert-1103-local.zip",
+      "archive_size": 54361,
+      "chain": [
+        "pinball-1.4.375-1.4.376-1-star-crumb-items-revert-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.375-1.4.376-1-star-crumb-items-revert-1103-local.zip",
+          "size": 54361,
+          "sha256": "81ab63299978d380bf0ca0904a10122978765d2d2759f0b284e1d49622640146",
+          "members": 1,
+          "files": [
+            "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b"
+          ],
+          "member_sha256": {
+            "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b": "0ee62facd7a178241d13a133dbd9fd1439143c148c3eeb48f27ec37705bee3c2"
+          },
+          "logical_paths": {
+            "production/upload/6a/6bdd729c6fc750e7ca45eab45deaf48a29f80b": "master/shop/star_crumb_exchange.orderedmap"
+          },
+          "applies_on": "1.4.375",
+          "version": "1.4.376",
+          "server_files": {},
+          "log": [
+            "撤掉星碎商店两件道具（客户端只允许破星结晶/星铁钢，打开商店 C3253），恢复 1.4.374 版"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "treasure-shop-1103",
+      "type": "patch",
+      "name": "珍奇品商店优化",
+      "description": "",
+      "version": "1.4.377",
+      "depends_on": "1.4.376",
+      "enabled": true,
+      "archive": "pinball-1.4.376-1.4.377-1-treasure-shop-1103-local.zip",
+      "archive_size": 9925,
+      "chain": [
+        "pinball-1.4.376-1.4.377-1-treasure-shop-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/47/3f4d20c2ee78c3af3f0bfc33494b690bc0b205"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.376-1.4.377-1-treasure-shop-1103-local.zip",
+          "size": 9925,
+          "sha256": "a03b1ae3b9ad7a0f0a5193866958651c84d243863cd11387887ef01d39867482",
+          "members": 1,
+          "files": [
+            "production/upload/47/3f4d20c2ee78c3af3f0bfc33494b690bc0b205"
+          ],
+          "member_sha256": {
+            "production/upload/47/3f4d20c2ee78c3af3f0bfc33494b690bc0b205": "05f7122d52573140843bfd0d817e7299d46d7155422479769916dc6484ce7ada"
+          },
+          "logical_paths": {
+            "production/upload/47/3f4d20c2ee78c3af3f0bfc33494b690bc0b205": "master/shop/treasure_shop.orderedmap"
+          },
+          "applies_on": "1.4.376",
+          "version": "1.4.377",
+          "server_files": {
+            "assets/treasure_shop.json": "f7b5af093a6758eee2dca2937e3c4d03a37dbb91098b510b7259bc660ac4cd5b"
+          },
+          "log": [
+            "珍奇品商店：以太/元素/经验/★3破晶每日次数加大，新增★4/★5破晶、紫币碎片×10、体力药（小）×5、梦境纹章×20"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "item-cap-1103",
+      "type": "patch",
+      "name": "道具持有上限放开",
+      "description": "",
+      "version": "1.4.378",
+      "depends_on": "1.4.377",
+      "enabled": true,
+      "archive": "pinball-1.4.377-1.4.378-1-item-cap-1103-local.zip",
+      "archive_size": 246388,
+      "chain": [
+        "pinball-1.4.377-1.4.378-1-item-cap-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.377-1.4.378-1-item-cap-1103-local.zip",
+          "size": 246388,
+          "sha256": "be8b4d8e4a36f936c46a008010e9511abae04a7834d32ad8c168997b4e7f8ec1",
+          "members": 1,
+          "files": [
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+          ],
+          "member_sha256": {
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "99a76e3cb33740b5498f94e3efc6af3cd76264c4ab58e75cb7de5c503342fbc7"
+          },
+          "logical_paths": {
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "master/item/item.orderedmap"
+          },
+          "applies_on": "1.4.377",
+          "version": "1.4.378",
+          "server_files": {},
+          "log": [
+            "道具持有上限统一 9999999（1508 个；上限为 1 的唯一道具不动）"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "treasure-shop-price-1103",
+      "type": "patch",
+      "name": "珍奇品商店按表调整",
+      "description": "",
+      "version": "1.4.379",
+      "depends_on": "1.4.378",
+      "enabled": true,
+      "archive": "pinball-1.4.378-1.4.379-1-treasure-shop-price-1103-local.zip",
+      "archive_size": 9583,
+      "chain": [
+        "pinball-1.4.378-1.4.379-1-treasure-shop-price-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/47/3f4d20c2ee78c3af3f0bfc33494b690bc0b205"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.378-1.4.379-1-treasure-shop-price-1103-local.zip",
+          "size": 9583,
+          "sha256": "6b7c2cb83511c97d1d134fd096132935840e6b1262f0e13a29d5128f3ce44428",
+          "members": 1,
+          "files": [
+            "production/upload/47/3f4d20c2ee78c3af3f0bfc33494b690bc0b205"
+          ],
+          "member_sha256": {
+            "production/upload/47/3f4d20c2ee78c3af3f0bfc33494b690bc0b205": "005a734d61f1cc532adb9cb7e949a605b42affb0c2f33410fe845690b5e48fe4"
+          },
+          "logical_paths": {
+            "production/upload/47/3f4d20c2ee78c3af3f0bfc33494b690bc0b205": "master/shop/treasure_shop.orderedmap"
+          },
+          "applies_on": "1.4.378",
+          "version": "1.4.379",
+          "server_files": {
+            "out/routes/api/exBoost.js": "56b5ba553f1e89dac1e062da0de1577340418a1c4d8a05359815cf278fb08e5a",
+            "assets/treasure_shop.json": "477c8fe7df46bd494cec59b4220d18750ba06d81d6b591835df70d79bcc54c33"
+          },
+          "log": [
+            "珍奇品商店：删掉紫币碎片×10；★4 破晶 20 万、★5 破晶 40 万玛娜"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
+    },
+    {
+      "id": "daily-login-1103",
+      "type": "patch",
+      "name": "每日登录任务",
+      "description": "",
+      "version": "1.4.380",
+      "depends_on": "1.4.379",
+      "enabled": true,
+      "archive": "pinball-1.4.379-1.4.380-1-daily-login-1103-local.zip",
+      "archive_size": 40751,
+      "chain": [
+        "pinball-1.4.379-1.4.380-1-daily-login-1103-local.zip"
+      ],
+      "files": [
+        "production/upload/76/bc536a599e39f890bb8de4b255ac70f529fffa",
+        "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.379-1.4.380-1-daily-login-1103-local.zip",
+          "size": 40751,
+          "sha256": "32b907c6060076a4338ae03dc16258be36713372e95d9bf87df0612ad037a7d2",
+          "members": 2,
+          "files": [
+            "production/upload/76/bc536a599e39f890bb8de4b255ac70f529fffa",
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836"
+          ],
+          "member_sha256": {
+            "production/upload/76/bc536a599e39f890bb8de4b255ac70f529fffa": "3de817b1e538afd6b30a484fca22f4a43f55bc997a6724ddc71829ec8b3f5d4c",
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836": "80a20d3afe1b6367753b59d2dae77216112b16894350103dff69ec4a062c78b1"
+          },
+          "logical_paths": {
+            "production/upload/76/bc536a599e39f890bb8de4b255ac70f529fffa": "master/mission/daily_mission.orderedmap",
+            "production/upload/4d/3ecc694d68402d31b33273a8f926ede81c1836": "master/mission/daily_mission_reward.orderedmap"
+          },
+          "applies_on": "1.4.379",
+          "version": "1.4.380",
+          "server_files": {},
+          "log": [
+            "每日任务新增「每日登录」900004，奖励 1500 星导石"
+          ]
+        }
+      ],
+      "created_at": "2026-11-03"
     }
   ],
   "generated_for": "official active chain"

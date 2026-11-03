@@ -1,0 +1,24 @@
+{
+  "name": "pinball-1.4.317-1.4.318-1-riven-port175-tables.zip",
+  "size": 320163,
+  "sha256": "d3b637c5b5d0dbcd96fc006696086fb3963dc32cc6326dd95339aff26d070b59",
+  "members": 3,
+  "files": [
+    "production/upload/38/9ee6ccbe584f8fbb6b346de1ee83e9ebdeda4a",
+    "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa",
+    "production/upload/d6/a23f83f176b05f715a8504b8fc0fc1ffaff068"
+  ],
+  "logical": {
+    "production/upload/d6/a23f83f176b05f715a8504b8fc0fc1ffaff068": "master/ability/ability_soul.orderedmap",
+    "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "master/item/item.orderedmap",
+    "production/upload/38/9ee6ccbe584f8fbb6b346de1ee83e9ebdeda4a": "master/shop/general_shop.orderedmap"
+  },
+  "member_sha256": {
+    "production/upload/38/9ee6ccbe584f8fbb6b346de1ee83e9ebdeda4a": "bf75ce22b6a4f706fa49ab53a2ed4863e201e9050711bf6dfc81a4fd5da1e836",
+    "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "e416aa68dd0cdc44e433516e234ce446b88d3a6479eb35cc257ed0deefce9f3c",
+    "production/upload/d6/a23f83f176b05f715a8504b8fc0fc1ffaff068": "69820a2045d8bc104798ced8ac8862c100890fb451be1e35e695c03429867842"
+  },
+  "applies_on": "1.4.317",
+  "version": "1.4.318",
+  "server_files": {}
+}

@@ -24,7 +24,7 @@ import { clearEquipmentBlock } from "../room/equipment-ready"
 import { battleRelayBridge, isRelayProxySocket } from "../tcp/battle-relay/bridge"
 import type { RelayMember } from "../tcp/battle-relay/protocol"
 import { battleConnectionMatches, battleMemberCanPlay, bindBattleConnection, beginBattleSceneEpoch,
-    ensureBattleSessionContract, markBattleMemberPhase } from "./battle-contract"
+    ensureBattleSessionContract, getBattleSessionContract, markBattleMemberPhase } from "./battle-contract"
 
 export interface SessionClient {
     socket: net.Socket
@@ -48,6 +48,8 @@ export interface SessionClient {
     fiveBossBattleEntered: boolean
     /** This battle connection sent Finalize: its battle ended normally. */
     finalizeSent: boolean
+    /** Battle session for which Finalized was pushed as a server-confirmed clear. */
+    serverClearSent?: string
     admissionClaimed: boolean
     admissionGeneration?: number
     equipmentSelectedPartyId?: number
@@ -141,6 +143,8 @@ export class SessionManager {
     private rescueGuestReconnectTimers = new Map<string, NodeJS.Timeout>()
     private blockedRoomRestores = new Map<string, Set<number>>()
     private hostReconnectTimers = new Map<string, NodeJS.Timeout>()
+    private deferredDisbands = new Map<string, { timer: NodeJS.Timeout; deadline: number }>()
+    private staleAssetViewers = new Map<string, number>()
     private roomConnectionGenerations = new Map<string, number>()
 
     private addr(viewerId: number, roomNumber: string): string {
@@ -304,8 +308,15 @@ export class SessionManager {
                     return
                 }
                 const inactiveMs = performance.now() - (this.battleLastActivityAt.get(connectionId) ?? 0)
-                if (inactiveMs < leaseMs) {
-                    this.scheduleBattleActivityLease(connectionId, Math.max(1, leaseMs - inactiveMs))
+                // After a teammate's /finish the room is SETTLING/RETURNING, but a
+                // slow client can stay silent on its result sequence well past the
+                // ordinary lease before it sends Finalize and /finish. Killing it
+                // there shows S1000 and can lose its settlement.
+                const effectiveLeaseMs = this.isAwaitingFinalizeAfterSettlement(current)
+                    ? Math.max(leaseMs, this.parsePositiveDuration("BATTLE_SETTLING_HEARTBEAT_LEASE_MS", 120_000, 5_000))
+                    : leaseMs
+                if (inactiveMs < effectiveLeaseMs) {
+                    this.scheduleBattleActivityLease(connectionId, Math.max(1, effectiveLeaseMs - inactiveMs))
                     return
                 }
                 console.warn(`[MULTI] real battle connection heartbeat expired: room=${current.roomNumber}`
@@ -885,9 +896,116 @@ export class SessionManager {
         this.blockedRoomRestores.delete(roomNumber)
     }
 
+    /**
+     * Each CN client simulates every member's battle locally, so a custom boss
+     * can die on one device minutes before the others. After the first
+     * victorious /finish, tell the teammates still in their battle scene with
+     * BattleServerMessage.Finalized ([1,[2]]); the v35m client patch turns that
+     * into a victory. Older clients only drop their battle socket on it, so the
+     * whole room must run v35m: off unless MULTI_SERVER_CONFIRMED_CLEAR=1.
+     */
+    sendServerConfirmedClear(roomNumber: string, settledViewerId: number, battleSessionId: string): number {
+        if (!/^(1|true|yes|on)$/i.test(process.env.MULTI_SERVER_CONFIRMED_CLEAR ?? "")) return 0
+        const sent: number[] = []
+        for (const client of this.getConnectedBattleClients(roomNumber)) {
+            if (client.viewerId === settledViewerId || client.serverClearSent) continue
+            if (!this.isAwaitingFinalizeAfterSettlement(client)) continue
+            client.serverClearSent = battleSessionId
+            this.sendJson(client.socket, [1, [2]], {
+                roomNumber,
+                connectionId: client.connectionId,
+                viewerId: client.viewerId,
+                roomGeneration: client.roomGeneration,
+                channel: "server_confirmed_clear",
+            })
+            sent.push(client.viewerId)
+        }
+        if (sent.length > 0) console.warn(`[MULTI] server-confirmed clear sent: room=${roomNumber}`
+            + ` settled=${settledViewerId} to=${sent.join(",")}`)
+        return sent.length
+    }
+
+    /** Remember that this viewer's last room HTTP request carried outdated resources. */
+    markStaleAssetViewer(roomNumber: string, viewerId: number): void {
+        const now = Date.now()
+        for (const [key, expiresAt] of this.staleAssetViewers) if (expiresAt < now) this.staleAssetViewers.delete(key)
+        this.staleAssetViewers.set(`${roomNumber}:${viewerId}`, now + 120_000)
+    }
+
+    /** One-shot: true when the viewer entering this room must update its assets first. */
+    takeStaleAssetViewer(roomNumber: string, viewerId: number): boolean {
+        const key = `${roomNumber}:${viewerId}`
+        const expiresAt = this.staleAssetViewers.get(key)
+        this.staleAssetViewers.delete(key)
+        return expiresAt !== undefined && expiresAt >= Date.now()
+    }
+
+    /** A real member still in its battle scene after a teammate already settled. */
+    private isAwaitingFinalizeAfterSettlement(client: SessionClient): boolean {
+        if (!client.isBattle || client.finalizeSent || client.socket.destroyed) return false
+        try {
+            const room = require("../room/manager").getRoom(client.roomNumber)
+            if (!room || room.five_boss_runtime) return false
+            const phase = room.lifecycle?.phase
+            if (phase !== "SETTLING" && phase !== "RETURNING") return false
+            const member = getBattleSessionContract(room)?.members.get(client.viewerId)
+            return !member || member.phase === "ACTIVE" || member.phase === "READY"
+        } catch (e) {
+            return false
+        }
+    }
+
+    private unsettledBattleClients(roomNumber: string): SessionClient[] {
+        return this.getConnectedBattleClients(roomNumber).filter(client => this.isAwaitingFinalizeAfterSettlement(client))
+    }
+
+    /**
+     * Disbanding closes every battle socket. When the host leaves right after
+     * its own settlement, teammates that have not sent Finalize yet would get
+     * S1000 and lose their /finish. Keep the room until they finish, bounded by
+     * MULTI_DISBAND_SETTLEMENT_WAIT_MS
+     * (default BATTLE_ROOM_TIMEOUT_MS).
+     */
+    private deferDisbandForUnsettledMembers(roomNumber: string, reason: string, messageKey: string): boolean {
+        // Teammates can still be fighting after one member finished. The
+        // settling heartbeat lease already drops a silent socket, so a connected
+        // one is live; cap it with the abandoned-battle watchdog duration.
+        const waitMs = this.parsePositiveDuration("MULTI_DISBAND_SETTLEMENT_WAIT_MS",
+            this.parsePositiveDuration("BATTLE_ROOM_TIMEOUT_MS", 900_000), 0)
+        const pending = this.deferredDisbands.get(roomNumber)
+        if (pending && performance.now() >= pending.deadline) return false
+        const waiting = this.unsettledBattleClients(roomNumber)
+        if (waiting.length === 0 || waitMs <= 0) return false
+        if (pending) clearTimeout(pending.timer)
+        const deadline = pending?.deadline ?? performance.now() + waitMs
+        const timer = setTimeout(() => {
+            void embeddedMultiCoordinator.enqueueRoomCommand(roomNumber, () => {
+                if (this.deferredDisbands.get(roomNumber)?.timer !== timer) return
+                if (!require("../room/manager").getRoom(roomNumber)) {
+                    this.deferredDisbands.delete(roomNumber)
+                    return
+                }
+                this.commitRoomDisband(roomNumber, reason, messageKey)
+            }).catch(error => console.error(`[MULTI] deferred disband failed: room=${roomNumber}`, error))
+        }, Math.max(0, Math.min(2_000, deadline - performance.now())))
+        timer.unref()
+        this.deferredDisbands.set(roomNumber, { timer, deadline })
+        if (!pending) console.warn(`[MULTI] disband deferred for unsettled members: room=${roomNumber}`
+            + ` reason=${reason} waiting=${waiting.map(client => client.viewerId).join(",")} maxWaitMs=${waitMs}`)
+        return true
+    }
+
     commitRoomDisband(roomNumber: string, reason: string, messageKey = "multibattle_room_dismissed"): boolean {
         const currentRoom = require("../room/manager").getRoom(roomNumber)
         if (currentRoom && require("../coordinator/room-start-claims").hasRoomStartClaims(currentRoom)) return false
+        if (this.deferDisbandForUnsettledMembers(roomNumber, reason, messageKey)) return true
+        const deferred = this.deferredDisbands.get(roomNumber)
+        if (deferred) {
+            clearTimeout(deferred.timer)
+            this.deferredDisbands.delete(roomNumber)
+            console.warn(`[MULTI] deferred disband committed: room=${roomNumber} reason=${reason}`
+                + ` remaining=${this.unsettledBattleClients(roomNumber).map(client => client.viewerId).join(",") || "none"}`)
+        }
         const roomClients = this.getClientsInRoom(roomNumber)
         const lobbyClients = roomClients.filter(client => !client.isBattle)
         const battleClients = this.getConnectedBattleClients(roomNumber)

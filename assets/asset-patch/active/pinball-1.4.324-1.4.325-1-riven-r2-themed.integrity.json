@@ -1,0 +1,27 @@
+{
+  "name": "pinball-1.4.324-1.4.325-1-riven-r2-themed.zip",
+  "size": 841386,
+  "sha256": "07d9536c6b5193500656fbcbca3b0a6acd4889e437732e8041d5bc7dcb8262a2",
+  "members": 4,
+  "files": [
+    "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3",
+    "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3",
+    "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa",
+    "production/upload/d6/a23f83f176b05f715a8504b8fc0fc1ffaff068"
+  ],
+  "logical_paths": {
+    "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "master/item/item.orderedmap",
+    "production/upload/d6/a23f83f176b05f715a8504b8fc0fc1ffaff068": "master/ability/ability_soul.orderedmap",
+    "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3": "item/sprite_sheet.png",
+    "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3": "item/sprite_sheet.atlas.amf3.deflate"
+  },
+  "member_sha256": {
+    "production/upload/6d/4d576b424178c5b2b253a2dd5aa3d78fa74ef3": "15a32303d67b75c2a1314badbe719993e5316b4044243fb06d987ffa0395ecc2",
+    "production/upload/7b/5e0efc0e0691038ca52fe282501dfd3a1b5ae3": "452acb2b7296fea05a67817df8f49547e025d608f6e057ea8414838309969d2f",
+    "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "72be926ce4be9324d91871fe19c2590d60b9814ef05c161762249e9bca677efa",
+    "production/upload/d6/a23f83f176b05f715a8504b8fc0fc1ffaff068": "1f489744beabefc5d24240c7cdeeb0bb02a76422637e504242d795d280e82ad2"
+  },
+  "applies_on": "1.4.324",
+  "version": "1.4.325",
+  "server_files": {}
+}

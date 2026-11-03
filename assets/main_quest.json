@@ -255,7 +255,7 @@
     },
     "9009002": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035802,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40184,
         "bRankTime": 483000,
@@ -702,7 +702,7 @@
     },
     "8014001": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035802,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40169,
         "bRankTime": 1368000,
@@ -1161,7 +1161,7 @@
     },
     "7014002": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035802,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40144,
         "bRankTime": 300000,
@@ -1582,7 +1582,7 @@
     },
     "6010004": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035802,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40119,
         "bRankTime": 483000,
@@ -1942,7 +1942,7 @@
     },
     "5013002": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035801,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40096,
         "bRankTime": 483000,
@@ -2404,7 +2404,7 @@
     },
     "4011004": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035801,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40076,
         "bRankTime": 483000,
@@ -2806,7 +2806,7 @@
     },
     "3013002": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035801,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40050,
         "bRankTime": 483000,
@@ -3116,7 +3116,7 @@
     },
     "2009005": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035801,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40028,
         "bRankTime": 483000,
@@ -3263,7 +3263,7 @@
     },
     "12010001": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035803,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40205,
         "bRankTime": 528000,
@@ -3493,7 +3493,7 @@
     },
     "11010002": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035803,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40205,
         "bRankTime": 474000,
@@ -3670,7 +3670,7 @@
     },
     "10014004": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035803,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40191,
         "bRankTime": 474000,
@@ -4108,7 +4108,7 @@
     },
     "1008002": {
         "name": "",
-        "clearRewardId": 1,
+        "clearRewardId": 99035801,
         "sPlusRewardId": 1,
         "scoreRewardGroupId": 40010,
         "bRankTime": 483000,

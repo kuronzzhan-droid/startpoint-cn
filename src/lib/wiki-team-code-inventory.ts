@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import type { PlayerCharacter, PlayerEquipment } from "../data/types"
+import { serverCharacters } from "./content-master"
 import { PublicTeam, TEAM_GROUPS, TeamCodeError, wikiPublicId } from "./wiki-team-code-client"
 
 export interface NativeTeam {
@@ -39,7 +40,7 @@ function readObject(name: string): Record<string, unknown> {
 
 export function loadTeamCodeAssets(): TeamAssets {
     if (cachedAssets) return cachedAssets
-    const characters = readObject("character.json")
+    const characters: Record<string, unknown> = serverCharacters
     const maxLevels = readObject("equipment_max_level.json")
     const dissolve = readObject("equipment_dissolve.json")
     const map = (kind: "c" | "w", entries: Record<string, unknown>) =>
@@ -76,13 +77,12 @@ export function resolvePublicTeam(team: PublicTeam, assets: TeamAssets): NativeT
                 ? assets.characters
                 : assets.equipment
             const value = source.get(id)
-            if (value === undefined) throw new TeamCodeError("incompatible")
+            if (value === undefined) return null
             if (group !== "soul") return value
-            const soul = assets.souls.get(value)
-            if (soul === undefined) throw new TeamCodeError("incompatible")
-            return soul
+            return assets.souls.get(value) ?? null
         })
     }
+    if (native.main[0] === null) throw new TeamCodeError("incompatible")
     return native
 }
 

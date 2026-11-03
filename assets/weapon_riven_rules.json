@@ -1,0 +1,1213 @@
+{
+  "schema_version": 3,
+  "status": "v3_local_generated_not_deployed",
+  "source_plan": "LIB-V3NEG-BRIEF.md",
+  "proposal_notes": [
+    "按LIB-V3FIX-BRIEF.md热修公式与权重；可编辑配置的变更在服务端重载后影响现有卡。"
+  ],
+  "scope": {
+    "target": "self_or_party",
+    "required_weapon_slot": "main_same_slot",
+    "max_affixes_per_card": 4,
+    "validation_stack_count": 3,
+    "generate_master_rows": true,
+    "max_rivens_per_party": 1
+  },
+  "affix_count_probabilities": [
+    {
+      "count": 1,
+      "probability": 0.08
+    },
+    {
+      "count": 2,
+      "probability": 0.22
+    },
+    {
+      "count": 3,
+      "probability": 0.45
+    },
+    {
+      "count": 4,
+      "probability": 0.25
+    }
+  ],
+  "combinations": [
+    {
+      "id": "1p0n",
+      "count": 1,
+      "probability": 0.08,
+      "conditional_probability": 1.0,
+      "slots": [
+        {
+          "polarity": "+"
+        }
+      ]
+    },
+    {
+      "id": "2p0n",
+      "count": 2,
+      "probability": 0.22,
+      "conditional_probability": 1.0,
+      "slots": [
+        {
+          "polarity": "+"
+        },
+        {
+          "polarity": "+"
+        }
+      ]
+    },
+    {
+      "id": "2p1n",
+      "count": 3,
+      "probability": 0.25,
+      "conditional_probability": 0.5555555555555556,
+      "slots": [
+        {
+          "polarity": "+"
+        },
+        {
+          "polarity": "+"
+        },
+        {
+          "polarity": "-"
+        }
+      ]
+    },
+    {
+      "id": "3p0n",
+      "count": 3,
+      "probability": 0.2,
+      "conditional_probability": 0.4444444444444445,
+      "slots": [
+        {
+          "polarity": "+"
+        },
+        {
+          "polarity": "+"
+        },
+        {
+          "polarity": "+"
+        }
+      ]
+    },
+    {
+      "id": "3p1n",
+      "count": 4,
+      "probability": 0.25,
+      "conditional_probability": 1.0,
+      "slots": [
+        {
+          "polarity": "+"
+        },
+        {
+          "polarity": "+"
+        },
+        {
+          "polarity": "+"
+        },
+        {
+          "polarity": "-"
+        }
+      ]
+    }
+  ],
+  "tiers": {
+    "status": "legacy_metadata_only",
+    "strength_multiplier": 1,
+    "note": "v3按family和weight抽取，不限制旧strong/medium档"
+  },
+  "selection": {
+    "eligible": "enabled AND polarity matches; family unique across all slots",
+    "weight_field": "weight",
+    "normalization": "单个slot的候选词条按weight/sum(eligible_weights)抽取。",
+    "replacement": false,
+    "duplicate_id_per_card": false,
+    "exclusive_group_scope": "card",
+    "nonempty_exclusive_group_unique": true,
+    "slot_order": "listed",
+    "insufficient_candidates": "reject_configuration",
+    "proposal_note": "按family数量证明所有最多3正前缀均有合法负面候选；不通过删slot或跨family重复掩盖配置不足。",
+    "family_field": "family",
+    "tier_restriction": false
+  },
+  "numeric_generation": {
+    "status": "v3_current_disposition",
+    "magnitude": "min与max_full表示非负效果幅度；正负对玩法的含义见polarity，写入正负符号按kind的编码约定。",
+    "disposition_source": "disposition.yaml",
+    "uniform_u_range": "[0, 1)",
+    "quantile": "q uniform [.9,1], rounded to six decimals",
+    "continuous_value": "V=max_full*disposition_curve(d)*structure_coefficient*q; reciprocal curves use 100*V/(100+V)",
+    "scaled_endpoints": "cap applies the affix curve at q=1; encoded L clamps to 1..100",
+    "level_min": 1,
+    "level_max": 100,
+    "level_formula": "clamp(floor(1+99*(v-lo)/(hi-lo)+.5),1,100)",
+    "fixed_value_level": 1,
+    "template_contract": "one_key_per_affix_global_endpoints",
+    "template_note": "V3生成当前端点，legacy_encoding保留旧端点用于迁移。",
+    "decimal_resolution": 100000,
+    "raw_rounding": "floor(x + 0.5)，与ActionScript Math.round一致；负数恰半向正无穷，例如-1.5->-1。",
+    "percent_raw_scale": 1000,
+    "damage_raw_scale": 100000,
+    "integer_consumer_rounding": "resolveInt类在r(L)之后另做round_as3(r(L)/100000)；例如定额减伤kind43显示整数伤害值。",
+    "decimal_interpolation": "r(L) = round_as3(Araw + (Braw - Araw) * (L - 1) / 99)；Araw/Braw先按kind单位及符号转换为整数raw。",
+    "opening_float_note": "c121/c122解析为Float，不能套用Decimal raw倍率；若收录开局kind须按该kind消费路径核对。",
+    "validation_note": "按客户端离散L回读验证；小于一档的连续变化可能显示相同L。",
+    "quality": "q is stored actual quality; new draw uniform [.9,1], migration [0,1]",
+    "encoding_endpoints": "lo=0; reciprocal hi=100*max_full/(100+max_full); other hi covers v3 max and legacy hi",
+    "range_policy": "encoded L and cap_L quantize using shared endpoints; cap_L is authoritative discrete ceiling"
+  },
+  "reroll": {
+    "currency": {
+      "item_id": 2370099,
+      "name_zh": "深渊币"
+    },
+    "cost_basis": "per_card_paid_reroll_ordinal",
+    "costs": [
+      {
+        "paid_reroll_ordinal": 1,
+        "amount": 50
+      },
+      {
+        "paid_reroll_ordinal": 2,
+        "amount": 200
+      },
+      {
+        "paid_reroll_ordinal": 3,
+        "amount": 350
+      },
+      {
+        "paid_reroll_ordinal": 4,
+        "amount": 500
+      },
+      {
+        "paid_reroll_ordinal": 5,
+        "amount": 650
+      },
+      {
+        "paid_reroll_ordinal": 6,
+        "amount": 800
+      },
+      {
+        "paid_reroll_ordinal": 7,
+        "amount": 950
+      },
+      {
+        "paid_reroll_ordinal": 8,
+        "amount": 1100
+      },
+      {
+        "paid_reroll_ordinal": 9,
+        "amount": 1250
+      },
+      {
+        "paid_reroll_ordinal": 10,
+        "amount": 1400
+      },
+      {
+        "paid_reroll_ordinal": 11,
+        "amount": 1550
+      },
+      {
+        "paid_reroll_ordinal": 12,
+        "amount": 1700
+      },
+      {
+        "paid_reroll_ordinal": 13,
+        "amount": 1850
+      },
+      {
+        "paid_reroll_ordinal": 14,
+        "amount": 2000
+      }
+    ],
+    "next_cost_formula": "cost_items[chosen].costs[min(roll_count,len(costs)-1)]",
+    "authoritative_side": "server",
+    "reroll_all_affixes_and_count": "mode=full only; values retains keys and count",
+    "choice": "keep_old_or_new",
+    "first_paid_reroll_has_choice": true,
+    "keeping_old_refunds_cost": false,
+    "keeping_old_increments_paid_rerolls": true,
+    "initial_reveal_is_paid_reroll": false,
+    "initial_reveal_note": "未知裂罅的通关转换不增加付费重铸次数；付费表从第一次draw开始。",
+    "cost_items": [
+      {
+        "item_id": 2370099,
+        "costs": [
+          50,
+          200,
+          350,
+          500,
+          650,
+          800,
+          950,
+          1100,
+          1250,
+          1400,
+          1550,
+          1700,
+          1850,
+          2000
+        ]
+      },
+      {
+        "item_id": 10000320,
+        "costs": [
+          1
+        ]
+      }
+    ],
+    "modes": [
+      "full",
+      "values"
+    ]
+  },
+  "guardrails": {
+    "source": "author_20261026_v3neg_reciprocal_damage_negative",
+    "acceptance_model": "single_revealed_riven_per_party",
+    "stacked_cards": 3,
+    "cards_per_target": 1,
+    "independent_positive_max_percent": 20,
+    "attack_additive_total_min_percent": -50,
+    "all_element_resistance_total_strictly_less_than_percent": 100,
+    "skill_gauge_charge_observed_cap_percent": 100,
+    "mechanism_caps_policy": "Single revealed riven; independent positive <=20%; initial gauge <=100%; resistance <100%; damage-negative readback >-100%.",
+    "validation_scope": "本库单编队贡献；假想三卡报告风险。角色、武器及普通魂珠的外部来源不在本库安全证明范围内。",
+    "negative_independent_uncapped": false,
+    "damage_negative_strict_min_percent": -100
+  },
+  "dismantle_return": {
+    "item_id": 16000900,
+    "base": 3,
+    "per_affix": 0,
+    "per_roll": 0
+  },
+  "maintenance": {
+    "disabling_retains_existing_cards": true,
+    "published_value_edit_policy": "authorized_v3_keep_keys_and_record_legacy_endpoints",
+    "source_note": "作者v3授权同键更新，原定义及端点保存在generator/out-v2-baseline和legacy_encoding。"
+  },
+  "contract": "weapon-riven-v2.0",
+  "library_version": 3,
+  "structures": [
+    {
+      "id": "1p0n",
+      "positive": 1,
+      "negative": 0,
+      "probability": 0.08
+    },
+    {
+      "id": "2p0n",
+      "positive": 2,
+      "negative": 0,
+      "probability": 0.22
+    },
+    {
+      "id": "2p1n",
+      "positive": 2,
+      "negative": 1,
+      "probability": 0.25
+    },
+    {
+      "id": "3p0n",
+      "positive": 3,
+      "negative": 0,
+      "probability": 0.2
+    },
+    {
+      "id": "3p1n",
+      "positive": 3,
+      "negative": 1,
+      "probability": 0.25
+    }
+  ],
+  "count_coefficients": {
+    "1": 1,
+    "2": 0.85,
+    "3": 0.75
+  },
+  "negative_bonus": 1.2,
+  "negative_coefficient": 1,
+  "quality": {
+    "min": 0.9,
+    "max": 1,
+    "precision": 6,
+    "migration_min": 0
+  },
+  "weight_tiers": {
+    "attack": 3,
+    "damage": 2,
+    "utility": 1.5,
+    "special": 0.3,
+    "party_multiplier": 0.5
+  },
+  "max_rivens_per_party": 1,
+  "legacy_sampling": {
+    "status": "migration_reference_only_not_used_by_v3",
+    "affix_count_probabilities": [
+      {
+        "count": 1,
+        "probability": 0.2
+      },
+      {
+        "count": 2,
+        "probability": 0.35
+      },
+      {
+        "count": 3,
+        "probability": 0.3
+      },
+      {
+        "count": 4,
+        "probability": 0.15
+      }
+    ],
+    "combinations": [
+      {
+        "id": "one_strong_positive",
+        "count": 1,
+        "conditional_probability": 1.0,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "strong"
+          }
+        ],
+        "provenance": "plan_section_1"
+      },
+      {
+        "id": "two_medium_positives",
+        "count": 2,
+        "conditional_probability": 0.5,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          }
+        ],
+        "provenance": "plan_combination_draft_probability"
+      },
+      {
+        "id": "strong_positive_and_strong_negative",
+        "count": 2,
+        "conditional_probability": 0.5,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "strong"
+          },
+          {
+            "polarity": "-",
+            "tier": "strong"
+          }
+        ],
+        "provenance": "plan_combination_draft_probability"
+      },
+      {
+        "id": "three_medium_positives",
+        "count": 3,
+        "conditional_probability": 0.5,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          }
+        ],
+        "provenance": "plan_polarity_draft_tiers_and_probability"
+      },
+      {
+        "id": "two_positives_and_one_negative",
+        "count": 3,
+        "conditional_probability": 0.5,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "strong"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "-",
+            "tier": "strong"
+          }
+        ],
+        "provenance": "plan_polarity_draft_tiers_and_probability"
+      },
+      {
+        "id": "three_positives_and_one_negative",
+        "count": 4,
+        "conditional_probability": 1.0,
+        "slots": [
+          {
+            "polarity": "+",
+            "tier": "strong"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "+",
+            "tier": "medium"
+          },
+          {
+            "polarity": "-",
+            "tier": "strong"
+          }
+        ],
+        "provenance": "plan_polarity_draft_tiers"
+      }
+    ],
+    "tiers": {
+      "selection_field": "tier",
+      "strength_multiplier": 1.0,
+      "definitions": {
+        "strong": "强档词条池；由affixes.yaml每条自己的min/max_full决定数值，不再乘一层强档倍率。",
+        "medium": "中档词条池；由affixes.yaml每条自己的min/max_full决定数值，不再乘一层中档倍率。"
+      },
+      "comparability": "强/中是设计分档，不代表不同kind、不同单位的数值可以直接比较；同kind双档用不同id及同一互斥组。"
+    }
+  },
+  "items": {
+    "unknown": 16000000,
+    "instance_first": 16000001,
+    "instance_last": 16000200,
+    "holding_limit": 20
+  },
+  "disposition_curve": {
+    "floor": 0,
+    "exponent": 0.6
+  },
+  "themes": [
+    {
+      "id": "spirit_beast_shop",
+      "item_id": 16000901,
+      "name_zh": "精灵兽裂罅",
+      "pool": {
+        "disposition_categories": [
+          "spirit_beast_shop"
+        ]
+      },
+      "fallback": "pool"
+    },
+    {
+      "id": "abyss",
+      "item_id": 16000902,
+      "name_zh": "深渊裂罅",
+      "pool": {
+        "id_ranges": [
+          [
+            8000101,
+            8000124
+          ]
+        ]
+      },
+      "fallback": "pool"
+    },
+    {
+      "id": "fantasy",
+      "item_id": 16000903,
+      "name_zh": "幻想裂罅",
+      "pool": {
+        "weapon_ids": [
+          100013,
+          100014,
+          100015,
+          100016,
+          100017,
+          100018,
+          100019,
+          100020,
+          100021,
+          100022,
+          100023
+        ],
+        "id_ranges": [
+          [
+            8000201,
+            8000299
+          ]
+        ]
+      },
+      "fallback": "pool",
+      "note": "幻想连战武器 100013–100023 与 8000201–8000299；PARADOX 由全局排除挡掉"
+    },
+    {
+      "id": "cursed",
+      "item_id": 16000904,
+      "name_zh": "诅咒裂罅",
+      "pool": {
+        "weapon_ids": [
+          5910101,
+          5910102,
+          5910103,
+          5910104,
+          5910105,
+          5910106,
+          5910107,
+          5910108,
+          5910109,
+          5910110,
+          5910111,
+          5910112,
+          5910113,
+          5910114,
+          5910115,
+          5910116,
+          5910117,
+          5910118,
+          5910119,
+          5910120,
+          5910121,
+          5910122,
+          5910123,
+          5910124,
+          5910125,
+          5910126,
+          5910127,
+          5910128,
+          5910129
+        ]
+      },
+      "fallback": "pool",
+      "note": "诅咒武器 29 把（5910101–5910129，主表代号 mod_cursed_*）"
+    },
+    {
+      "id": "lord",
+      "item_id": 16000905,
+      "name_zh": "领主裂罅",
+      "pool": {
+        "id_ranges": [
+          [
+            5930000,
+            5939999
+          ]
+        ],
+        "exclude_themes": [
+          "spirit_beast_shop",
+          "cursed"
+        ]
+      },
+      "fallback": "pool",
+      "note": "5930000–5939999 首领素材 MOD 武器，去掉已归精灵兽/诅咒主题的"
+    },
+    {
+      "id": "star4",
+      "item_id": 16000907,
+      "name_zh": "星光裂罅",
+      "pool": {
+        "weapon_ids": [
+          4010003,
+          4010010,
+          4010014,
+          4010015,
+          4010017,
+          4010018,
+          4010021,
+          4010024,
+          4010048,
+          4010049,
+          4010052,
+          4010071,
+          4020007,
+          4020013,
+          4020014,
+          4020016,
+          4020019,
+          4020021,
+          4020033,
+          4020034,
+          4030003,
+          4030004,
+          4030008,
+          4030009,
+          4030014,
+          4030019,
+          4030024,
+          4030032,
+          4040007,
+          4040008,
+          4040012,
+          4040021,
+          4040023,
+          4040024,
+          4040027,
+          4040034,
+          4050004,
+          4050007,
+          4050011,
+          4050019,
+          4050021,
+          4050023,
+          4050030,
+          4050031,
+          4060005,
+          4060011,
+          4060022,
+          4060023,
+          4060028,
+          4060031,
+          4060032,
+          4060035,
+          4060036,
+          4070004,
+          4070007,
+          4070011,
+          4070012,
+          4070016,
+          4070031,
+          4070034,
+          4070037,
+          4070038,
+          4070041,
+          4080003,
+          4080015,
+          4080016,
+          4080019,
+          4080021,
+          4080023,
+          4080024,
+          4080027,
+          4090006,
+          4090012,
+          4090033,
+          4090037,
+          4090043,
+          4090050,
+          4100003,
+          4100008,
+          4100014
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★4（主表 c11=4）"
+    },
+    {
+      "id": "star3",
+      "item_id": 16000908,
+      "name_zh": "星尘裂罅",
+      "pool": {
+        "weapon_ids": [
+          1010001,
+          1060001,
+          1080001,
+          2010002,
+          2020001,
+          2030001,
+          2040001,
+          2050001,
+          2070001,
+          3010006,
+          3010007,
+          3010008,
+          3010013,
+          3010023,
+          3010027,
+          3010035,
+          3010053,
+          3020003,
+          3020006,
+          3020011,
+          3020012,
+          3030006,
+          3030007,
+          3030012,
+          3030013,
+          3030027,
+          3040003,
+          3040006,
+          3040032,
+          3050002,
+          3050005,
+          3050010,
+          3060002,
+          3060003,
+          3060007,
+          3060010,
+          3070006,
+          3070010,
+          3070018,
+          3070022,
+          3080002,
+          3080008,
+          3080009,
+          3080017,
+          3090036,
+          3100007
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★3 及以下（主表 c11≤3）"
+    },
+    {
+      "id": "star5_sword",
+      "item_id": 16000909,
+      "name_zh": "星辉·剑裂罅",
+      "pool": {
+        "weapon_ids": [
+          300001,
+          300002,
+          5005000,
+          5010004,
+          5010005,
+          5010011,
+          5010012,
+          5010019,
+          5010020,
+          5010022,
+          5010025,
+          5010026,
+          5010028,
+          5010029,
+          5010030,
+          5010031,
+          5010032,
+          5010033,
+          5010034,
+          5010036,
+          5010037,
+          5010038,
+          5010039,
+          5010040,
+          5010041,
+          5010042,
+          5010043,
+          5010044,
+          5010045,
+          5010046,
+          5010047,
+          5010050,
+          5010051,
+          5010054,
+          5010055,
+          5010056,
+          5010057,
+          5010058,
+          5010059,
+          5010060,
+          5010061,
+          5010062,
+          5010063,
+          5010064,
+          5010065,
+          5010066,
+          5010068,
+          5010069,
+          5010070,
+          5010072,
+          5010073,
+          5010074,
+          5010075,
+          5010077,
+          5010078,
+          5017716,
+          5095001
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 剑（主表 c11=5，种类取主表代号 c0）"
+    },
+    {
+      "id": "star5_axe",
+      "item_id": 16000910,
+      "name_zh": "星辉·斧裂罅",
+      "pool": {
+        "weapon_ids": [
+          5020008,
+          5020009,
+          5020010,
+          5020017,
+          5020018,
+          5020020,
+          5020022,
+          5020023,
+          5020024,
+          5020025,
+          5020026,
+          5020027,
+          5020028,
+          5020029,
+          5020030,
+          5020031,
+          5020032,
+          5020035,
+          5020036,
+          5020037,
+          5020038,
+          5020039,
+          5020040,
+          5020041,
+          5020042,
+          5020043
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 斧（主表 c11=5，种类取主表代号 c0）"
+    },
+    {
+      "id": "star5_spear",
+      "item_id": 16000911,
+      "name_zh": "星辉·枪裂罅",
+      "pool": {
+        "weapon_ids": [
+          5025000,
+          5030005,
+          5030011,
+          5030016,
+          5030017,
+          5030018,
+          5030020,
+          5030021,
+          5030022,
+          5030023,
+          5030025,
+          5030026,
+          5030028,
+          5030029,
+          5030030,
+          5030033,
+          5030034,
+          5030035,
+          5030036,
+          5030037,
+          5030038,
+          5030039,
+          5030040,
+          5030041
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 枪（主表 c11=5，种类取主表代号 c0）"
+    },
+    {
+      "id": "star5_bow",
+      "item_id": 16000912,
+      "name_zh": "星辉·弓裂罅",
+      "pool": {
+        "weapon_ids": [
+          5035000,
+          5040009,
+          5040010,
+          5040014,
+          5040016,
+          5040017,
+          5040018,
+          5040019,
+          5040020,
+          5040022,
+          5040025,
+          5040026,
+          5040028,
+          5040029,
+          5040030,
+          5040031,
+          5040033,
+          5040035,
+          5040036,
+          5040037
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 弓（主表 c11=5，种类取主表代号 c0）"
+    },
+    {
+      "id": "star5_book",
+      "item_id": 16000913,
+      "name_zh": "星辉·书裂罅",
+      "pool": {
+        "weapon_ids": [
+          5045000,
+          5050009,
+          5050013,
+          5050014,
+          5050015,
+          5050016,
+          5050017,
+          5050018,
+          5050020,
+          5050022,
+          5050024,
+          5050025,
+          5050026,
+          5050027,
+          5050028,
+          5050029,
+          5050032,
+          5050033,
+          5050034,
+          5050036,
+          5050037,
+          5050038,
+          5050039
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 书（主表 c11=5，种类取主表代号 c0）"
+    },
+    {
+      "id": "star5_staff",
+      "item_id": 16000914,
+      "name_zh": "星辉·杖裂罅",
+      "pool": {
+        "weapon_ids": [
+          5055000,
+          5060009,
+          5060013,
+          5060015,
+          5060016,
+          5060017,
+          5060018,
+          5060019,
+          5060020,
+          5060021,
+          5060024,
+          5060025,
+          5060026,
+          5060027,
+          5060029,
+          5060030,
+          5060033,
+          5060034,
+          5060037,
+          5060038,
+          5060039,
+          5060040,
+          5060041,
+          5060042,
+          5060043,
+          5060044,
+          5060045,
+          5095003
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 杖（主表 c11=5，种类取主表代号 c0）"
+    },
+    {
+      "id": "star5_fist",
+      "item_id": 16000915,
+      "name_zh": "星辉·拳裂罅",
+      "pool": {
+        "weapon_ids": [
+          5070009,
+          5070017,
+          5070019,
+          5070020,
+          5070021,
+          5070023,
+          5070024,
+          5070025,
+          5070026,
+          5070027,
+          5070028,
+          5070029,
+          5070030,
+          5070032,
+          5070033,
+          5070035,
+          5070036,
+          5070039,
+          5070040,
+          5070042,
+          5070043,
+          5070044
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 拳（主表 c11=5，种类取主表代号 c0）"
+    },
+    {
+      "id": "star5_shield",
+      "item_id": 16000916,
+      "name_zh": "星辉·盾裂罅",
+      "pool": {
+        "weapon_ids": [
+          5080007,
+          5080011,
+          5080012,
+          5080013,
+          5080014,
+          5080018,
+          5080020,
+          5080022,
+          5080025,
+          5080026,
+          5080028,
+          5080029,
+          5080031,
+          5080032,
+          5080033,
+          5080034,
+          5080035,
+          5080036,
+          5080037,
+          5080038,
+          5085000
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 盾（主表 c11=5，种类取主表代号 c0）"
+    },
+    {
+      "id": "star5_acce",
+      "item_id": 16000917,
+      "name_zh": "星辉·饰裂罅",
+      "pool": {
+        "weapon_ids": [
+          100001,
+          100002,
+          100003,
+          100004,
+          100005,
+          100006,
+          100007,
+          100008,
+          100009,
+          100010,
+          100011,
+          100012,
+          200001,
+          200002,
+          200003,
+          200004,
+          200005,
+          200006,
+          5090001,
+          5090002,
+          5090003,
+          5090004,
+          5090005,
+          5090007,
+          5090008,
+          5090009,
+          5090010,
+          5090011,
+          5090013,
+          5090014,
+          5090015,
+          5090016,
+          5090017,
+          5090018,
+          5090019,
+          5090020,
+          5090021,
+          5090022,
+          5090023,
+          5090024,
+          5090025,
+          5090026,
+          5090027,
+          5090028,
+          5090029,
+          5090030,
+          5090031,
+          5090032,
+          5090034,
+          5090035,
+          5090038,
+          5090039,
+          5090040,
+          5090041,
+          5090042,
+          5090044,
+          5090045,
+          5090046,
+          5090047,
+          5090048,
+          5090049,
+          5090051,
+          5090052,
+          5090053,
+          5090054,
+          5090055,
+          5090056,
+          5090057,
+          5090058,
+          5090059,
+          5090060,
+          5095002
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 饰（主表 c11=5，种类取主表代号 c0）"
+    },
+    {
+      "id": "star5_gun",
+      "item_id": 16000918,
+      "name_zh": "星辉·铳裂罅",
+      "pool": {
+        "weapon_ids": [
+          5100001,
+          5100002,
+          5100004,
+          5100005,
+          5100006,
+          5100009,
+          5100010,
+          5100011,
+          5100012,
+          5100013,
+          5100015,
+          5100016,
+          5100017,
+          5100018,
+          5100019,
+          5100020
+        ]
+      },
+      "fallback": "pool",
+      "note": "官方 ★5 铳（主表 c11=5，种类取主表代号 c0）"
+    }
+  ],
+  "themes_note": "主题未知裂罅：五重通关揭示时武器只从 pool 里随机；优先玩家持有的 pool 武器，一把都没有就从整个 pool 随机。pool 可写 disposition_categories（倾向表分类 id）、weapon_ids、id_ranges，三者取并集，只取倾向表里登记过的武器。新主题=加一行+item 数据行，item_id 须在 16000901–16000919。 pool.exclude_themes=去掉所列主题的池；所有池再去掉 reveal_exclusions。主题 note 只作说明。第三轮（2026-10-27）加 903–905、907–918；906 奇物裂罅排除诅咒后池为空，未配置。",
+  "disposition_tiers": {
+    "0": 0.08,
+    "1": 0.18,
+    "2": 0.3,
+    "3": 0.45,
+    "4": 0.8,
+    "5": 1.0
+  },
+  "disposition_tiers_note": "倾向系数按整数档线性插值（作者 2026-10-27 15:1x）；存在时取代 disposition_curve。",
+  "value_model": {
+    "kind": "positive_budget",
+    "positive_budget_percent": 500,
+    "budget_units": [
+      "percent"
+    ],
+    "independent_weight_factor": 0.3333333333333333,
+    "independent_positive_max_percent": 20
+  },
+  "value_model_note": "作者 2026-10-27 15:15：一张卡正面词条（unit=percent、非独立乘区）百分比合计 ≤ positive_budget_percent × 倾向系数；各条按 max_full 比例分预算且不超过 max_full×倾向系数，再乘品质 q。负面不抬预算、公式不变（伤害类倒数曲线）。独立乘区正面（independent_damage）不进预算：max_full(≤independent_positive_max_percent)×倾向系数×q，抽取权重×independent_weight_factor。非百分比正面（固定减伤/次数/秒/点数）也不进预算：max_full×倾向系数×q。count_coefficients / negative_bonus 在本模型下不用，仅保留给旧模型。",
+  "reveal_exclusions": {
+    "id_ranges": [
+      [
+        5920000,
+        5929999
+      ],
+      [
+        5990001,
+        5990999
+      ],
+      [
+        5900911,
+        5900916
+      ]
+    ]
+  },
+  "reveal_exclusions_note": "全局揭示排除（作者 2026-10-27 20:2x）：普通未知裂罅与所有主题裂罅都不会揭示成这些武器。5920000–5929999 PARADOX；5990001–5990999 GM 测试武器；5900911–5900916【验证2】测试复制品。"
+}

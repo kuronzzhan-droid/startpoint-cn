@@ -6103,5 +6103,22 @@
       "type": 1,
       "amount": 10000000
     }
+  },
+  "990099035": {
+    "costs": [
+      {
+        "id": 16000900,
+        "amount": 10
+      }
+    ],
+    "rewards": [
+      {
+        "type": 0,
+        "id": 16000000,
+        "count": 1
+      }
+    ],
+    "availableFrom": "2000-01-01 00:00:00",
+    "availableUntil": null
   }
 }

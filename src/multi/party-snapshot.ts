@@ -1,5 +1,5 @@
 import {
-    getPlayerCharacterManaNodeAwakeLevelsSync,
+    getPlayerCharacterManaNodesSync,
     getPlayerCharacterSync,
 } from "../data/domains/character"
 import { getPlayerEquipmentSync } from "../data/domains/equipment"
@@ -87,8 +87,9 @@ export function buildRealParty(playerId: number, targetParty?: PlayerParty): any
             if (!dbChar) {
                 filledChars.push([1])
             } else {
-                // 觉醒等级要原样带上：客户端按这张表的值判定觉醒能力和技能档位
-                const manaNodeMap: Record<string, number> = { ...getPlayerCharacterManaNodeAwakeLevelsSync(playerId, charId) }
+                const rawManaNodes = getPlayerCharacterManaNodesSync(playerId, charId)
+                const manaNodeMap: Record<string, number> = {}
+                for (const id of rawManaNodes) manaNodeMap[String(id)] = 0
 
                 const exBoost = dbChar.exBoost?.abilityIdList?.length
                     ? [0, { ability_id_list: dbChar.exBoost.abilityIdList, status_id: dbChar.exBoost.statusId }]
@@ -114,7 +115,9 @@ export function buildRealParty(playerId: number, targetParty?: PlayerParty): any
             if (!dbUnison) {
                 filledUnison.push([1])
             } else {
-                const nodeMap: Record<string, number> = { ...getPlayerCharacterManaNodeAwakeLevelsSync(playerId, unisonId) }
+                const rawNodes = getPlayerCharacterManaNodesSync(playerId, unisonId)
+                const nodeMap: Record<string, number> = {}
+                for (const id of rawNodes) nodeMap[String(id)] = 0
                 const unisonExBoost = dbUnison.exBoost?.abilityIdList?.length
                     ? [0, { ability_id_list: dbUnison.exBoost.abilityIdList, status_id: dbUnison.exBoost.statusId }]
                     : [1]

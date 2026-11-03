@@ -27,6 +27,8 @@ export interface RoomDecisionPayload {
     category?: number | null
     questId?: number | null
     shareTypes?: number[] | null
+    /** The HTTP request carried a res_ver older than the server's asset tail. */
+    assetStale?: boolean
 }
 export interface RoomConnectionState {
     category_id: number
@@ -96,6 +98,7 @@ export function registerRoomCommandHandlers(executor: RoomCommandExecutor): void
             if (denied) return denied
             if (questMismatch(room, payload)) return { status: "quest_mismatch" }
             if (payload.viewerId === room.host_viewer_id) updateHostEntryTime(room.room_number)
+            if (payload.assetStale) sessionManager.markStaleAssetViewer(room.room_number, payload.viewerId)
             const connection = connectionState(room)
             if (payload.viewerId === room.host_viewer_id) connection.raising_state = 1
             else if (!sessionManager.isHostOnline(room.host_viewer_id, room.room_number, room.lobby_generation)) connection.raising_state = 2
@@ -107,6 +110,7 @@ export function registerRoomCommandHandlers(executor: RoomCommandExecutor): void
         return decide(payload, context, room => {
             const denied = unavailable(room, payload)
             if (denied) return denied
+            if (payload.assetStale) sessionManager.markStaleAssetViewer(room.room_number, payload.viewerId)
             const connection = connectionState(room)
             if (!isRoomMember(room, payload.viewerId)) connection.raising_state = 13
             else if (room.lifecycle.phase !== "BATTLE") {

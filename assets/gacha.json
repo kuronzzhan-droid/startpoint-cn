@@ -139013,6 +139013,7 @@
     "singleCost": 150,
     "multiCost": 1500,
     "discountCost": 50,
+    "tenTicketItemId": 999012,
     "wildcardTicketAvailable": false,
     "rarityOddsId": "normal_rarity",
     "guaranteeRarity": 4,
