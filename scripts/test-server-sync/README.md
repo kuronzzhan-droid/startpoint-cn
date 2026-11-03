@@ -2,29 +2,45 @@
 
 把测试服（175）上的服务端代码和资源表单向同步到本仓库的 `test-server` 分支。`main` 不受影响，需要时再从 `test-server` 挑内容合进 `main`。
 
+测试服没有装 git，也连不上 github.com（只能连 api.github.com），所以 `sync.cjs` 直接调用 GitHub REST API：按 git 的方式算文件哈希，和分支上的树比对，只上传有变化的文件，生成一个提交并移动分支。
+
 ## 什么时候跑
 
-- 每次测试服发布完，发布流程最后执行一次 `sync.ps1`
-- 计划任务每天 04:30 兜底执行一次（`install-task.ps1` 注册）
-- 没有变化时直接退出，不产生提交
+- 计划任务每小时跑一次（`install-task.ps1` 注册），没有变化就直接退出，不产生提交
+- 发布线程发布完也可以手动跑一次：`node C:\startpoint-sync\sync.cjs`
+- 有文件大小+修改时间缓存，没变化的文件不会重新读取
 
 ## 同步什么
 
-白名单目录：`src` `assets` `web` `scripts` `tools` `admin` `data` `docs` `client-patch` `apk-patches` `deployment`，以及 `package.json` 等根文件。
+白名单目录：`src` `out` `assets` `web` `scripts` `tools` `admin` `data` `docs` `client-patch` `apk-patches` `deployment`，以及 `package.json` 等根文件。
 
-永远不同步：`.env*`、密钥/证书、APK、存档和数据库、日志、`node_modules`、`out`、`.cdn`、`config/`、`*.zip`（补丁包照旧放 Release）、`*.backup.json`、可执行文件，以及超过 20MB 的单个文件。
+`out/` 一定要同步：测试服实际运行的是 `out/` 里的 JS，10-22 以后很多改动只在 `out/` 里，`src/` 没有跟上。
 
-推送前依次检查：gitleaks 扫描暂存内容、`scripts/check-hygiene.sh`（个人 IP / 路径 / 邮箱）。任何一项不过就放弃本次提交。
+永远不同步：`.env` 和 `.env.*` 备份、`*.bak` / `*.pre-*` 备份、密钥/证书、APK、存档和数据库、日志、`node_modules`、`.cdn`、`config/`、`tmp/`、`*.zip`（补丁包照旧放 Release）、`*.backup.json`、可执行文件。超过 50MB 的文件、新增的超过 1MB 的二进制文件会跳过并写进报告。被排除的文件即使分支上有，也不会被删掉。
 
-## 安装（175 上，一次性）
+文本文件统一转成 LF（和仓库的 `.gitattributes` 一致）。
 
-1. 建目录 `C:\startpoint-sync`，放入 `sync.ps1` 和 `gitleaks.exe`
-2. 在 GitHub 建 fine-grained token：只选本仓库，权限只开 Contents 读写；内容保存为 `C:\startpoint-sync\token.txt`
-3. 先试跑：`powershell -ExecutionPolicy Bypass -File C:\startpoint-sync\sync.ps1 -DryRun`，看 `sync.log`
-4. 管理员 PowerShell 运行 `install-task.ps1`：注册计划任务，并把 token 文件权限收紧到 SYSTEM/Administrators
+## 推送前的检查
 
-令牌只在每条 git 命令里临时作为 HTTP 头传入，不写进 `.git/config` 或远程地址，日志里会打码。
+每个新增/修改的文本文件都会扫描：GitHub / AWS / API 令牌、私钥、测试服和 StarView 的 IP、局域网 IP、个人家目录路径、个人邮箱，以及同步令牌本身。命中任何一项就整次放弃，结果写进 `blocked.txt`，退出码 2。`C:\startpoint-sync\gitleaks.exe` 存在时会再用 gitleaks 扫一遍。
+
+## 文件（都在 `C:\startpoint-sync`）
+
+| 文件 | 用途 |
+|---|---|
+| `sync.cjs` | 同步脚本 |
+| `token.txt` | fine-grained token，只能写本仓库的 Contents；权限收紧到 SYSTEM/Administrators |
+| `sync.log` | 运行日志 |
+| `last-diff.txt` | 最近一次的新增/修改/删除/跳过清单 |
+| `blocked.txt` | 被安全扫描拦下时的命中清单 |
+| `hash-cache.json` | 哈希缓存，可以随时删 |
+
+## 安装
+
+1. 把 `sync.cjs`、`install-task.ps1` 拷到测试服，令牌存成 `C:\startpoint-sync\token.txt`
+2. 先试跑：`node C:\startpoint-sync\sync.cjs --dry-run`，看 `last-diff.txt` 和 `blocked.txt`
+3. 管理员 PowerShell 运行 `install-task.ps1`
 
 ## 失败时
 
-日志在 `C:\startpoint-sync\sync.log`。推送失败会重试 4 次，仍失败就把提交留在本地，下次运行一起推。
+网络错误和限流会自动等待重试。分支只在提交建好之后才移动，中途失败不会留下半个提交，下次运行会重新比对。

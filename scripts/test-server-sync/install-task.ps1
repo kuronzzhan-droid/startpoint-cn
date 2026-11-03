@@ -1,26 +1,30 @@
 <#
-  Registers the daily fallback run of sync.ps1 (04:30 local time)
-  and locks down the token file.
-  Run once in an elevated PowerShell on the test server.
+  One-time setup on the test server (elevated PowerShell):
+    - copies sync.cjs into the sync root
+    - restricts token.txt to SYSTEM and Administrators
+    - registers an hourly scheduled task running the sync as SYSTEM
+  Re-running it is safe; it replaces the task.
 #>
 param(
     [string]$SyncRoot = 'C:\startpoint-sync',
-    [string]$At = '04:30'
+    [string]$Node = 'C:\Program Files\nodejs\node.exe',
+    [int]$EveryMinutes = 60
 )
 $ErrorActionPreference = 'Stop'
 
-$script = Join-Path $SyncRoot 'sync.ps1'
-if (-not (Test-Path $script)) { Copy-Item (Join-Path $PSScriptRoot 'sync.ps1') $script }
+New-Item -ItemType Directory -Force -Path $SyncRoot | Out-Null
+Copy-Item -Force (Join-Path $PSScriptRoot 'sync.cjs') (Join-Path $SyncRoot 'sync.cjs')
 
 $token = Join-Path $SyncRoot 'token.txt'
-if (Test-Path $token) {
-    # Only SYSTEM and Administrators may read the token.
-    & icacls $token /inheritance:r /grant:r 'SYSTEM:R' 'Administrators:R' | Out-Null
-}
+if (-not (Test-Path $token)) { throw "put the GitHub token in $token first" }
+& icacls $token /inheritance:r /grant:r 'SYSTEM:R' 'Administrators:R' | Out-Null
 
-$action  = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$script`""
-$trigger = New-ScheduledTaskTrigger -Daily -At $At
-$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -StartWhenAvailable
+$script = Join-Path $SyncRoot 'sync.cjs'
+$action = New-ScheduledTaskAction -Execute $Node -Argument "`"$script`"" -WorkingDirectory $SyncRoot
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) `
+    -RepetitionInterval (New-TimeSpan -Minutes $EveryMinutes)
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 30) `
+    -StartWhenAvailable -MultipleInstances IgnoreNew -Priority 7
 Register-ScheduledTask -TaskName 'StartPoint test-server sync' -Action $action -Trigger $trigger `
     -Settings $settings -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
-Write-Host "registered daily sync at $At"
+Write-Host "registered: every $EveryMinutes min, log $SyncRoot\sync.log"
