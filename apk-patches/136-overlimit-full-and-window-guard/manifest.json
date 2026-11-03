@@ -1,0 +1,177 @@
+{
+  "capability": "wfx-overlimit-full-v1",
+  "output_swf_sha256": "f1c3260d470f46a4364baddb85af48dc34a5c299bb025d123be085ad6f04e573",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "OwnedOverLimitLogic/getOwnAwakingCrystalToOverLimit",
+      "body": 18060,
+      "code_sha256": "a9394992e89a5690204d5a1e5df4445dcc36b1be49a547b6427f7562370d1547",
+      "header": [
+        3,
+        12,
+        1,
+        2
+      ],
+      "file": "OwnedOverLimitLogic__getOwnAwakingCrystalToOverLimit.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "OwnedOverLimitLogic/getAwakingCrystalToOverLimit",
+      "body": 18063,
+      "code_sha256": "ae75214b496824eeb8a3f67a961e105668a259b1ffbd9b67a7b8a3bbdca2dfb4",
+      "header": [
+        3,
+        13,
+        1,
+        2
+      ],
+      "file": "OwnedOverLimitLogic__getAwakingCrystalToOverLimit.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "OwnedOverLimitLogic/getOverLimitState",
+      "body": 18061,
+      "code_sha256": "108cde956841ca68e0061dcf332f7943d6e6c86a8b0c56fe2e30e14abcd60af0",
+      "header": [
+        3,
+        12,
+        1,
+        2
+      ],
+      "file": "OwnedOverLimitLogic__getOverLimitState.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "OwnedCharacterLogic/getPossibleOverLimitCountByItem",
+      "body": 17768,
+      "code_sha256": "ec11cc72b904085a2745ae66e9c8d7dca14d7a85ebfb05f356b17802b32847fb",
+      "header": [
+        3,
+        6,
+        1,
+        2
+      ],
+      "file": "OwnedCharacterLogic__getPossibleOverLimitCountByItem.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "OverLimitWindow/getOverLimitState",
+      "body": 73067,
+      "code_sha256": "eea92f78c2cc8dbd3529af5c0e46e1c0a1bf9f5cd3cd17630f786bb1b4058f25",
+      "header": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "file": "OverLimitWindow__getOverLimitState.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "OverLimitWindow/run",
+      "body": 73055,
+      "code_sha256": "d38a6b02ef83d2e1fb99134aa35733786e0ad3a423c4eecd404bac54a48d73d2",
+      "header": [
+        11,
+        12,
+        1,
+        2
+      ],
+      "file": "OverLimitWindow__run.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "OverLimitWindow/getStatusInformation",
+      "body": 73065,
+      "code_sha256": "1c60bfbd538517f6fa3d393655a3dd282e93a3b1fe53f563a7088bc48b733ccc",
+      "header": [
+        10,
+        7,
+        1,
+        2
+      ],
+      "file": "OverLimitWindow__getStatusInformation.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "ExpodOverLimitByItemDialog/getDescription",
+      "body": 33543,
+      "code_sha256": "002d338edc18618ff1c0badc69e639c32a322a3ce472df89c7475be49206d43d",
+      "header": [
+        9,
+        2,
+        1,
+        2
+      ],
+      "file": "ExpodOverLimitByItemDialog__getDescription.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "GeneralCharacterLogic/getPedestalImagePath",
+      "body": 17568,
+      "code_sha256": "746d25246464eee803ca007a47853a152c7f8cffa13af6fc7303956c2ea42772",
+      "header": [
+        3,
+        4,
+        1,
+        2
+      ],
+      "file": "GeneralCharacterLogic__getPedestalImagePath.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "GeneralCharacterLogic/getHalfPedestalImagePath",
+      "body": 17588,
+      "code_sha256": "563f61520501a8aa0095d48c3e861bbbe2782edf6ae5efaf8b467fc16aa32d29",
+      "header": [
+        3,
+        4,
+        1,
+        2
+      ],
+      "file": "GeneralCharacterLogic__getHalfPedestalImagePath.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "OverLimitWindowView/onApplyOverLimitStatusInformation",
+      "body": 73110,
+      "code_sha256": "fe334f5fee2b7e096f2d572870b0a0c0a89240357a679525b0de8f4e1ac982e0",
+      "header": [
+        10,
+        9,
+        1,
+        2
+      ],
+      "file": "OverLimitWindowView__onApplyOverLimitStatusInformation.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "GeneralCharacterLogic/wfxOverlimitFull",
+      "body": 92658,
+      "code_sha256": "b75db4cc9bfe0eb2e4743c5e7641acf74e92e9eee96f931d1add28c0042f0d16",
+      "header": [
+        3,
+        3,
+        1,
+        2
+      ],
+      "file": "GeneralCharacterLogic__wfxOverlimitFull.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "GeneralCharacterLogic/wfxAllManaNodesLearned",
+      "body": 92659,
+      "code_sha256": "edfbe445295ffb3922af4d4396ddc1629637601d1d2720bfde26e02555e921d9",
+      "header": [
+        2,
+        10,
+        1,
+        2
+      ],
+      "file": "GeneralCharacterLogic__wfxAllManaNodesLearned.pcode.txt"
+    }
+  ],
+  "source_entrypoint": "../../build.py",
+  "scope": "累计链本地草稿；只读依赖前七轮构造器及v34输入；AIR/真机未核实"
+}

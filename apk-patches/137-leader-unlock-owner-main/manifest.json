@@ -1,0 +1,151 @@
+{
+  "capability": "wfx-owner-main-unlock-v1",
+  "output_swf_sha256": "764254976d9f0c5a246f16d89e31da3e3347d752582938c9033e59237a57fabb",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/wfxPartyMask",
+      "body": 92619,
+      "code_sha256": "2d875de4a44504825e2b4185115301db5d96371d6dc9b6c10796946f7a58f5d1",
+      "header": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "file": "BattleCharacterLogic__wfxPartyMask.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/getElement",
+      "body": 92412,
+      "code_sha256": "1773f4a8dcb5bd7cc793b3b0ff9b6b7bdd436ce77bf34b59ce5c5f65829b3a40",
+      "header": [
+        3,
+        20,
+        6,
+        7
+      ],
+      "file": "BattleCharacterLogic__getElement.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/getInstantAbiltyCountWithoutLimit",
+      "body": 92403,
+      "code_sha256": "8b21fea75ce919bf191153c72285784a1ca68800ae2375077d33fef01fe919e0",
+      "header": [
+        6,
+        17,
+        6,
+        7
+      ],
+      "file": "BattleCharacterLogic__getInstantAbiltyCountWithoutLimit.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "TriggerableAbilityDialogAllAbilitiesGenerator/addAbility",
+      "body": 37201,
+      "code_sha256": "21e45b2f052f3f1c79f5079ee06e38ef29a2e7441c204569865c1f4c5b9107d2",
+      "header": [
+        9,
+        20,
+        1,
+        2
+      ],
+      "file": "TriggerableAbilityDialogAllAbilitiesGenerator__addAbility.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/wfxOwnerMainUnlocked",
+      "body": 92660,
+      "code_sha256": "044941685f705f32d88b8a102fd59e3666ea1eace092fe12793b1d25e56fbba9",
+      "header": [
+        3,
+        3,
+        1,
+        2
+      ],
+      "file": "BattleCharacterLogic__wfxOwnerMainUnlocked.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "AbilityDisabledReasonResolver/wfxOwnAbilityUnlocked",
+      "body": 92661,
+      "code_sha256": "b346057f996edb630e5d2a143e22e6dc84b56bcc34d1aeb486d5bb5bec0b5276",
+      "header": [
+        3,
+        5,
+        1,
+        2
+      ],
+      "file": "AbilityDisabledReasonResolver__wfxOwnAbilityUnlocked.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "AbilityDisabledReasonResolver/wfxResolveOwnPrecondition",
+      "body": 92662,
+      "code_sha256": "a55eee662836f87da44fe1fbd9a17cf351555d52fb66e86d6c678cad42adad02",
+      "header": [
+        17,
+        15,
+        1,
+        2
+      ],
+      "file": "AbilityDisabledReasonResolver__wfxResolveOwnPrecondition.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "AbilityDisabledReasonResolver/wfxResolveOwnAbility",
+      "body": 92663,
+      "code_sha256": "19550391c64113e284d40e49053775c7169ab0d87c0a90d83d9c6439ac85105c",
+      "header": [
+        17,
+        13,
+        1,
+        2
+      ],
+      "file": "AbilityDisabledReasonResolver__wfxResolveOwnAbility.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/wfxElementBeforeOwnerMain",
+      "body": 92664,
+      "code_sha256": "af3bd846acede1a3ace8c1ff2cc7221a3fc28cef44730ed59c9f59d998b1318f",
+      "header": [
+        3,
+        20,
+        6,
+        7
+      ],
+      "file": "BattleCharacterLogic__wfxElementBeforeOwnerMain.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/wfxCachedElementBeforeOwnerMain",
+      "body": 92665,
+      "code_sha256": "e9c1db841d28825384eee5c758d6f7fb9869d053164e8f943ab45af862853c5e",
+      "header": [
+        3,
+        5,
+        6,
+        7
+      ],
+      "file": "BattleCharacterLogic__wfxCachedElementBeforeOwnerMain.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "BattlePartyLogic/wfxSameElementBeforeOwnerMain",
+      "body": 92666,
+      "code_sha256": "2b662197a0937d3f0d269d1233f9993ffd620ecfb93de9fdb4bf10e52511f37d",
+      "header": [
+        3,
+        10,
+        1,
+        2
+      ],
+      "file": "BattlePartyLogic__wfxSameElementBeforeOwnerMain.pcode.txt"
+    }
+  ],
+  "source_entrypoint": "../../build.py",
+  "scope": "本地草稿；只读依赖前八轮构造器及v34输入；AIR/真机未核实"
+}

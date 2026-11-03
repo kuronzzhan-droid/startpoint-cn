@@ -1,0 +1,549 @@
+{
+  "baseline_swf_sha256": "960757dbaf599b5d4978b95670b9bbe3e76fac5cfd29045b8c9c0dd1a1ca0870",
+  "output_swf_sha256": "f1c3260d470f46a4364baddb85af48dc34a5c299bb025d123be085ad6f04e573",
+  "methods": {
+    "OwnedOverLimitLogic/getOwnAwakingCrystalToOverLimit": {
+      "body": 18060,
+      "before": "2be9af1fa92ed8bb56a5ee90b9eb511f7f94c6941f38a223e406207e17be61b2",
+      "after": "a9394992e89a5690204d5a1e5df4445dcc36b1be49a547b6427f7562370d1547",
+      "before_header": [
+        3,
+        12,
+        1,
+        2
+      ],
+      "after_header": [
+        3,
+        12,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 137,
+        "max_stack": 3,
+        "max_scope": 2,
+        "locals_used": 12,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          3,
+          12,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          86,
+          4,
+          "forbid"
+        ]
+      ],
+      "full_mode": {
+        "helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "old_mode_entry": 95,
+        "new_mode_entry": 99,
+        "no_key_original_instructions_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "OwnedOverLimitLogic/getAwakingCrystalToOverLimit": {
+      "body": 18063,
+      "before": "2e584914a2f67e60a268e62502f8e7af84a6a6e1e38af444b8de79c446470b34",
+      "after": "ae75214b496824eeb8a3f67a961e105668a259b1ffbd9b67a7b8a3bbdca2dfb4",
+      "before_header": [
+        3,
+        13,
+        1,
+        2
+      ],
+      "after_header": [
+        3,
+        13,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 148,
+        "max_stack": 3,
+        "max_scope": 2,
+        "locals_used": 13,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          3,
+          13,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          97,
+          4,
+          "forbid"
+        ]
+      ],
+      "full_mode": {
+        "helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "old_mode_entry": 106,
+        "new_mode_entry": 110,
+        "no_key_original_instructions_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "OwnedOverLimitLogic/getOverLimitState": {
+      "body": 18061,
+      "before": "98f9c7121ac212729daaf7a0e9b740e2de275dcc26e2536ad4d8e1d63d023fd0",
+      "after": "108cde956841ca68e0061dcf332f7943d6e6c86a8b0c56fe2e30e14abcd60af0",
+      "before_header": [
+        3,
+        12,
+        1,
+        2
+      ],
+      "after_header": [
+        3,
+        12,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 130,
+        "max_stack": 3,
+        "max_scope": 2,
+        "locals_used": 12,
+        "unreachable": 0,
+        "backward_labels": 0,
+        "exceptions": 0,
+        "header": [
+          3,
+          12,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          34,
+          4,
+          "forbid"
+        ]
+      ],
+      "full_mode": {
+        "helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "old_mode_entry": 46,
+        "new_mode_entry": 50,
+        "no_key_original_instructions_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "OwnedCharacterLogic/getPossibleOverLimitCountByItem": {
+      "body": 17768,
+      "before": "7fa65be8a2181e01a0a17b400d74fecbd0565c2600be4e78a7be8d96a94e837e",
+      "after": "ec11cc72b904085a2745ae66e9c8d7dca14d7a85ebfb05f356b17802b32847fb",
+      "before_header": [
+        3,
+        6,
+        1,
+        2
+      ],
+      "after_header": [
+        3,
+        6,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 62,
+        "max_stack": 3,
+        "max_scope": 2,
+        "locals_used": 6,
+        "unreachable": 4,
+        "backward_labels": 0,
+        "exceptions": 0,
+        "header": [
+          3,
+          6,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          18,
+          3,
+          "forbid"
+        ],
+        [
+          59,
+          3,
+          "enter"
+        ]
+      ],
+      "full_mode": {
+        "helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "old_mode_entry": 28,
+        "new_mode_entry": 31,
+        "no_key_original_instructions_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "OverLimitWindow/getOverLimitState": {
+      "body": 73067,
+      "before": "ae683cc1f5574ac7b415c43cf779ea642535cd6a66531aa1ee51a150d1492068",
+      "after": "eea92f78c2cc8dbd3529af5c0e46e1c0a1bf9f5cd3cd17630f786bb1b4058f25",
+      "before_header": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "after_header": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 57,
+        "max_stack": 3,
+        "max_scope": 2,
+        "locals_used": 3,
+        "unreachable": 0,
+        "backward_labels": 0,
+        "exceptions": 0,
+        "header": [
+          4,
+          3,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          14,
+          4,
+          "forbid"
+        ]
+      ],
+      "full_mode": {
+        "helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "old_mode_entry": 32,
+        "new_mode_entry": 36,
+        "no_key_original_instructions_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "OverLimitWindow/run": {
+      "body": 73055,
+      "before": "b96160fc0f1046a50cf78065ed8d907861a2a65fb13c4f365abad60cbd4b2a7e",
+      "after": "d38a6b02ef83d2e1fb99134aa35733786e0ad3a423c4eecd404bac54a48d73d2",
+      "before_header": [
+        11,
+        12,
+        1,
+        2
+      ],
+      "after_header": [
+        11,
+        12,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 264,
+        "max_stack": 11,
+        "max_scope": 2,
+        "locals_used": 12,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          11,
+          12,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          88,
+          4,
+          "forbid"
+        ]
+      ],
+      "full_mode": {
+        "helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "old_mode_entry": 106,
+        "new_mode_entry": 110,
+        "no_key_original_instructions_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "OverLimitWindow/getStatusInformation": {
+      "body": 73065,
+      "before": "c64d19bbf7957fd9490406d4d251abb9d1e16eeb3062e1b49148f56afbd29aa4",
+      "after": "1c60bfbd538517f6fa3d393655a3dd282e93a3b1fe53f563a7088bc48b733ccc",
+      "before_header": [
+        10,
+        7,
+        1,
+        2
+      ],
+      "after_header": [
+        10,
+        7,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 118,
+        "max_stack": 10,
+        "max_scope": 2,
+        "locals_used": 7,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          10,
+          7,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          19,
+          4,
+          "forbid"
+        ]
+      ],
+      "full_mode": {
+        "helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "old_mode_entry": 37,
+        "new_mode_entry": 41,
+        "no_key_original_instructions_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "ExpodOverLimitByItemDialog/getDescription": {
+      "body": 33543,
+      "before": "a0468818a62ad753f0d18a755b29af19c61ebf5c3cd4a145c7a5a8cfc8a8be55",
+      "after": "002d338edc18618ff1c0badc69e639c32a322a3ce472df89c7475be49206d43d",
+      "before_header": [
+        9,
+        2,
+        1,
+        2
+      ],
+      "after_header": [
+        9,
+        2,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 53,
+        "max_stack": 7,
+        "max_scope": 2,
+        "locals_used": 2,
+        "unreachable": 0,
+        "backward_labels": 0,
+        "exceptions": 0,
+        "header": [
+          9,
+          2,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          11,
+          4,
+          "forbid"
+        ]
+      ],
+      "full_mode": {
+        "helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "old_mode_entry": 29,
+        "new_mode_entry": 33,
+        "no_key_original_instructions_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "GeneralCharacterLogic/getPedestalImagePath": {
+      "body": 17568,
+      "before": "1c5905b65f624a24c01cf58adeeb90c300a9e9ae965577c4b295c093f0be117d",
+      "after": "746d25246464eee803ca007a47853a152c7f8cffa13af6fc7303956c2ea42772",
+      "before_header": [
+        3,
+        3,
+        1,
+        2
+      ],
+      "after_header": [
+        3,
+        4,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 61,
+        "max_stack": 2,
+        "max_scope": 2,
+        "locals_used": 4,
+        "unreachable": 0,
+        "backward_labels": 0,
+        "exceptions": 0,
+        "header": [
+          3,
+          4,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          16,
+          5,
+          "forbid"
+        ],
+        [
+          38,
+          6,
+          "forbid"
+        ]
+      ],
+      "pedestal": {
+        "full_helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "all_nodes_helper": "GeneralCharacterLogic/wfxAllManaNodesLearned",
+        "original_bytes_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "GeneralCharacterLogic/getHalfPedestalImagePath": {
+      "body": 17588,
+      "before": "0dc8e515702c2c3c77cca60549da8e063eec0785f89a57e503b5ddf41be6a28a",
+      "after": "563f61520501a8aa0095d48c3e861bbbe2782edf6ae5efaf8b467fc16aa32d29",
+      "before_header": [
+        3,
+        3,
+        1,
+        2
+      ],
+      "after_header": [
+        3,
+        4,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 61,
+        "max_stack": 2,
+        "max_scope": 2,
+        "locals_used": 4,
+        "unreachable": 0,
+        "backward_labels": 0,
+        "exceptions": 0,
+        "header": [
+          3,
+          4,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          16,
+          5,
+          "forbid"
+        ],
+        [
+          38,
+          6,
+          "forbid"
+        ]
+      ],
+      "pedestal": {
+        "full_helper": "GeneralCharacterLogic/wfxOverlimitFull",
+        "all_nodes_helper": "GeneralCharacterLogic/wfxAllManaNodesLearned",
+        "original_bytes_exactly_recoverable": true
+      },
+      "abc": "boot_ffc6"
+    },
+    "OverLimitWindowView/onApplyOverLimitStatusInformation": {
+      "body": 73110,
+      "before": "26c35555780e7eb6fb2581dd769f9483e74ff903512be4f5af1baad597724b06",
+      "after": "fe334f5fee2b7e096f2d572870b0a0c0a89240357a679525b0de8f4e1ac982e0",
+      "before_header": [
+        10,
+        9,
+        1,
+        2
+      ],
+      "after_header": [
+        10,
+        9,
+        1,
+        2
+      ],
+      "static_check": {
+        "instructions": 153,
+        "max_stack": 10,
+        "max_scope": 2,
+        "locals_used": 9,
+        "unreachable": 0,
+        "backward_labels": 1,
+        "exceptions": 0,
+        "header": [
+          10,
+          9,
+          1,
+          2
+        ]
+      },
+      "insertions": [
+        [
+          130,
+          2,
+          "forbid"
+        ]
+      ],
+      "window_guard": {
+        "strategy": "skip_missing_thumbnail",
+        "thumbnail_local": 8,
+        "original_continue_instruction": 147,
+        "new_continue_instruction": 149,
+        "original_bytes_exactly_recoverable": true,
+        "same_window_slot_count_changes": false
+      },
+      "abc": "boot_ffc6"
+    },
+    "GeneralCharacterLogic/wfxOverlimitFull": {
+      "added": true,
+      "after": "b75db4cc9bfe0eb2e4743c5e7641acf74e92e9eee96f931d1add28c0042f0d16",
+      "after_header": [
+        3,
+        3,
+        1,
+        2
+      ],
+      "abc": "boot_ffc6"
+    },
+    "GeneralCharacterLogic/wfxAllManaNodesLearned": {
+      "added": true,
+      "after": "edfbe445295ffb3922af4d4396ddc1629637601d1d2720bfde26e02555e921d9",
+      "after_header": [
+        2,
+        10,
+        1,
+        2
+      ],
+      "abc": "boot_ffc6"
+    }
+  }
+}

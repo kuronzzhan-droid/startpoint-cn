@@ -1,0 +1,642 @@
+{
+  "input": "D:\\WF\\v35-generic-20261018\\run10\\v35j.swf",
+  "sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+  "methods": [
+    {
+      "label": "MemberImpl/applyHeal",
+      "body": 60556,
+      "sha256": "343cbc499674828c173e36ee5eb41eb5b1c4c9bf10092f3dc7a0896780f7957a",
+      "header": [
+        6,
+        10,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__applyHeal.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/wfxHealSample",
+      "body": 92657,
+      "sha256": "62bd04d56ce006807be873e98e7f0789ef90953329fb598dc280ce89d9e48a3f",
+      "header": [
+        3,
+        9,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__wfxHealSample.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/applyRegeneration",
+      "body": 60545,
+      "sha256": "62be77e2d7f3b1fe33d3cfca5eae223944bdbe4394eb7654e028c229e83017c9",
+      "header": [
+        5,
+        15,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__applyRegeneration.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/applyFeverDifference",
+      "body": 60557,
+      "sha256": "9088008af0a725d32cb79fff3117e8b14756efe3a65cb9b67ab8647647617c00",
+      "header": [
+        2,
+        4,
+        1,
+        1
+      ],
+      "file": "native-pcode/MemberImpl__applyFeverDifference.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/applyImpact",
+      "body": 60555,
+      "sha256": "38e61684748e22d890fba88d41f4e3beac183e6906be62e01308b96700599bd5",
+      "header": [
+        4,
+        6,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__applyImpact.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/getSquadForImpact",
+      "body": 60361,
+      "sha256": "15c352688da53adca0722e8cc039bc605b06698205aba3ea6667c34bcedf637a",
+      "header": [
+        1,
+        1,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__getSquadForImpact.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/isInPrimarySquad",
+      "body": 60231,
+      "sha256": "3623176af358ffed1542c5747e3a9e63d3f8c466476b1414a8dce7fe6d938eb7",
+      "header": [
+        1,
+        1,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__isInPrimarySquad.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/isHostile",
+      "body": 60233,
+      "sha256": "4210b3064a089aca740850e98bdbf902bb524a18f8ab525e662c03f6bbff5c37",
+      "header": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "file": "native-pcode/MemberImpl__isHostile.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/getAdditionalDirectAttack",
+      "body": 60465,
+      "sha256": "f271bd6e0990ebd5238dd0463e2a0fb4f14f8d3f7fd7a7f7eedd9ce1be1cbf67",
+      "header": [
+        3,
+        11,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__getAdditionalDirectAttack.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/scheduleDirectAttack",
+      "body": 60192,
+      "sha256": "7f0d02acfc116523f829a639e717fea6e53ce30b61c0f40085082c4b0caf1e07",
+      "header": [
+        110,
+        45,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__scheduleDirectAttack.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/wfxMergeDirect",
+      "body": 92606,
+      "sha256": "9e94f2904e16303fa9eb4d2db70f97357cb304f94399ad7ca1493e8509efca61",
+      "header": [
+        3,
+        5,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__wfxMergeDirect.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/wfxHealFever",
+      "body": 92649,
+      "sha256": "48af4ba4546b75523d301d7758cacd136d5cf1d6326a9e0a601e20fb8a05001d",
+      "header": [
+        5,
+        7,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__wfxHealFever.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/wfxHealDamageRecord",
+      "body": 92656,
+      "sha256": "6b82a06ba71af5fd25c6d080d8e501a5171136bb618995916360dfac549c9737",
+      "header": [
+        4,
+        9,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__wfxHealDamageRecord.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/wfxHealDamageEmit",
+      "body": 92652,
+      "sha256": "42df231068d465b4a8fa89e1b5229544e707d2a565d9ed7c173b5b9dca9e69b9",
+      "header": [
+        8,
+        8,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__wfxHealDamageEmit.pcode.txt"
+    },
+    {
+      "label": "SquadImpl/getMember",
+      "body": 59624,
+      "sha256": "6513326f19ffe6e0e72023f5fc5c0c780e21380ae0316d10b2f9d56724298d59",
+      "header": [
+        2,
+        2,
+        1,
+        2
+      ],
+      "file": "native-pcode/SquadImpl__getMember.pcode.txt"
+    },
+    {
+      "label": "SquadImpl/getMemberAt",
+      "body": 59622,
+      "sha256": "06dc52babdeebc989330282f3f829da076b00f9db4382601bde0cbc513a26ee6",
+      "header": [
+        2,
+        2,
+        1,
+        2
+      ],
+      "file": "native-pcode/SquadImpl__getMemberAt.pcode.txt"
+    },
+    {
+      "label": "SquadImpl/isPrimary",
+      "body": 59546,
+      "sha256": "b0e18ffcee3cf8185c1fd57f7cfd5924b280addd74ab64464b2300a2d1a383ef",
+      "header": [
+        2,
+        1,
+        1,
+        2
+      ],
+      "file": "native-pcode/SquadImpl__isPrimary.pcode.txt"
+    },
+    {
+      "label": "SquadImpl/applyImpact",
+      "body": 59676,
+      "sha256": "a06e36219f0da2abd25bf0937326195ee46ffa045ce86b41a4eed388f52b8a15",
+      "header": [
+        3,
+        4,
+        1,
+        2
+      ],
+      "file": "native-pcode/SquadImpl__applyImpact.pcode.txt"
+    },
+    {
+      "label": "SquadImpl/iter",
+      "body": 59545,
+      "sha256": "3a30183ef76bd799247edea066d95e74e0dc57e1254ae23cebf3da19a658c6a6",
+      "header": [
+        4,
+        5,
+        1,
+        2
+      ],
+      "file": "native-pcode/SquadImpl__iter.pcode.txt"
+    },
+    {
+      "label": "SquadImpl/isHostile",
+      "body": 59553,
+      "sha256": "4210b3064a089aca740850e98bdbf902bb524a18f8ab525e662c03f6bbff5c37",
+      "header": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "file": "native-pcode/SquadImpl__isHostile.pcode.txt"
+    },
+    {
+      "label": "ConditionSlot/wfxRows",
+      "body": 92603,
+      "sha256": "043dc1989b5bced086cb2b10ceba115cf29139c75f6b43fe1a18fe7c1d87bba3",
+      "header": [
+        3,
+        7,
+        1,
+        2
+      ],
+      "file": "native-pcode/ConditionSlot__wfxRows.pcode.txt"
+    },
+    {
+      "label": "ConditionSlot/getAdditionalDirectAttack",
+      "body": 56744,
+      "sha256": "57e7a78d3c1a363bf0b55aba60b902162b6bc70a23a15bb2487f93bbd1c4796d",
+      "header": [
+        3,
+        10,
+        1,
+        2
+      ],
+      "file": "native-pcode/ConditionSlot__getAdditionalDirectAttack.pcode.txt"
+    },
+    {
+      "label": "MemberAbilityTotalizerImpl/getAdditionalDirectAttack",
+      "body": 51959,
+      "sha256": "b243b04faceff243cfadaf4eb278b32df14f1d2d5ed7e0403912567042eae3b3",
+      "header": [
+        3,
+        2,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberAbilityTotalizerImpl__getAdditionalDirectAttack.pcode.txt"
+    },
+    {
+      "label": "AdditionalDirectAttackContent$/getBetter",
+      "body": 7509,
+      "sha256": "615f1c0fc37b3bb6832124c4162747e62421aaa7370f4021dfcec5c461cb9ffe",
+      "header": [
+        2,
+        6,
+        1,
+        1
+      ],
+      "file": "native-pcode/AdditionalDirectAttackContent$__getBetter.pcode.txt"
+    },
+    {
+      "label": "FeverPointGaugeImpl/addFeverPoint",
+      "body": 61292,
+      "sha256": "ced6a6754f7bfdf804a275acffd21e34068f994271f5f0e69cef89c378fdd0f8",
+      "header": [
+        4,
+        6,
+        1,
+        2
+      ],
+      "file": "native-pcode/FeverPointGaugeImpl__addFeverPoint.pcode.txt"
+    },
+    {
+      "label": "ZoneImpl/addFeverPoint",
+      "body": 60968,
+      "sha256": "7e7f6fd6e6972783a72e259bd094fc49396ef85a16bcd41a5004bb3755b07c02",
+      "header": [
+        4,
+        5,
+        1,
+        2
+      ],
+      "file": "native-pcode/ZoneImpl__addFeverPoint.pcode.txt"
+    },
+    {
+      "label": "DirectAttackScheduler/run",
+      "body": 59800,
+      "sha256": "8a15699e0b7ec013334ae0a11ba3448bf1966e056796d89eb330e3c122795da0",
+      "header": [
+        2,
+        1,
+        1,
+        2
+      ],
+      "file": "native-pcode/DirectAttackScheduler__run.pcode.txt"
+    },
+    {
+      "label": "DirectAttackScheduler/schedule",
+      "body": 59799,
+      "sha256": "5b481b61e724c59730f5dee178bade74b95eace7c47d89238f75421947b0af1f",
+      "header": [
+        6,
+        9,
+        1,
+        2
+      ],
+      "file": "native-pcode/DirectAttackScheduler__schedule.pcode.txt"
+    },
+    {
+      "label": "Battle/applyCoopCommand",
+      "body": 50911,
+      "sha256": "a93dccd92a5fd3fd1a10a8afef2f8c813ee45265c675a61bfea9b5bf0e97e9bd",
+      "header": [
+        14,
+        16,
+        1,
+        2
+      ],
+      "file": "native-pcode/Battle__applyCoopCommand.pcode.txt"
+    },
+    {
+      "label": "ImpactManagerImpl/processImpactResult",
+      "body": 58952,
+      "sha256": "ef66ba37672e518e77c2de370124b2d482d9bbf9f08578d6b2a65953a8c4d401",
+      "header": [
+        4,
+        6,
+        1,
+        2
+      ],
+      "file": "native-pcode/ImpactManagerImpl__processImpactResult.pcode.txt"
+    },
+    {
+      "label": "ImpactManagerImpl/processImpact",
+      "body": 58953,
+      "sha256": "9e4937177716412998cb39acb9bc924b324dfa85fd4168b1b2533a6b5b050d7b",
+      "header": [
+        5,
+        18,
+        1,
+        2
+      ],
+      "file": "native-pcode/ImpactManagerImpl__processImpact.pcode.txt"
+    },
+    {
+      "label": "ImpactManagerImpl/mergeAndApplyImpact",
+      "body": 58956,
+      "sha256": "27962392e41c427ab1c82215a18878b3450a7204ac91d19019e296ebf289c4a5",
+      "header": [
+        9,
+        24,
+        1,
+        2
+      ],
+      "file": "native-pcode/ImpactManagerImpl__mergeAndApplyImpact.pcode.txt"
+    },
+    {
+      "label": "ImpactManagerImpl/applyImpact",
+      "body": 58958,
+      "sha256": "9ea8fe0854b98da00c67e9b95e5e03062922f53801033e118c6799bfa0443fd0",
+      "header": [
+        4,
+        19,
+        1,
+        2
+      ],
+      "file": "native-pcode/ImpactManagerImpl__applyImpact.pcode.txt"
+    },
+    {
+      "label": "ImpactManagerImpl/applyImpactImmediately",
+      "body": 58957,
+      "sha256": "41486285229fd1ae9c90020d427e8620a23416968f7182a4f2558cfe63fec602",
+      "header": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "file": "native-pcode/ImpactManagerImpl__applyImpactImmediately.pcode.txt"
+    },
+    {
+      "label": "NormalHealCalculator/calculate",
+      "body": 45259,
+      "sha256": "f6a77b2984b6bd5b8b129607ec70332dbf2c518a640ad59bd4df519bc9f7ffd1",
+      "header": [
+        18,
+        10,
+        1,
+        2
+      ],
+      "file": "native-pcode/NormalHealCalculator__calculate.pcode.txt"
+    },
+    {
+      "label": "FixedHealCalculator/calculate",
+      "body": 45253,
+      "sha256": "b9f7ffe303830bf73f400040fa15f35db3e8246de0a4f4ff70533496c3628d68",
+      "header": [
+        18,
+        9,
+        1,
+        1
+      ],
+      "file": "native-pcode/FixedHealCalculator__calculate.pcode.txt"
+    },
+    {
+      "label": "RatioHealCalculator/calculate",
+      "body": 45263,
+      "sha256": "61fc5bef77cf621c937ad7b24e08eba5933f1aafc1b00fb40ca71d79e114f8f6",
+      "header": [
+        18,
+        10,
+        1,
+        1
+      ],
+      "file": "native-pcode/RatioHealCalculator__calculate.pcode.txt"
+    },
+    {
+      "label": "ContinuationRatioHealCalculator/calculate",
+      "body": 45239,
+      "sha256": "3ca61f65b05e21b8df87fe74f67ae13e54d22a669b434869cff22dc0dbbebd08",
+      "header": [
+        18,
+        6,
+        1,
+        1
+      ],
+      "file": "native-pcode/ContinuationRatioHealCalculator__calculate.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/applyRegenerationHandler",
+      "body": 60544,
+      "sha256": "73c4f2205b675ab5cc864c52b0bb2a58f8b88ec6b538c6ac70d7c9e8a668591e",
+      "header": [
+        21,
+        5,
+        1,
+        2
+      ],
+      "file": "native-pcode/MemberImpl__applyRegenerationHandler.pcode.txt"
+    },
+    {
+      "label": "ImpactResult/toCoopCommand",
+      "body": 45051,
+      "sha256": "afccfd52b0590b9e5873670c43a439d0fea5b952dfc73635756457c4e6fa7abe",
+      "header": [
+        17,
+        15,
+        1,
+        2
+      ],
+      "file": "native-pcode/ImpactResult__toCoopCommand.pcode.txt"
+    },
+    {
+      "label": "SquadManagerImpl/summerizeHealResult",
+      "body": 59707,
+      "sha256": "acb0e2e6f88f2752a8cb52c61416602e0e35b2defa43d4dc9286a621325c440e",
+      "header": [
+        3,
+        5,
+        1,
+        2
+      ],
+      "file": "native-pcode/SquadManagerImpl__summerizeHealResult.pcode.txt"
+    },
+    {
+      "label": "Battle/get_id",
+      "body": 50850,
+      "sha256": "77b837a770a48569ec1c7248148b2df2eba518040975f9ae81f5c5214ac61785",
+      "header": [
+        1,
+        1,
+        1,
+        2
+      ],
+      "file": "native-pcode/Battle__get_id.pcode.txt"
+    },
+    {
+      "label": "Battle/__isMyBattle__",
+      "body": 50915,
+      "sha256": "b4f0f6af5999065877876061c3b95b8a14634ed5e6f700d8537d3469b703b728",
+      "header": [
+        1,
+        1,
+        1,
+        2
+      ],
+      "file": "native-pcode/Battle____isMyBattle__.pcode.txt"
+    },
+    {
+      "label": "Mate/applyImpact",
+      "body": 6656,
+      "sha256": "120087dc491965fa9bf7ecb7c1d55e3e668df2f7a9dfd898450ffe70a793838e",
+      "header": [
+        2,
+        4,
+        1,
+        1
+      ],
+      "file": "native-pcode/Mate__applyImpact.pcode.txt"
+    },
+    {
+      "label": "ImpactManagerImpl/processImpacts",
+      "body": 58951,
+      "sha256": "ed8e76bf9e73930d924f8e0c3e31829251f8fe96f246b30f2bf78ee4d9d063f8",
+      "header": [
+        5,
+        8,
+        1,
+        2
+      ],
+      "file": "native-pcode/ImpactManagerImpl__processImpacts.pcode.txt"
+    },
+    {
+      "label": "ImpactManagerImpl/_add",
+      "body": 58965,
+      "sha256": "061bb8fe187bc339c4a02a1d0bf9b054f8e90c4b218c4e8d1b360b4e2cdf7a95",
+      "header": [
+        5,
+        16,
+        1,
+        2
+      ],
+      "file": "native-pcode/ImpactManagerImpl___add.pcode.txt"
+    },
+    {
+      "label": "ImpactManagerImpl$/shouldSync",
+      "body": 58944,
+      "sha256": "aba74a6a2ce498b6b412aca7e78a1c6930df20d2bbc9e1c41fad1e7645e4c6cd",
+      "header": [
+        2,
+        8,
+        1,
+        1
+      ],
+      "file": "native-pcode/ImpactManagerImpl$__shouldSync.pcode.txt"
+    },
+    {
+      "label": "MemberImpl/applyCureDifference",
+      "body": 60562,
+      "sha256": "963ede4983d2b3f8d60ff51caa58f185ebb7f7b7c8bee68626b2a2094030f1b3",
+      "header": [
+        2,
+        3,
+        1,
+        1
+      ],
+      "file": "native-pcode/MemberImpl__applyCureDifference.pcode.txt"
+    },
+    {
+      "label": "BattleScenePlayingStateImpl/distributeCoopCommand",
+      "body": 63153,
+      "sha256": "2cfad3a7157c27292612a748fd7dbbbcf3dc565b80eaf7152e8cec772548e309",
+      "header": [
+        5,
+        11,
+        1,
+        2
+      ],
+      "file": "native-pcode/BattleScenePlayingStateImpl__distributeCoopCommand.pcode.txt"
+    },
+    {
+      "label": "ImpactManagerImpl/add",
+      "body": 58964,
+      "sha256": "bc2b2d602e34b4b364ee62bdec9bc022fd13fe6c62244a597943a1ad40b078b5",
+      "header": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "file": "native-pcode/ImpactManagerImpl__add.pcode.txt"
+    },
+    {
+      "label": "ActionEvaluator/addImpactToSubject",
+      "body": 52295,
+      "sha256": "2cd4d6fee6d01e91a67829603085af9270298c361b492fa6dedab72c707e9a02",
+      "header": [
+        20,
+        18,
+        1,
+        2
+      ],
+      "file": "native-pcode/ActionEvaluator__addImpactToSubject.pcode.txt"
+    },
+    {
+      "label": "ActionEvaluator/calculateImpactId",
+      "body": 52293,
+      "sha256": "3f3cb51b4b1320f31c94b9376557f7c612b140a6681c06418bd265f41690680e",
+      "header": [
+        6,
+        6,
+        1,
+        2
+      ],
+      "file": "native-pcode/ActionEvaluator__calculateImpactId.pcode.txt"
+    },
+    {
+      "label": "ActionEvaluator/evalCommand",
+      "body": 52284,
+      "sha256": "da225036264d7261f207f3048eb28226337bfde261a84ee70803628de8f9c05a",
+      "header": [
+        109,
+        191,
+        1,
+        2
+      ],
+      "file": "native-pcode/ActionEvaluator__evalCommand.pcode.txt"
+    }
+  ]
+}

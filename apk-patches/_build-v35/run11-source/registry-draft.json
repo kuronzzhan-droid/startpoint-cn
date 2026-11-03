@@ -1,0 +1,1313 @@
+{
+  "schema_version": 1,
+  "draft_for": "D:/WF/out/kulo-patch-toolkit/oldrepo_modtools/wfx_registry.json",
+  "status": "draft_only",
+  "since_layer": "v35k-run11",
+  "source_registry_unchanged": true,
+  "capability_name_decision": {
+    "requested_draft": "wfx-core-v1",
+    "selected": "wfx-effect-query-v1",
+    "reason": "原注册表 wfx-core-v1 同时承诺 pin 防驱散；本轮只交付规格缓存与查询，并且码24/26的flags是数值封顶。独立命名避免宣称尚未实现的pin能力，原planned能力不改。"
+  },
+  "integration_notes": [
+    "本文件是登记草稿，未写入原注册表，也未修改发布工具或接收方档案。",
+    "下列效果码按码解释flags；必须先应用下列effect_flags_overrides，再使用原注册表全局flags位校验。",
+    "码71遵守TASK1的value=100与旧层数/100等价：新值是候选上限，与官方MAX及旧候选取最大，不再加一次官方MAX。",
+    "capability状态应由SWF校验回执管理；本地离线验证不能登记为设备验证或已部署。",
+    "本轮完整继承第一轮capability名称，查询底座仍叫wfx-effect-query-v1。",
+    "本草稿不新增主表枚举；码27仍通过unique_condition.c0的wfx状态描述。",
+    "码24只是direct-base-v1的修正；最终乘积钳位版本必须由v35b的SWF哈希证明。",
+    "本轮只有本地SWF候选与登记草稿；没有修改unique_condition/ability等实际数据。",
+    "能量小数保留在本场缓存，图标层数为1+floor(能量)；c4至少为阈值+1。",
+    "码61层数为等级，不乘结束爆发比率；value=0时不爆发，仍可派发结束标记。",
+    "码62有符号相加且共享队伍槽按对象去重；总比例小于等于0时不爆发，结束标记照常。",
+    "累计使用实际有效扣血/扣盾量；保留本队毒和实际共享伤害归属，排除他端与同步镜像。",
+    "原生公共技能链融合多个battleId且无单队owner，公共chain及其共享伤害不冒认成本队。",
+    "复用既有能力伤害演出资源并补齐E到S到结束标记图标的安全预载；没有新增资源。",
+    "完整AIR、Android、联机和视觉设备验收未核实。",
+    "码28/29直接扩充码24同一个基础加和，不引入独立乘区或新消费入口；因此并入direct-base-v1，由revision_layer和SWF SHA区分是否支持新码。",
+    "28/29的flags按有符号int32解释，必须先应用effect_flags_overrides；不可沿用全局pin或非负flags校验。",
+    "无码28/29时助手在持有者侧返回0，不读取命中目标parent或固有状态层数；码24原有弱体查询仍按原路径执行。",
+    "129997的c4=20为TASK4给定数据条件；本轮未改状态主表。目标层数口径见各码target_count_semantics。",
+    "第五轮完整继承前四轮登记，不新增effect code，不调整flags或效果公式。",
+    "第6段label只是可读标签；wfxSpec仍只解析code/arg/value/flags。隐藏判断不负责校验数字字段。",
+    "getTotalConditions原本调用过滤后列表并取length，本轮保留其方法记录，图标和翻页数量同源。",
+    "第五轮草稿仅代表本地离线候选；完整AIR/Android视觉效果未核实，未发布或部署。",
+    "第六轮累计前五轮全部能力与效果码；新增30/31，新增leader-unlock-v2，旧v1登记保留。",
+    "码30与27拥有独立累计器；码31走724同一addFeverPoint(ratio,true,101)，保留满槽钳位和Fever中行为。",
+    "准备语音127及PF4覆盖键逻辑不在第六轮修改范围。",
+    "登记仍为本地离线草稿；AIR、真机与真实联机未核实，未发布或部署。",
+    "第七轮完整继承前六轮全部登记；不增加效果码，不改变数据键、flags或旧能力定义。",
+    "无队长场景沿用无队伍出口；有队长时原指令可逆恢复且真实字节码行为与v35f对照。",
+    "pushbyte的原操作数255编码为0xff，AVM2有符号值为-1；getElement据此回落原属性。",
+    "新增助手的队长getter调用审计见run7/audit；原生getter不修改。",
+    "本登记仅为本地离线草稿；完整AIR、真机、真实联机与实际UI均未核实。",
+    "第八轮只生成离线SWF、登记和补丁归档草稿；没有写实际数据或服务端。",
+    "全程超限键仅星5且最高等级键>=120生效；无键保持v35g，格子缺失防崩对所有角色生效。",
+    "全盘满强化按持有角色abilities中的节点学习记录；不要求觉醒、不漏尚未开放盘。",
+    "第九轮完整累计前八轮登记；只追加自身能力202解锁，不修改既有capability及数据键定义。",
+    "27及31在六同属性队伍中满足slot0合击自身能力的OwnerIsMain；slot1/2仍走原生。",
+    "203、Leader/IsNotLeader、UnisonMyself/UnisonWithMain与技能自身限制保持原生。",
+    "第九轮仅本地离线SWF与补丁登记草稿；完整AIR、真机与实际UI未核实。",
+    "第十轮完整累计前九轮登记，既有capability、效果码和数据键保持原值。",
+    "身份tag只通过character_tag登记进入原生解析，不开放未登记tag，也不修改角色c5。",
+    "码32是自身状态开关，不按层数放大；沿用第六段hidden_隐藏规则。",
+    "能力一览显示沿用wfxPartyMask的bit2/bit8/bit16；不改变战斗里的实际分发。",
+    "第十轮仅本地离线SWF、归档及登记草稿；AIR、真机、实际UI与真实联机未核实。",
+    "第十一轮完整累计前十轮，旧能力与效果码定义保持原值；只追加33/34/35。",
+    "码33的arg和flags允许有符号int32，仅该新码放宽；每条cap独立，贡献合计钳0。",
+    "码34和35都逐次逐受治疗成员量化，零头不跨次累积、不跨成员合并；第三版仅码34支持额外CT，码35保持第二版无CT。",
+    "码34 arg=分类+10*档位百分比+1000*CT秒数，例5050表示跟随队长、每5%一档、5秒CT；60逻辑帧/秒，5秒=300逻辑帧。",
+    "CT从30帧聚合窗发伤害时开始，每持有者独立、有效和溢出共用；CT内治疗丢弃不囤积，暂停不消耗；arg<1000与第二版真实字节码行为对照。",
+    "新数据保留全队原码30/31，另仅给杰拉德自身34/35；新客户端按类型互斥，旧客户端不识别新码。",
+    "持有者查询含invisibleSlot和原生队伍槽，攻击、分类、增伤和统计归持有者。",
+    "2026-10-19裁定已解决两项待澄清口径：联机B，Fever A，详见task-evidence/decision-status.json。",
+    "联机B：码34/35允许本端实际收到的跨玩家治疗，仅本端受治疗成员实际执行回复时计入；仅转发/镜像不计。码30/31原有跨statsBattleId排除不变。",
+    "Fever A：每名成员实际applyHeal各自量化后由每个持有者各调用一次原生Fever API，不跨成员合批，不新增批次标记。",
+    "本地受治疗采样及原生同步代码离线验证；真实双端联机去重与画面/设备性能未核实。",
+    "仅离线SWF与注册草稿，未修改实际角色、能力、状态数据或正式注册表。"
+  ],
+  "capabilities": {
+    "wfx-effect-query-v1": {
+      "level": "semantic",
+      "layer": "v35a",
+      "status": "local_candidate",
+      "summary": "ConditionSlot按uid懒解析并缓存规格/空哨兵；按content.index筛选、按code/arg聚合并保留逐状态flags，不含pin",
+      "revision_layer": "v35d-run4",
+      "revision": "仅码28/29允许负整数flags；旧码负flags继续无效。全部字段仍需int32整数。"
+    },
+    "direct-base-v1": {
+      "level": "semantic",
+      "layer": "v35a",
+      "status": "local_candidate",
+      "depends_on": [
+        "wfx-effect-query-v1"
+      ],
+      "summary": "码24基础/连击/弱体数，码28目标指定固有状态达标、码29目标指定固有状态层数；两次非负钳位，旧凯尔倍率继续相乘",
+      "revision_layer": "v35d-run4",
+      "required_swf_sha256": "4fe2b1ba6267bdcd69f54be3d464ef9aba9cc07a806038ec21161762e708a212",
+      "revision_reason": "码28/29直接扩充码24同一个基础加和，不引入独立乘区或新消费入口；因此并入direct-base-v1，由revision_layer和SWF SHA区分是否支持新码。"
+    },
+    "direct-merge-v1": {
+      "level": "semantic",
+      "layer": "v35a",
+      "status": "local_candidate",
+      "depends_on": [
+        "wfx-effect-query-v1"
+      ],
+      "summary": "码25按持有成员及最小段数启用原直击合并；保留旧凯尔入口"
+    },
+    "charge-cap-v2": {
+      "level": "semantic",
+      "layer": "v35a",
+      "status": "local_candidate",
+      "depends_on": [
+        "wfx-effect-query-v1"
+      ],
+      "summary": "码71 sum(value*层)/10000作为充能速度候选上限；保留旧13999010与max-first快速路径"
+    },
+    "ability-resistance-v1": {
+      "level": "semantic",
+      "layer": "v35a",
+      "status": "local_candidate",
+      "depends_on": [
+        "wfx-effect-query-v1"
+      ],
+      "summary": "码26逐状态层数封顶后贡献能力伤害抗性，负值为减抗；保留1499901"
+    },
+    "pf-snapcombo-v1": {
+      "level": "semantic",
+      "layer": "v35a",
+      "status": "local_candidate",
+      "summary": "custom_ability_string的wfx_snapcombo_<override键>非空且不等于0时使用原PF前快照；保留秋九尾旧键"
+    },
+    "pf-lv4-data-v1": {
+      "level": "semantic",
+      "layer": "v35a",
+      "status": "local_candidate",
+      "summary": "wfx_pf4_<队长角色id>设定PF4连击门槛和RGB颜色，按场缓存；仍要求原override支持Lv4"
+    },
+    "fever-items-v2": {
+      "level": "semantic",
+      "layer": "v35a",
+      "status": "local_candidate",
+      "summary": "主小队任意uid的fever:items:状态驱动箭头道具，队长优先；可写lvN；开局全表候选键预载"
+    },
+    "leader-unlock-v1": {
+      "level": "semantic",
+      "layer": "v35b",
+      "status": "local_candidate",
+      "summary": "当前slot0主位队长技编号选择1/2/4位掩码；放开合击主位能力、合击队长技、队友队长技，保留自身为队长前置"
+    },
+    "adaptive-element-v1": {
+      "level": "semantic",
+      "layer": "v35b",
+      "status": "local_candidate",
+      "summary": "学会指定能力后，BattleCharacterLogic战斗属性与能力DSL预载属性同步取队长原属性；编成及属性限定关保持原属性"
+    },
+    "overflow-heal-damage-v1": {
+      "level": "semantic",
+      "layer": "v35b",
+      "status": "local_candidate",
+      "summary": "码27溢出治疗由治疗者按当前属性造成能力伤害；同治疗者30帧聚合，排除拒绝/敌方/他端/协力球",
+      "depends_on": [
+        "wfx-effect-query-v1"
+      ]
+    },
+    "ability-visuals-v1": {
+      "level": "semantic",
+      "layer": "v35b",
+      "status": "local_candidate",
+      "summary": "按角色code_name配置六槽视觉资源；缺键保留稻穗旧shot/hit，预载限定本场队伍"
+    },
+    "super-fever-v1": {
+      "level": "semantic",
+      "layer": "v35c",
+      "status": "local_candidate",
+      "summary": "码60独立能量、码61等级状态/一次结束结算、码62加成；只在本端主小队结算，reference4固定基数能力伤害",
+      "depends_on": [
+        "wfx-effect-query-v1"
+      ]
+    },
+    "fever-voice-v1": {
+      "level": "semantic",
+      "layer": "v35c",
+      "status": "local_candidate",
+      "summary": "按角色code_name声明Fever语音，旧夏日白149990无需新键"
+    },
+    "dual-form-uid-v1": {
+      "level": "semantic",
+      "layer": "v35c",
+      "status": "local_candidate",
+      "summary": "ModDualForm:<uid>指定特殊动画状态，不带参数默认22"
+    },
+    "equipment-rules-data-v1": {
+      "level": "semantic",
+      "layer": "v35c",
+      "status": "local_candidate",
+      "summary": "equipment_rule_<装备id>配置诅咒阈值、衰减步长和失效装备数，旧号段规则为默认"
+    },
+    "wfx-hidden-unique-icons-v1": {
+      "level": "semantic",
+      "layer": "v35e",
+      "status": "local_candidate",
+      "required_swf_sha256": "89461f676b57a059bde58fe5897190db9b61013ae63947401fe1bf87106d6bcf",
+      "summary": "旧hidden_前缀继续隐藏；wfx:开头且第6段以hidden_开头时隐藏HUD图标并同步过滤后计数",
+      "hooks": [
+        "MemberImpl/getConditionsIncludingOuterEnvironments",
+        "MemberImpl/getTotalConditions"
+      ],
+      "patch_archive": "131-wfx-hidden-unique-icons",
+      "offline_only": true
+    },
+    "heal-damage-v1": {
+      "level": "semantic",
+      "layer": "v35f",
+      "status": "local_candidate",
+      "required_swf_sha256": "383f49b060718055a80080309aed92f150073d321c8a237f748a025c32050ed4",
+      "summary": "治疗有效/溢出百分比按层快照加权，分治疗者和分类聚合30逻辑帧后全敌伤害",
+      "patch_archive": "132-heal-damage",
+      "offline_only": true,
+      "depends_on": [
+        "wfx-effect-query-v1"
+      ]
+    },
+    "heal-fever-v1": {
+      "level": "semantic",
+      "layer": "v35f",
+      "status": "local_candidate",
+      "required_swf_sha256": "383f49b060718055a80080309aed92f150073d321c8a237f748a025c32050ed4",
+      "summary": "治疗有效/溢出百分比按层加权，立即经原生724同一API增加Fever",
+      "patch_archive": "133-heal-fever",
+      "offline_only": true,
+      "depends_on": [
+        "wfx-effect-query-v1"
+      ]
+    },
+    "leader-unlock-v2": {
+      "level": "semantic",
+      "layer": "v35f",
+      "status": "local_candidate",
+      "required_swf_sha256": "383f49b060718055a80080309aed92f150073d321c8a237f748a025c32050ed4",
+      "summary": "继承位1/2/4；位8限制本人slot0合击，位16要求原生同属性人数至少6",
+      "patch_archive": "134-leader-unlock-v2",
+      "offline_only": true,
+      "depends_on": [
+        "leader-unlock-v1"
+      ]
+    },
+    "wfx-no-leader-guard-v1": {
+      "level": "semantic",
+      "layer": "v35g",
+      "status": "local_candidate",
+      "required_swf_sha256": "960757dbaf599b5d4978b95670b9bbe3e76fac5cfd29045b8c9c0dd1a1ca0870",
+      "patch_archive": "135-wfx-no-leader-guard",
+      "offline_only": true,
+      "summary": "WFX属性和合击掩码助手仅在party非空且首位Option.Some时调用队长getter",
+      "guard": "party != null && party.values.characters[0].index == 0",
+      "missing_leader_results": {
+        "wfxAdaptiveElement": "沿用pushbyte 255的原出口；AVM2 int为-1",
+        "wfxPartyMask": 0
+      },
+      "methods": [
+        "BattleCharacterLogic/wfxAdaptiveElement",
+        "BattleCharacterLogic/wfxPartyMask"
+      ],
+      "depends_on": [
+        "adaptive-element-v1",
+        "leader-unlock-v2"
+      ],
+      "native_getter_changed": false
+    },
+    "wfx-overlimit-full-v1": {
+      "level": "semantic",
+      "layer": "v35h",
+      "status": "local_candidate",
+      "required_swf_sha256": "f1c3260d470f46a4364baddb85af48dc34a5c299bb025d123be085ad6f04e573",
+      "baseline_swf_sha256": "960757dbaf599b5d4978b95670b9bbe3e76fac5cfd29045b8c9c0dd1a1ca0870",
+      "patch_archive": "136-overlimit-full-and-window-guard",
+      "methods": [
+        "ExpodOverLimitByItemDialog/getDescription",
+        "GeneralCharacterLogic/getHalfPedestalImagePath",
+        "GeneralCharacterLogic/getPedestalImagePath",
+        "GeneralCharacterLogic/wfxAllManaNodesLearned",
+        "GeneralCharacterLogic/wfxOverlimitFull",
+        "OverLimitWindow/getOverLimitState",
+        "OverLimitWindow/getStatusInformation",
+        "OverLimitWindow/run",
+        "OverLimitWindowView/onApplyOverLimitStatusInformation",
+        "OwnedCharacterLogic/getPossibleOverLimitCountByItem",
+        "OwnedOverLimitLogic/getAwakingCrystalToOverLimit",
+        "OwnedOverLimitLogic/getOverLimitState",
+        "OwnedOverLimitLogic/getOwnAwakingCrystalToOverLimit"
+      ],
+      "summary": "按角色键从第1次突破使用超限结晶与悖论之核；最高台座按全盘已学，窗口跳过缺失格子",
+      "eligibility": "星5且character_status最高键>=120；持有角色overLimitStep>=0；键值严格为字符串1",
+      "maximum_pedestal": "突破8次、Lv120及角色所有盘全部应有玛纳节点已学；不要求觉醒",
+      "level_cap_display": "保持O1原字节码与80到100、之后105到120的显示规则",
+      "missing_slot_guard": "所有角色生效；仅跳过不存在的缩略图，重新开窗按新道具列表建格子",
+      "unverified": [
+        "完整AIR虚拟机",
+        "Android真机",
+        "实际UI画面",
+        "服务端联动"
+      ]
+    },
+    "wfx-owner-main-unlock-v1": {
+      "level": "semantic",
+      "layer": "v35i",
+      "status": "local_candidate",
+      "required_swf_sha256": "764254976d9f0c5a246f16d89e31da3e3347d752582938c9033e59237a57fabb",
+      "baseline_swf_sha256": "f1c3260d470f46a4364baddb85af48dc34a5c299bb025d123be085ad6f04e573",
+      "patch_archive": "137-leader-unlock-owner-main",
+      "methods": [
+        "AbilityDisabledReasonResolver/wfxOwnAbilityUnlocked",
+        "AbilityDisabledReasonResolver/wfxResolveOwnAbility",
+        "AbilityDisabledReasonResolver/wfxResolveOwnPrecondition",
+        "BattleCharacterLogic/getElement",
+        "BattleCharacterLogic/getInstantAbiltyCountWithoutLimit",
+        "BattleCharacterLogic/wfxCachedElementBeforeOwnerMain",
+        "BattleCharacterLogic/wfxElementBeforeOwnerMain",
+        "BattleCharacterLogic/wfxOwnerMainUnlocked",
+        "BattleCharacterLogic/wfxPartyMask",
+        "BattlePartyLogic/wfxSameElementBeforeOwnerMain",
+        "TriggerableAbilityDialogAllAbilitiesGenerator/addAbility"
+      ],
+      "summary": "现有合击解锁bit1同时满足该合击角色自身能力的202 OwnerIsMain前置",
+      "data_key": "复用slot0实际队长技编号的wfx_unlock_<编号>；不新增数据键",
+      "gates": "沿用wfxPartyMask；bit8限制slot0合击，bit16要求原生共鸣人数至少6",
+      "scope": "仅合击角色自身能力的202；其他前置和技能限制保持原生",
+      "no_party": "没有队伍、没有slot0队长或不能定位来源时回退原生",
+      "unverified": [
+        "完整AIR虚拟机",
+        "Android真机",
+        "实际UI画面",
+        "真实联机",
+        "设备性能"
+      ]
+    },
+    "wfx-character-identity-tags-v1": {
+      "level": "semantic",
+      "layer": "v35j",
+      "status": "local_candidate",
+      "required_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+      "baseline_swf_sha256": "764254976d9f0c5a246f16d89e31da3e3347d752582938c9033e59237a57fabb",
+      "patch_archive": "138-character-identity-tags",
+      "methods": [
+        "CharacterBaseImpl/get_characterTags",
+        "CharacterBaseImpl/wfxCharacterIdentityTags"
+      ],
+      "summary": "角色主位、合击与战斗快照共用已登记的隐含身份tag",
+      "details": "identity_tags/README.md",
+      "unverified": [
+        "完整AIR虚拟机",
+        "Android真机",
+        "实际UI画面",
+        "真实联机",
+        "设备性能"
+      ]
+    },
+    "wfx-caster-hp-barrier-v1": {
+      "level": "semantic",
+      "layer": "v35j",
+      "status": "local_candidate",
+      "required_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+      "baseline_swf_sha256": "764254976d9f0c5a246f16d89e31da3e3347d752582938c9033e59237a57fabb",
+      "patch_archive": "139-caster-hp-barrier",
+      "methods": [
+        "ActionEvaluator/evalCommand",
+        "ActionEvaluator/wfxBarrierRequest",
+        "BarrierCalculator/calculate"
+      ],
+      "summary": "CreateBarrier执行者持有码32时改用执行者实际最大HP",
+      "details": "caster_barrier/README.md",
+      "unverified": [
+        "完整AIR虚拟机",
+        "Android真机",
+        "实际UI画面",
+        "真实联机",
+        "设备性能"
+      ]
+    },
+    "wfx-unison-leader-display-v1": {
+      "level": "semantic",
+      "layer": "v35j",
+      "status": "local_candidate",
+      "required_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+      "baseline_swf_sha256": "764254976d9f0c5a246f16d89e31da3e3347d752582938c9033e59237a57fabb",
+      "patch_archive": "140-unison-leader-display",
+      "methods": [
+        "AbilityDisabledReasonResolver/wfxLeaderResolve",
+        "AbilityDisabledReasonResolver/wfxLeaderResolveInitial",
+        "AbilityDisabledReasonResolver/wfxLeaderResolveInstant",
+        "AbilityDisabledReasonResolver/wfxLeaderResolvePrecondition",
+        "TriggerableAbilityDialogAllAbilitiesGenerator/get",
+        "TriggerableAbilityDialogAllAbilitiesGenerator/wfxAddLeaderAbility",
+        "TriggerableAbilityDialogAllAbilitiesGenerator/wfxAppendUnisonLeader",
+        "TriggerableAbilityDialogAllAbilitiesGenerator/wfxLeaderAbilityPeek",
+        "TriggerableAbilityDialogAllAbilitiesGenerator/wfxLeaderDescriptions",
+        "TriggerableAbilityDialogAllAbilitiesGenerator/wfxLeaderReasonResolver"
+      ],
+      "summary": "能力一览按原生条件分类展示bit2解锁的合击队长技",
+      "details": "leader_display/README.md",
+      "unverified": [
+        "完整AIR虚拟机",
+        "Android真机",
+        "实际UI画面",
+        "真实联机",
+        "设备性能"
+      ]
+    },
+    "direct-count-target-debuff-v1": {
+      "level": "semantic",
+      "layer": "v35k",
+      "status": "local_candidate",
+      "required_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+      "baseline_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+      "patch_archive": "141-direct-count-target-debuff",
+      "methods": [
+        "ConditionSlot$/wfxSpec",
+        "MemberImpl/scheduleDirectAttack",
+        "MemberImpl/wfxDirectTargetCount"
+      ],
+      "summary": "按本次命中目标官方弱体数增加原生直接攻击计算次数",
+      "details": "direct_count/README.md",
+      "unverified": [
+        "完整AIR虚拟机",
+        "Android真机",
+        "实际画面",
+        "真实联机",
+        "设备性能"
+      ]
+    },
+    "heal-damage-any-source-v1": {
+      "level": "semantic",
+      "layer": "v35k",
+      "status": "local_candidate",
+      "required_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+      "baseline_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+      "patch_archive": "142-heal-damage-any-source",
+      "methods": [
+        "MemberImpl$/wfxHealAnyCTQueue",
+        "MemberImpl$/wfxHealAnyCTTick",
+        "MemberImpl$/wfxHealDamageTick",
+        "MemberImpl/wfxHealAnyCTRecord",
+        "MemberImpl/wfxHealAnyDamage",
+        "MemberImpl/wfxHealAnyFever",
+        "MemberImpl/wfxHealAnyMembers",
+        "MemberImpl/wfxHealAnySample",
+        "MemberImpl/wfxHealAnyValue",
+        "MemberImpl/wfxHealSample",
+        "UniqueConditionLogic/wfxSuperPreload"
+      ],
+      "summary": "本队受到任意来源治疗时逐成员量化转伤害，支持持有者独立CT",
+      "details": "heal_any/README.md",
+      "unverified": [
+        "完整AIR虚拟机",
+        "Android真机",
+        "实际画面",
+        "真实联机",
+        "设备性能"
+      ],
+      "decision_evidence": "task-evidence/decision-status.json"
+    },
+    "heal-fever-any-source-v1": {
+      "level": "semantic",
+      "layer": "v35k",
+      "status": "local_candidate",
+      "required_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+      "baseline_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+      "patch_archive": "143-heal-fever-any-source",
+      "methods": [
+        "MemberImpl$/wfxHealAnyCTQueue",
+        "MemberImpl$/wfxHealAnyCTTick",
+        "MemberImpl$/wfxHealDamageTick",
+        "MemberImpl/wfxHealAnyCTRecord",
+        "MemberImpl/wfxHealAnyDamage",
+        "MemberImpl/wfxHealAnyFever",
+        "MemberImpl/wfxHealAnyMembers",
+        "MemberImpl/wfxHealAnySample",
+        "MemberImpl/wfxHealAnyValue",
+        "MemberImpl/wfxHealSample",
+        "UniqueConditionLogic/wfxSuperPreload"
+      ],
+      "summary": "本队受到任意来源治疗时逐成员档位量化后由持有者加Fever",
+      "details": "heal_any/README.md",
+      "unverified": [
+        "完整AIR虚拟机",
+        "Android真机",
+        "实际画面",
+        "真实联机",
+        "设备性能"
+      ],
+      "decision_evidence": "task-evidence/decision-status.json"
+    }
+  },
+  "effect_codes": [
+    {
+      "code": 24,
+      "name": "direct.base",
+      "label": "直击基础倍率",
+      "side": "member",
+      "arg": "direct_base_component",
+      "arg_schema": {
+        "0": "固定万分比",
+        "1": "每连击万分比",
+        "2": "目标官方弱体数>=1时固定万分比",
+        "3": "每个官方弱体的万分比"
+      },
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "1/10000"
+      },
+      "reduce": "sum_by_arg_and_per_row_cap",
+      "stack_scaled": true,
+      "formula": "max(0,max(0,1+(B24+I(k>=1)*D2+D3+R28+L29)/10000)*(1+C24*combo/10000))",
+      "hooks": [
+        "MemberImpl/scheduleDirectAttack"
+      ],
+      "capability": "direct-base-v1",
+      "gate": "block",
+      "text_template": "直击基础倍率（依arg、层数及弱体数）",
+      "since_layer": "v35a-run1",
+      "revision_layer": "v35d-run4",
+      "revision": "保留v35b两次钳位；将28/29并入基础括号；无码28/29时原24算术顺序不变"
+    },
+    {
+      "code": 25,
+      "name": "direct.merge",
+      "label": "直击段数合并",
+      "side": "member",
+      "arg": "direct_merge_min_hits",
+      "arg_schema": {
+        "min": 0,
+        "default_when_zero": 4
+      },
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "ignored": true
+      },
+      "reduce": "any_active_threshold_satisfied",
+      "stack_scaled": false,
+      "hooks": [
+        "MemberImpl/scheduleDirectAttack"
+      ],
+      "capability": "direct-merge-v1",
+      "gate": "block",
+      "text_template": "直击达到{arg}段时合并（0表示4段）",
+      "since_layer": "v35a-run1"
+    },
+    {
+      "code": 26,
+      "name": "ability.resistance",
+      "label": "能力伤害抗性",
+      "side": "target",
+      "arg": "reserved_ignored",
+      "arg_schema": {
+        "recommended": 0,
+        "runtime": "忽略arg，合计该code的所有状态"
+      },
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "原生Decimal，100000=100%"
+      },
+      "reduce": "sum",
+      "stack_scaled": true,
+      "formula": "sum(value*min(layers,flags>0?flags:infinity))",
+      "hooks": [
+        "ConditionSlot/getOneSideTotalAbilityDamageResistance"
+      ],
+      "capability": "ability-resistance-v1",
+      "gate": "block",
+      "text_template": "能力伤害抗性每层{value}，最多{flags}层（0不限）",
+      "since_layer": "v35a-run1"
+    },
+    {
+      "code": 71,
+      "name": "charge.cap",
+      "label": "强化充能速度上限",
+      "side": "member",
+      "arg": "reserved_ignored",
+      "arg_schema": {
+        "recommended": 0,
+        "runtime": "忽略arg，合计该code的所有状态"
+      },
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "1/10000"
+      },
+      "reduce": "sum",
+      "stack_scaled": true,
+      "formula": "max(officialMAX,legacy13999010_layers/100,sum(value*layers)/10000)",
+      "hooks": [
+        "MemberImpl/getStatModifierSkillGaugeCharging"
+      ],
+      "capability": "charge-cap-v2",
+      "gate": "block",
+      "text_template": "强化充能速度候选上限{value}/10000每层",
+      "since_layer": "v35a-run1"
+    },
+    {
+      "code": 27,
+      "name": "heal.overflow_ability_damage",
+      "label": "溢出治疗转能力伤害",
+      "side": "member",
+      "arg": "target_mode",
+      "arg_schema": {
+        "0": "全体敌人",
+        "1": "最近敌人"
+      },
+      "value": {
+        "min": 0,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "1/10000"
+      },
+      "reduce": "sum_by_arg_at_heal_then_accumulate_30_frames",
+      "stack_scaled": true,
+      "formula": "overflowHP * sum(value * layers) / 10000",
+      "hooks": [
+        "MemberImpl/applyHeal",
+        "SquadManagerImpl/updatePhase",
+        "AbilityDamageShot/finish"
+      ],
+      "capability": "overflow-heal-damage-v1",
+      "gate": "block",
+      "text_template": "溢出治疗量的{value}/10000转为能力伤害（目标模式{arg}）",
+      "since_layer": "v35b-run2",
+      "exclusions": [
+        "isHealRejected",
+        "isFromHostile",
+        "statsBattleId不同",
+        "createdByCoopCommand",
+        "createdBySummonsMultiBall"
+      ],
+      "fixed_damage_reference": {
+        "reference": 3,
+        "base_damage": "strength",
+        "pipeline": "原生能力伤害加成、抗性、属性及统计流程"
+      }
+    },
+    {
+      "code": 60,
+      "name": "fever.energy",
+      "label": "超级Fever能量",
+      "side": "primary_member",
+      "arg": "S状态uid",
+      "value": {
+        "min": 0,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "每Fever点兑换能量万分比"
+      },
+      "reduce": "per_instance",
+      "stack_scaled": false,
+      "formula": "energy += actualFeverPoints*value/10000; each threshold grants S; retain remainder; icon=1+floor(energy)",
+      "capability": "super-fever-v1",
+      "gate": "block",
+      "since_layer": "v35c-run3",
+      "hooks": [
+        "FeverPointGaugeImpl/addFeverPoint",
+        "ConditionSlot/removeCondition",
+        "EnemyImpl/applyAttack",
+        "EnemyImpl/applySlipHandler",
+        "EnemyImpl/applyDamageShare",
+        "FixedAttackCalculator/calculate",
+        "DamageShareCalculator/calculateFromAttackResult",
+        "AbilityDamageShot/finish",
+        "NormalAttackCalculator/_calculate"
+      ]
+    },
+    {
+      "code": 61,
+      "name": "fever.super_state",
+      "label": "超级Fever状态",
+      "side": "primary_member",
+      "arg": "保留，写0",
+      "value": {
+        "min": 0,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "结束爆发基础万分比，0不爆发"
+      },
+      "reduce": "per_instance",
+      "stack_scaled": false,
+      "formula": "value>0 and value+bonus>0 ? effectiveDamageDuringInstance*(value+bonus)/10000 : 0; native layers are level only",
+      "capability": "super-fever-v1",
+      "gate": "block",
+      "since_layer": "v35c-run3",
+      "hooks": [
+        "FeverPointGaugeImpl/addFeverPoint",
+        "ConditionSlot/removeCondition",
+        "EnemyImpl/applyAttack",
+        "EnemyImpl/applySlipHandler",
+        "EnemyImpl/applyDamageShare",
+        "FixedAttackCalculator/calculate",
+        "DamageShareCalculator/calculateFromAttackResult",
+        "AbilityDamageShot/finish",
+        "NormalAttackCalculator/_calculate"
+      ]
+    },
+    {
+      "code": 62,
+      "name": "fever.end_bonus",
+      "label": "超级Fever结束爆发加成",
+      "side": "primary_member",
+      "arg": "保留，写0",
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "结束爆发附加万分比"
+      },
+      "reduce": "sum",
+      "stack_scaled": true,
+      "formula": "sum active code62 value*layers across primary members; deduplicate shared ConditionSlot identity",
+      "capability": "super-fever-v1",
+      "gate": "block",
+      "since_layer": "v35c-run3",
+      "hooks": [
+        "FeverPointGaugeImpl/addFeverPoint",
+        "ConditionSlot/removeCondition",
+        "EnemyImpl/applyAttack",
+        "EnemyImpl/applySlipHandler",
+        "EnemyImpl/applyDamageShare",
+        "FixedAttackCalculator/calculate",
+        "DamageShareCalculator/calculateFromAttackResult",
+        "AbilityDamageShot/finish",
+        "NormalAttackCalculator/_calculate"
+      ]
+    },
+    {
+      "code": 28,
+      "name": "direct.base.target_unique_reach",
+      "label": "目标固有状态层数达标的直击基础加成",
+      "side": "member",
+      "arg": "target_unique_condition_uid",
+      "arg_schema": {
+        "min": 0,
+        "max": 2147483647,
+        "integer": true
+      },
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "1/10000"
+      },
+      "reduce": "sum_per_row",
+      "stack_scaled": true,
+      "formula": "sum_rows(I(targetUniqueCount(U)>=max(1,N))*value*holderLayers)",
+      "target_count_semantics": "本次命中目标parent(Enemy).getConditionAccumulationCount(ConditionTargetKind.Unique(U))；原生取可见本槽及可见队伍槽中匹配、可叠状态的最大magnification，不加总同UID，不计invisibleSlot；不可叠状态返回0。",
+      "holder_scope": "与码24相同的wfxRows(code,true)槽集合",
+      "hooks": [
+        "MemberImpl/scheduleDirectAttack",
+        "MemberImpl/wfxDirectFactor"
+      ],
+      "capability": "direct-base-v1",
+      "gate": "block",
+      "since_layer": "v35d-run4",
+      "required_swf_sha256": "4fe2b1ba6267bdcd69f54be3d464ef9aba9cc07a806038ec21161762e708a212"
+    },
+    {
+      "code": 29,
+      "name": "direct.base.target_unique_layer",
+      "label": "按目标固有状态层数的直击基础加成",
+      "side": "member",
+      "arg": "target_unique_condition_uid",
+      "arg_schema": {
+        "min": 0,
+        "max": 2147483647,
+        "integer": true
+      },
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "1/10000"
+      },
+      "reduce": "sum_per_row",
+      "stack_scaled": true,
+      "formula": "sum_rows(value*holderLayers*(cap>0?min(targetUniqueCount(U),cap):targetUniqueCount(U)))",
+      "target_count_semantics": "本次命中目标parent(Enemy).getConditionAccumulationCount(ConditionTargetKind.Unique(U))；原生取可见本槽及可见队伍槽中匹配、可叠状态的最大magnification，不加总同UID，不计invisibleSlot；不可叠状态返回0。",
+      "holder_scope": "与码24相同的wfxRows(code,true)槽集合",
+      "hooks": [
+        "MemberImpl/scheduleDirectAttack",
+        "MemberImpl/wfxDirectFactor"
+      ],
+      "capability": "direct-base-v1",
+      "gate": "block",
+      "since_layer": "v35d-run4",
+      "required_swf_sha256": "4fe2b1ba6267bdcd69f54be3d464ef9aba9cc07a806038ec21161762e708a212"
+    },
+    {
+      "code": 30,
+      "name": "heal.percent_damage",
+      "label": "治疗转伤害",
+      "side": "member",
+      "arg": "damage_category",
+      "arg_schema": {
+        "0": "队长main_stance.concepts[0]，缺失或越界回退能力",
+        "1": "技能",
+        "2": "强化弹射Lv3",
+        "3": "直击",
+        "4": "能力"
+      },
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "每1%有效治疗的万分比系数；推荐非负"
+      },
+      "flags": "每1%溢出治疗的万分比系数，非pin位",
+      "stack_scaled": true,
+      "exclusions": [
+        "isHealRejected",
+        "isFromHostile",
+        "statsBattleId不同",
+        "createdByCoopCommand",
+        "createdBySummonsMultiBall",
+        "取不到治疗者"
+      ],
+      "percentage_units": "有效或溢出治疗量 / 被治疗者最大HP * 100；分子分母同为Decimal100",
+      "formula": "ratio=Σ层(eff%*value+over%*flags)/10000",
+      "reduce": "sum_by_healer_and_category_30_logical_frames",
+      "capability": "heal-damage-v1",
+      "gate": "block",
+      "since_layer": "v35f-run6",
+      "example": "wfx:30:0:10000:50000:hidden_wg_aqua_heal_damage",
+      "native_attack_reference": 2,
+      "task_reference_clarification": "TASK6字面0在原生是最大HP；决定状态见reference-clarification.md"
+    },
+    {
+      "code": 31,
+      "name": "heal.percent_fever",
+      "label": "治疗加Fever",
+      "side": "member",
+      "arg": "reserved_zero",
+      "arg_schema": {
+        "0": "保留"
+      },
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "unit": "每1%有效治疗的万分比系数；推荐非负"
+      },
+      "flags": "每1%溢出治疗的万分比系数，非pin位",
+      "stack_scaled": true,
+      "exclusions": [
+        "isHealRejected",
+        "isFromHostile",
+        "statsBattleId不同",
+        "createdByCoopCommand",
+        "createdBySummonsMultiBall",
+        "取不到治疗者"
+      ],
+      "percentage_units": "有效或溢出治疗量 / 被治疗者最大HP * 100；分子分母同为Decimal100",
+      "formula": "槽增加量=Fever最大值*Σ层(eff%*value+over%*flags)/10000",
+      "reduce": "immediate_per_heal",
+      "capability": "heal-fever-v1",
+      "gate": "block",
+      "since_layer": "v35f-run6",
+      "example": "wfx:31:0:100:200:hidden_wg_aqua_heal_fever"
+    },
+    {
+      "code": 32,
+      "name": "barrier.caster_maximum_hp",
+      "label": "护盾按执行者最大生命值",
+      "side": "dsl_executor",
+      "arg": "保留，写0",
+      "value": {
+        "integer": true,
+        "recommended": 0,
+        "ignored": true
+      },
+      "flags": "保留，写0；非pin位",
+      "stack_scaled": false,
+      "reduce": "any_active",
+      "formula": "原生护盾计算中的目标最大HP替换为本次DSL执行者的实际最大HP；原取整和最低1保留",
+      "capability": "wfx-caster-hp-barrier-v1",
+      "gate": "block",
+      "since_layer": "v35j-run10",
+      "example": "wfx:32:0:0:0:hidden_gerald_caster_barrier",
+      "hooks": [
+        "ActionEvaluator/evalCommand",
+        "BarrierCalculator/calculate"
+      ],
+      "required_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384"
+    },
+    {
+      "code": 33,
+      "name": "direct.count.target_debuff",
+      "side": "direct_attacker",
+      "arg": "base，有符号int32；每条状态的首个弱体额外次数",
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "meaning": "per，有符号int32；自第2个弱体起的额外次数"
+      },
+      "flags": "cap，有符号int32；<=0不封顶；非pin位",
+      "formula": "k=0为0；k>=1为max(0, sum(layers*(base+per*(min(k-1,cap) if cap>0 else k-1))))",
+      "native": "先保留原生AdditionalDirectAttack选优，再加到本次directAttackTimes；不新开乘区",
+      "example": "wfx:33:10:1:5:hidden_bel_weak_hits",
+      "capability": "direct-count-target-debuff-v1",
+      "gate": "block",
+      "since_layer": "v35k-run11",
+      "hooks": [
+        "ConditionSlot$/wfxSpec",
+        "MemberImpl/scheduleDirectAttack"
+      ],
+      "required_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+      "stack_scaled": true,
+      "hidden_label": "第6段hidden_沿run5规则隐藏图标",
+      "arg_schema": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true
+      }
+    },
+    {
+      "code": 34,
+      "name": "heal.damage.any_source",
+      "side": "recipient_party_holder",
+      "arg": "分类+10*档位百分比+1000*CT秒数；分类0跟随队长concepts，1技能/2强化弹射Lv3/3直击/4能力；档位0至99，CT非负整数秒",
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "meaning": "有效恢复每档伤害倍率*10000；档位0时每1%连续计算"
+      },
+      "flags": "溢出恢复每档伤害倍率*10000；非pin位",
+      "formula": "category=arg%10，tier=floor(arg/10)%100，ctSeconds=floor(arg/1000)；逐次逐受治疗成员分别floor(effectivePercent/tier)、floor(overPercent/tier)，零头不累积；tier=0沿连续倍率",
+      "timing": "持有者所有码34均arg<1000时完整保持第二版30帧聚合/原冷却/尾量；CT>0时首笔达档治疗开启30逻辑帧聚合窗，发伤害时开始max(30,CT秒数*60)逻辑帧冷却；CT内治疗直接丢弃，无尾量；结束后新达档治疗才开新窗",
+      "mixed_ct_implementation_convention": "多条码34当前有效行取最大CT，所有分类及无CT行共用持有者窗口；窗口内已记录CT不缩短。此为明确记录的实现选择，不表示作者另行裁定。",
+      "ct_scope": "每个持有者各自一个CT，有效与溢出共用；暂停不推进逻辑帧则CT不消耗；码35不受CT影响",
+      "logic_frames_per_second": 60,
+      "ct_evidence": "audit/ct-delta-report.json",
+      "network_policy": "联机B：本端受治疗成员实际执行的跨玩家回复计入；仅转发/镜像而未执行本端回复不计；旧码30/31跨statsBattleId排除不变",
+      "supersedes": "本队存在码34持有者即跳过本次所有治疗者码30；不影响码31",
+      "example": "wfx:34:5050:100000:150000:hidden_wg_aqua_heal_damage_any",
+      "capability": "heal-damage-any-source-v1",
+      "gate": "block",
+      "since_layer": "v35k-run11",
+      "hooks": [
+        "MemberImpl$/wfxHealDamageTick",
+        "MemberImpl/wfxHealSample",
+        "UniqueConditionLogic/wfxSuperPreload"
+      ],
+      "required_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+      "stack_scaled": true,
+      "hidden_label": "第6段hidden_沿run5规则隐藏图标",
+      "arg_schema": {
+        "min": 0,
+        "max": 2147483647,
+        "integer": true
+      }
+    },
+    {
+      "code": 35,
+      "name": "heal.fever.any_source",
+      "side": "recipient_party_holder",
+      "arg": "10*档位百分比；例每5%写50；arg<10连续计算",
+      "value": {
+        "min": -2147483648,
+        "max": 2147483647,
+        "integer": true,
+        "meaning": "每有效档占最大Fever槽万分比；100=1%，500=5%"
+      },
+      "flags": "每溢出档占最大Fever槽万分比；1000=10%；非pin位",
+      "formula": "Fever A：每名受治疗成员每次实际applyHeal独立量化，按层数加权后由每个持有者各调用一次addFeverPoint(...,true,101)；不跨成员合批、不加批次标记；tier=0沿码31",
+      "timing": "无CT，立即调用原生Fever API，保留原生满槽钳位",
+      "network_policy": "联机B：本端受治疗成员实际执行的跨玩家回复计入；仅转发/镜像而未执行本端回复不计；旧码30/31跨statsBattleId排除不变",
+      "supersedes": "本队存在码35持有者即跳过本次所有治疗者码31；不影响码30",
+      "example": "wfx:35:50:500:1000:hidden_wg_aqua_heal_fever_any",
+      "capability": "heal-fever-any-source-v1",
+      "gate": "block",
+      "since_layer": "v35k-run11",
+      "hooks": [
+        "MemberImpl$/wfxHealDamageTick",
+        "MemberImpl/wfxHealSample",
+        "UniqueConditionLogic/wfxSuperPreload"
+      ],
+      "required_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+      "stack_scaled": true,
+      "hidden_label": "第6段hidden_沿run5规则隐藏图标",
+      "arg_schema": {
+        "min": 0,
+        "max": 2147483647,
+        "integer": true
+      }
+    }
+  ],
+  "effect_flags_overrides": {
+    "24": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "仅arg3：逐状态弱体个数封顶，0不限；其余arg忽略",
+      "pin": false
+    },
+    "25": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "忽略，建议0",
+      "pin": false
+    },
+    "26": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "逐状态层数封顶，0不限",
+      "pin": false
+    },
+    "71": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "忽略，建议0",
+      "pin": false
+    },
+    "27": {
+      "type": "integer",
+      "min": 0,
+      "max": 0,
+      "meaning": "保留，必须写0",
+      "pin": false
+    },
+    "60": {
+      "type": "integer",
+      "min": 1,
+      "max": 2147483647,
+      "meaning": "所需能量，正整数",
+      "pin": false
+    },
+    "61": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "结束标记uid，0不发",
+      "pin": false
+    },
+    "62": {
+      "type": "integer",
+      "min": 0,
+      "max": 0,
+      "meaning": "保留，写0",
+      "pin": false
+    },
+    "28": {
+      "type": "integer",
+      "min": -2147483648,
+      "max": 2147483647,
+      "meaning": "目标层数阈值N；N<=0按1",
+      "pin": false
+    },
+    "29": {
+      "type": "integer",
+      "min": -2147483648,
+      "max": 2147483647,
+      "meaning": "单条状态的目标层数封顶cap；cap<=0不封顶",
+      "pin": false
+    },
+    "30": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "溢出治疗百分比对应的万分比系数",
+      "pin": false
+    },
+    "31": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "溢出治疗百分比对应的万分比系数",
+      "pin": false
+    },
+    "32": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "忽略，建议0",
+      "pin": false
+    },
+    "33": {
+      "type": "integer",
+      "min": -2147483648,
+      "max": 2147483647,
+      "meaning": "cap，有符号int32；<=0不封顶；非pin位",
+      "pin": false
+    },
+    "34": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "溢出恢复每档伤害倍率*10000；非pin位",
+      "pin": false
+    },
+    "35": {
+      "type": "integer",
+      "min": 0,
+      "max": 2147483647,
+      "meaning": "每溢出档占最大Fever槽万分比；1000=10%；非pin位",
+      "pin": false
+    }
+  },
+  "custom_ability_string_patterns": [
+    {
+      "prefix": "wfx_snapcombo_",
+      "value": "非空且不等于字符串0",
+      "capability": "pf-snapcombo-v1",
+      "gate": "block"
+    },
+    {
+      "prefix": "wfx_pf4_",
+      "value": "<非负整数门槛>[:<6位RRGGBB>]",
+      "capability": "pf-lv4-data-v1",
+      "gate": "block"
+    },
+    {
+      "prefix": "wfx_unlock_",
+      "key_suffix": "当前slot0主位队长的leader_ability表键",
+      "value": "非负整数位掩码：1合击主位能力，2合击队长技，4队友队长技，8仅slot0合击，16同属性人数至少6",
+      "capability": "leader-unlock-v2",
+      "gate": "block",
+      "bit8_scope": "仅限制位1与位2；位4不受slot0门限制",
+      "bit16_scope": "party.getNumberOfSameElement() < 6时整个掩码视为0",
+      "legacy_values_0_through_7": "与v35e等价",
+      "example": {
+        "key": "wfx_unlock_129989",
+        "value": "27"
+      },
+      "previous_revision": {
+        "prefix": "wfx_unlock_",
+        "key_suffix": "当前slot0主位队长的leader_ability表键",
+        "value": "非负整数位掩码，1=合击主位能力，2=合击队长技，4=队友队长技，7=全开",
+        "capability": "leader-unlock-v1",
+        "gate": "block"
+      },
+      "required_swf_sha256": "383f49b060718055a80080309aed92f150073d321c8a237f748a025c32050ed4"
+    },
+    {
+      "prefix": "wfx_adaptive_",
+      "key_suffix": "ability表键",
+      "value": "1",
+      "requires": "该角色已学会此能力",
+      "capability": "adaptive-element-v1",
+      "gate": "block"
+    },
+    {
+      "prefix": "ability_visual_",
+      "key_suffix": "角色code_name",
+      "value": "launch|shot|hit|skill|total_ability|total_powerflip；空槽取官方默认",
+      "runtime_slots": [
+        "shot",
+        "hit"
+      ],
+      "preload_only_slots": [
+        "launch",
+        "skill",
+        "total_ability",
+        "total_powerflip"
+      ],
+      "runtime_owner": "原32实际发射Member.mainCharacterStringId；合击来源能力沿主位球视觉归属",
+      "preload_scope": "本场Me与Somebody的实际队伍主位和合击；不遍历全表",
+      "capability": "ability-visuals-v1",
+      "gate": "block"
+    },
+    {
+      "prefix": "wfx_fever_voice_",
+      "key_suffix": "角色code_name",
+      "value": "1",
+      "capability": "fever-voice-v1",
+      "gate": "block"
+    },
+    {
+      "prefix": "equipment_rule_",
+      "key_suffix": "装备id（当前已核实装备与ability_soul_id同号）",
+      "value": "<诅咒阈值>:<衰减步长>:<失效其他装备数>",
+      "capability": "equipment-rules-data-v1",
+      "gate": "block"
+    },
+    {
+      "prefix": "wfx_overlimit_full_",
+      "key_suffix": "角色id",
+      "value": "1",
+      "capability": "wfx-overlimit-full-v1",
+      "gate": "block",
+      "example": {
+        "key": "wfx_overlimit_full_129989",
+        "value": "1"
+      },
+      "required_swf_sha256": "f1c3260d470f46a4364baddb85af48dc34a5c299bb025d123be085ad6f04e573"
+    }
+  ],
+  "unique_condition_patterns": [
+    {
+      "prefix": "fever:items:",
+      "value": "<k1>|<k2>|...[:lv<N>][:<label>]",
+      "default_level": 100,
+      "capability": "fever-items-v2",
+      "gate": "block"
+    }
+  ],
+  "source_registry_sha256": "14daee115e7133775dd346dc3aec477add5fecb37e6864ac258fd2fe0e01775b",
+  "extends": "../run10/registry-draft.json",
+  "character_tag_patterns": [
+    {
+      "prefix": "ModDualForm",
+      "value": "ModDualForm或ModDualForm:<正整数uid>",
+      "default_uid": 22,
+      "capability": "dual-form-uid-v1",
+      "gate": "block"
+    },
+    {
+      "prefix": "wfx_cid_",
+      "key_suffix": "character表键",
+      "declaration": "character_tag表新增该键，值为原生面板显示名称；无需改character.c5",
+      "resolution": "沿用原生OrCharacterGroup_Impl_.resolve的已登记CharacterTag分支",
+      "capability": "wfx-character-identity-tags-v1",
+      "gate": "block",
+      "example": {
+        "key": "wfx_cid_121177",
+        "value": "索维"
+      },
+      "required_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384"
+    }
+  ],
+  "fixed_damage_reference4": {
+    "base": "strength",
+    "classification": "ability",
+    "removed": [
+      "攻击方各种增伤/特攻/背水/领域增伤",
+      "攻击方属性克制系数",
+      "随机浮动"
+    ],
+    "retained": [
+      "敌方属性和能力抗性",
+      "条件抗性",
+      "易伤和守卫",
+      "固定及百分比减伤",
+      "原生伤害上限和取整",
+      "金属/无敌/障碍/屏障等原生处理"
+    ],
+    "legacy_reference3": "不变，继续用于溢出治疗并吃原生能力增伤"
+  },
+  "direct_base_capability_decision": {
+    "selected": "direct-base-v1",
+    "reason": "码28/29直接扩充码24同一个基础加和，不引入独立乘区或新消费入口；因此并入direct-base-v1，由revision_layer和SWF SHA区分是否支持新码。",
+    "revision_layer": "v35d-run4",
+    "required_swf_sha256": "4fe2b1ba6267bdcd69f54be3d464ef9aba9cc07a806038ec21161762e708a212",
+    "offline_only": true
+  },
+  "output_swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+  "unique_icon_visibility": {
+    "field": "unique_condition.c0",
+    "capability": "wfx-hidden-unique-icons-v1",
+    "legacy_hidden_prefix": "hidden_",
+    "wfx_prefix": "wfx:",
+    "label_segment_one_based": 6,
+    "hidden_label_prefix": "hidden_",
+    "case_sensitive": true,
+    "missing_or_empty_label_hidden": false,
+    "numeric_fields_validated_for_visibility": false,
+    "additional_segments": "只查看第6段；后续段不影响是否隐藏",
+    "visible_example": "wfx:24:0:2500:0:kyle_base_plus",
+    "hidden_example": "wfx:24:0:2500:0:hidden_kyle_base_plus",
+    "scope": "只改变图标列表和该列表的数量；状态对象、层数、触发和WFX查询保持原字节码",
+    "required_swf_sha256": "89461f676b57a059bde58fe5897190db9b61013ae63947401fe1bf87106d6bcf"
+  },
+  "requirement_decisions": {
+    "status": "resolved",
+    "source": "TASK11-current.md",
+    "questions": [
+      {
+        "id": "cross_player_stats_id",
+        "question": "原生跨玩家治疗携带来源端statsBattleId；保留跨ID排除，还是允许本端实际收到的队友治疗？",
+        "answer": "B",
+        "previous_candidate": "严格排除跨statsBattleId；正常跨玩家治疗因此不计入34/35",
+        "resolution": "码34/35允许本端实际执行的跨玩家回复；限制受治疗成员属于本端primary队伍且battle为本端，镜像、仅转发和统计回执不重复计入；旧30/31跨statsBattleId排除保留。"
+      },
+      {
+        "id": "fever_batch_boundary",
+        "question": "35每名成员实际applyHeal各调用一次，还是整次多目标治疗只调用一次并增加批次标记？",
+        "answer": "A",
+        "previous_candidate": "逐成员实际applyHeal独立量化，逐持有者一次调用；无跨成员批次聚合",
+        "resolution": "每名受治疗成员实际applyHeal独立量化；每位持有者在该成员事件中各调用一次Fever API，不加批次标记。"
+      }
+    ],
+    "source_sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+    "ruling_date": "2026-10-19",
+    "revision": 3,
+    "ct_supplement": {
+      "code": 34,
+      "arg_formula": "category + 10 * tier_percent + 1000 * ct_seconds",
+      "tier_percent_range": [
+        0,
+        99
+      ],
+      "example_arg": 5050,
+      "example_ct_seconds": 5,
+      "window_logic_frames": 30,
+      "minimum_ct_logic_frames": 30,
+      "ct_start": "damage_emission",
+      "ct_heals": "discard_without_carry",
+      "ct_scope": "one_per_holder_shared_effective_and_overheal",
+      "pause": "no_logic_frames_no_ct_progress",
+      "arg_below_1000": "bytecode_behavior_identical_to_pre_ct",
+      "code35": "unchanged_no_ct"
+    }
+  },
+  "verification_status": "pass",
+  "external_readonly_ack": "task-evidence/known-external-changes.json"
+}

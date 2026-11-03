@@ -1,0 +1,47 @@
+{
+  "MemberImpl/scheduleDirectAttack": {
+    "sha": "7f0d02acfc116523f829a639e717fea6e53ce30b61c0f40085082c4b0caf1e07",
+    "header": [
+      110,
+      45,
+      1,
+      2
+    ]
+  },
+  "ConditionSlot$/wfxSpec": {
+    "sha": "91ca69969bd16ae753041acdb6982603f6c3dc685c2145bd8cf96c33e369dd12",
+    "header": [
+      5,
+      9,
+      1,
+      2
+    ]
+  },
+  "MemberImpl/wfxHealSample": {
+    "sha": "62bd04d56ce006807be873e98e7f0789ef90953329fb598dc280ce89d9e48a3f",
+    "header": [
+      3,
+      9,
+      1,
+      2
+    ]
+  },
+  "UniqueConditionLogic/wfxSuperPreload": {
+    "sha": "2f69b6f0ec4c5a5912dd92c1fc909405bdd0391d2ed00ed0b46c6875d41a4f7a",
+    "header": [
+      5,
+      6,
+      1,
+      2
+    ]
+  },
+  "MemberImpl$/wfxHealDamageTick": {
+    "sha": "f67cf76ffee19cd81e3729613ae451cf1fb508946282e35f9471b80d5ef25b87",
+    "header": [
+      4,
+      7,
+      1,
+      2
+    ]
+  }
+}

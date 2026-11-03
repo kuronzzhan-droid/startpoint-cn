@@ -1,0 +1,3 @@
+# SquadImpl/isHostile; body=59553; sha256=4210b3064a089aca740850e98bdbf902bb524a18f8ab525e662c03f6bbff5c37; header=[1, 1, 1, 1]
+#0000 ofs0000: pushfalse []
+#0001 ofs0001: returnvalue []

@@ -1,0 +1,20 @@
+{
+  "input": "D:\\WF\\v35-generic-20261018\\run10\\v35j.swf",
+  "input_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+  "sha_sidecar": "../run10/v35j.swf.sha256",
+  "task": "../TASK11.md",
+  "task_sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+  "task_snapshot": "task-evidence/TASK11-current.md",
+  "excluded_inputs": [
+    "run*-aborted*"
+  ],
+  "scope": "仅run11写入；前十轮工具只读；离线，无设备或发布操作",
+  "previous_task_sha256": "e7f8bdde6450e4d2ea27835ac906ace322dfd0e1c34e64fc38f0d1692483aeea",
+  "previous_task_snapshot": "task-evidence/TASK11-before-ruling.md",
+  "decisions": "task-evidence/decision-status.json",
+  "pre_ct_task_sha256": "8b52c8b03f023e4c3fed5c1fd8e087ae447478a6785dc92996636dc0839154c3",
+  "pre_ct_task_snapshot": "task-evidence/TASK11-before-ct.md",
+  "pre_ct_swf": "work/pre-ct/v35k.swf",
+  "pre_ct_swf_sha256": "608bf66914dc5e0a0b8c16e795b88692f67b2b9a23a898be4254c42710e4353b",
+  "revision": 3
+}

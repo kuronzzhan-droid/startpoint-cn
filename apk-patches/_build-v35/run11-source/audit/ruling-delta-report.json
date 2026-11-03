@@ -1,0 +1,21 @@
+{
+  "status": "pass",
+  "before_sha256": "9959e55085250ab8878a47f7a8eed82c09023a6c181051879b7a7a208d7ec5fd",
+  "after_sha256": "608bf66914dc5e0a0b8c16e795b88692f67b2b9a23a898be4254c42710e4353b",
+  "changed_methods_from_previous_run11": [
+    "MemberImpl/wfxHealAnySample"
+  ],
+  "abc_scaffolding": {
+    "restored_target_bodies": [
+      "MemberImpl/wfxHealAnySample"
+    ],
+    "removed_appended_strings": [],
+    "removed_appended_multinames": 0,
+    "removed_appended_method_bodies": 0,
+    "original_abc_sha256": "1c91677630371ca29db9135b8ea49b4eb50e02737967270eb847f425211ff3b0",
+    "restored_abc_sha256": "1c91677630371ca29db9135b8ea49b4eb50e02737967270eb847f425211ff3b0",
+    "all_pools_signatures_classes_traits_scripts_and_other_bodies_byte_identical": true
+  },
+  "other_abc_instances_unchanged": 306,
+  "note": "相对裁定前run11，只有新助手移除跨来源ID过滤；相对v35j的全SWF保持性由总框架另验。"
+}

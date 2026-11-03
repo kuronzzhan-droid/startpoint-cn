@@ -1,0 +1,48 @@
+{
+  "capability": "wfx-caster-hp-barrier-v1",
+  "output_swf_sha256": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "BarrierCalculator/calculate",
+      "body": 45159,
+      "code_sha256": "5e1021eb3640873092f2eb9fe281e576dad8a423db68d0b631d5ada5596f66e0",
+      "header": [
+        5,
+        5,
+        1,
+        1
+      ],
+      "file": "BarrierCalculator__calculate.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "ActionEvaluator/evalCommand",
+      "body": 52284,
+      "code_sha256": "da225036264d7261f207f3048eb28226337bfde261a84ee70803628de8f9c05a",
+      "header": [
+        109,
+        191,
+        1,
+        2
+      ],
+      "file": "ActionEvaluator__evalCommand.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "ActionEvaluator/wfxBarrierRequest",
+      "body": 92668,
+      "code_sha256": "92bf0f2dc9844b1c7b36f6737957fb0052f9b8410e20c484441079f615a02435",
+      "header": [
+        3,
+        4,
+        1,
+        2
+      ],
+      "file": "ActionEvaluator__wfxBarrierRequest.pcode.txt"
+    }
+  ],
+  "shared_source": "../source",
+  "source_entrypoint": "../../build.py",
+  "scope": "本地草稿；前九轮构造器与v34输入只读；AIR/真机未核实"
+}

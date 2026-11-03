@@ -1,0 +1,89 @@
+# BattleCharacterLogic/wfxEquipmentConfig; body=92644; code_sha256=94d1f036c2d03097d9d5f21188d0b25c7e1de72491b32910123f60e30e7fc0e5; header=[3, 6, 1, 2]
+# exceptions=[]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: getlocal_0 []
+#0003 ofs0003: pushstring ['equipment_rule_']
+#0004 ofs0007: getlocal_1 []
+#0005 ofs0008: add []
+#0006 ofs0009: callproperty ['wfxPartyRead', 1]
+#0007 ofs000e: setlocal_2 []
+#0008 ofs000f: getlocal_2 []
+#0009 ofs0010: iffalse [] -> #85
+#0010 ofs0014: getlocal_2 []
+#0011 ofs0015: pushstring [':']
+#0012 ofs0018: callproperty ['split', 1]
+#0013 ofs001b: setlocal_2 []
+#0014 ofs001c: getlocal_2 []
+#0015 ofs001d: getproperty ['length']
+#0016 ofs001f: pushbyte [3]
+#0017 ofs0021: ifne [] -> #85
+#0018 ofs0025: getlocal_2 []
+#0019 ofs0026: pushbyte [0]
+#0020 ofs0028: getproperty ['<mn kind 0x1b>']
+#0021 ofs002a: dup []
+#0022 ofs002b: iffalse [] -> #84
+#0023 ofs002f: convert_d []
+#0024 ofs0030: setlocal [3]
+#0025 ofs0032: getlocal [3]
+#0026 ofs0034: convert_i []
+#0027 ofs0035: getlocal [3]
+#0028 ofs0037: ifne [] -> #85
+#0029 ofs003b: getlocal [3]
+#0030 ofs003d: pushbyte [0]
+#0031 ofs003f: iflt [] -> #85
+#0032 ofs0043: getlocal_2 []
+#0033 ofs0044: pushbyte [1]
+#0034 ofs0046: getproperty ['<mn kind 0x1b>']
+#0035 ofs0048: dup []
+#0036 ofs0049: iffalse [] -> #84
+#0037 ofs004d: convert_d []
+#0038 ofs004e: setlocal [4]
+#0039 ofs0050: getlocal [4]
+#0040 ofs0052: convert_i []
+#0041 ofs0053: getlocal [4]
+#0042 ofs0055: ifne [] -> #85
+#0043 ofs0059: getlocal [4]
+#0044 ofs005b: pushbyte [0]
+#0045 ofs005d: iflt [] -> #85
+#0046 ofs0061: getlocal_2 []
+#0047 ofs0062: pushbyte [2]
+#0048 ofs0064: getproperty ['<mn kind 0x1b>']
+#0049 ofs0066: dup []
+#0050 ofs0067: iffalse [] -> #84
+#0051 ofs006b: convert_d []
+#0052 ofs006c: setlocal [5]
+#0053 ofs006e: getlocal [5]
+#0054 ofs0070: convert_i []
+#0055 ofs0071: getlocal [5]
+#0056 ofs0073: ifne [] -> #85
+#0057 ofs0077: getlocal [5]
+#0058 ofs0079: pushbyte [0]
+#0059 ofs007b: iflt [] -> #85
+#0060 ofs007f: getlocal_3 []
+#0061 ofs0080: pushbyte [6]
+#0062 ofs0082: ifgt [] -> #85
+#0063 ofs0086: getlocal_3 []
+#0064 ofs0087: pushbyte [1]
+#0065 ofs0089: ifeq [] -> #85
+#0066 ofs008d: getlocal [5]
+#0067 ofs008f: pushbyte [6]
+#0068 ofs0091: ifgt [] -> #85
+#0069 ofs0095: getlocal [4]
+#0070 ofs0097: iffalse [] -> #74
+#0071 ofs009b: getlocal [5]
+#0072 ofs009d: iffalse [] -> #85
+#0073 ofs00a1: jump [] -> #76
+#0074 ofs00a5: getlocal [5]
+#0075 ofs00a7: iftrue [] -> #85
+#0076 ofs00ab: getlocal_3 []
+#0077 ofs00ac: convert_i []
+#0078 ofs00ad: getlocal [4]
+#0079 ofs00af: convert_i []
+#0080 ofs00b0: getlocal [5]
+#0081 ofs00b2: convert_i []
+#0082 ofs00b3: newarray [3]
+#0083 ofs00b5: returnvalue []
+#0084 ofs00b6: pop []
+#0085 ofs00b7: pushnull []
+#0086 ofs00b8: returnvalue []

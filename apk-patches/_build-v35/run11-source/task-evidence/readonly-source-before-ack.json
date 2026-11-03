@@ -1,0 +1,61 @@
+{
+  "status": "blocked",
+  "pass": false,
+  "blocker": "pending_external_readonly_ack",
+  "workspace_snapshot_exact": false,
+  "snapshot_sha256": "e0281cc5db4a7fd8b7ade1f1a83867d981b8040fa288f80887fe96cf873d37f0",
+  "accepted_changes": [
+    {
+      "path": "TASK11.md",
+      "before": {
+        "sha256": "e7f8bdde6450e4d2ea27835ac906ace322dfd0e1c34e64fc38f0d1692483aeea",
+        "bytes": 8561
+      },
+      "after": {
+        "sha256": "69c0c9b27f479d7270618776be22b5ef371b21c5061d255877d8ce05e9b57851",
+        "bytes": 10585
+      },
+      "intermediate": {
+        "sha256": "8b52c8b03f023e4c3fed5c1fd8e087ae447478a6785dc92996636dc0839154c3",
+        "bytes": 9169
+      },
+      "reason": "用户要求继续第三版：保留联机B、Fever A，精确接受2026-10-19 13:52新增5s CT补充；原任务及第二版前缀不变",
+      "snapshot": "task-evidence/TASK11-current.md",
+      "pre_ct_snapshot": "task-evidence/TASK11-before-ct.md"
+    }
+  ],
+  "unapproved_differences": [
+    {
+      "path": "apk/superseded/v35k-x86-unsigned-aligned.apk",
+      "before": null,
+      "after": {
+        "bytes": 213926073,
+        "sha256": "5452cbfc91ecbf9440b72c935500778af05bf8957e79b01e2f9c497bd2e821be"
+      },
+      "modified_utc": "2026-10-19T05:53:52.181446+00:00"
+    },
+    {
+      "path": "apk/superseded/v35k-x86.signed.apk",
+      "before": null,
+      "after": {
+        "bytes": 214421192,
+        "sha256": "0d49ee23949aa1d9f6ea92c3d9403b412bd6b7b234592e9fd619a62bb620b5c2"
+      },
+      "modified_utc": "2026-10-19T05:53:58.340017+00:00"
+    },
+    {
+      "path": "apk/HASHES.txt",
+      "before": {
+        "sha256": "410c767fd5b7954b7799c6ca26ea9f749ec1c4a6f032080a9f5b9a86196b802e",
+        "bytes": 2333
+      },
+      "after": {
+        "bytes": 2598,
+        "sha256": "3821bb936a55d2548fb2addb0901a4505535f76c4dd9991a172cc62601186796"
+      },
+      "modified_utc": "2026-10-19T05:54:18.476958+00:00"
+    }
+  ],
+  "observation": "work/external-readonly-differences.json",
+  "scope": "保留最初只读锁；仅观察到的三项外部差异待用户确认，未予接受"
+}

@@ -1,0 +1,38 @@
+{
+  "BattleCharacterLogic/getInstantAbiltyCountWithoutLimit": {
+    "sha": "65dafd49bdcf77015670a32b60a443677a0cbf116d58c136008559756c20c307",
+    "header": [
+      6,
+      17,
+      6,
+      7
+    ]
+  },
+  "TriggerableAbilityDialogAllAbilitiesGenerator/addAbility": {
+    "sha": "c2e8d65bd7b8ec6fb1b178d2353c0a4310e59a5f11ce6253f76ac9fbf2d7953e",
+    "header": [
+      9,
+      19,
+      1,
+      2
+    ]
+  },
+  "BattleCharacterLogic/getElement": {
+    "sha": "af3bd846acede1a3ace8c1ff2cc7221a3fc28cef44730ed59c9f59d998b1318f",
+    "header": [
+      3,
+      20,
+      6,
+      7
+    ]
+  },
+  "BattleCharacterLogic/wfxPartyMask": {
+    "sha": "73531ade920c9db8d32da86499c84356e98876bee548204e19bb777fe1a38b26",
+    "header": [
+      4,
+      3,
+      1,
+      2
+    ]
+  }
+}

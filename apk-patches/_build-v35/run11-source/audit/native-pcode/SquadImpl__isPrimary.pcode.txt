@@ -1,0 +1,13 @@
+# SquadImpl/isPrimary; body=59546; sha256=b0e18ffcee3cf8185c1fd57f7cfd5924b280addd74ab64464b2300a2d1a383ef; header=[2, 1, 1, 2]
+#0000 ofs0000: getlocal_0 []
+#0001 ofs0001: pushscope []
+#0002 ofs0002: findproperty ['kind']
+#0003 ofs0005: getproperty ['kind']
+#0004 ofs0008: getproperty ['index']
+#0005 ofs000a: pushbyte [0]
+#0006 ofs000c: ifne [] -> #10
+#0007 ofs0010: pushtrue []
+#0008 ofs0011: returnvalue []
+#0009 ofs0012: jump [] -> #12
+#0010 ofs0016: pushfalse []
+#0011 ofs0017: returnvalue []

@@ -1,0 +1,33 @@
+{
+  "capability": "wfx-no-leader-guard-v1",
+  "output_swf_sha256": "960757dbaf599b5d4978b95670b9bbe3e76fac5cfd29045b8c9c0dd1a1ca0870",
+  "pcode": [
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/wfxAdaptiveElement",
+      "body": 92621,
+      "code_sha256": "24eb22261dddddd9c703089a03d6bcc59c607440351690f7fd69258752d3ea38",
+      "header": [
+        4,
+        2,
+        1,
+        2
+      ],
+      "file": "BattleCharacterLogic__wfxAdaptiveElement.pcode.txt"
+    },
+    {
+      "abc": "boot_ffc6",
+      "label": "BattleCharacterLogic/wfxPartyMask",
+      "body": 92619,
+      "code_sha256": "73531ade920c9db8d32da86499c84356e98876bee548204e19bb777fe1a38b26",
+      "header": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "file": "BattleCharacterLogic__wfxPartyMask.pcode.txt"
+    }
+  ],
+  "scope": "本地离线草稿；未写正式补丁库，未发布；AIR和真机未核实"
+}

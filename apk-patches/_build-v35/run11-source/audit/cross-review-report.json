@@ -1,0 +1,2400 @@
+{
+  "status": "pass",
+  "swf_sha256": "4f7b894b11e1f377a91e1d4c9b132bd676f850bc6d49f48268fe9ecb7aaaa46b",
+  "count": 191,
+  "checks": [
+    {
+      "name": "input.sha256",
+      "actual": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384",
+      "expected": "1414862f84a1895b0bea54613f92fd48a59d11544a6097ef4dd2627c0dfe2384"
+    },
+    {
+      "name": "native.sha.MemberImpl/applyHeal",
+      "actual": "343cbc499674828c173e36ee5eb41eb5b1c4c9bf10092f3dc7a0896780f7957a",
+      "expected": "343cbc499674828c173e36ee5eb41eb5b1c4c9bf10092f3dc7a0896780f7957a"
+    },
+    {
+      "name": "native.header.MemberImpl/applyHeal",
+      "actual": [
+        6,
+        10,
+        1,
+        2
+      ],
+      "expected": [
+        6,
+        10,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/applyRegeneration",
+      "actual": "62be77e2d7f3b1fe33d3cfca5eae223944bdbe4394eb7654e028c229e83017c9",
+      "expected": "62be77e2d7f3b1fe33d3cfca5eae223944bdbe4394eb7654e028c229e83017c9"
+    },
+    {
+      "name": "native.header.MemberImpl/applyRegeneration",
+      "actual": [
+        5,
+        15,
+        1,
+        2
+      ],
+      "expected": [
+        5,
+        15,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/applyFeverDifference",
+      "actual": "9088008af0a725d32cb79fff3117e8b14756efe3a65cb9b67ab8647647617c00",
+      "expected": "9088008af0a725d32cb79fff3117e8b14756efe3a65cb9b67ab8647647617c00"
+    },
+    {
+      "name": "native.header.MemberImpl/applyFeverDifference",
+      "actual": [
+        2,
+        4,
+        1,
+        1
+      ],
+      "expected": [
+        2,
+        4,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/applyImpact",
+      "actual": "38e61684748e22d890fba88d41f4e3beac183e6906be62e01308b96700599bd5",
+      "expected": "38e61684748e22d890fba88d41f4e3beac183e6906be62e01308b96700599bd5"
+    },
+    {
+      "name": "native.header.MemberImpl/applyImpact",
+      "actual": [
+        4,
+        6,
+        1,
+        2
+      ],
+      "expected": [
+        4,
+        6,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/getSquadForImpact",
+      "actual": "15c352688da53adca0722e8cc039bc605b06698205aba3ea6667c34bcedf637a",
+      "expected": "15c352688da53adca0722e8cc039bc605b06698205aba3ea6667c34bcedf637a"
+    },
+    {
+      "name": "native.header.MemberImpl/getSquadForImpact",
+      "actual": [
+        1,
+        1,
+        1,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/isInPrimarySquad",
+      "actual": "3623176af358ffed1542c5747e3a9e63d3f8c466476b1414a8dce7fe6d938eb7",
+      "expected": "3623176af358ffed1542c5747e3a9e63d3f8c466476b1414a8dce7fe6d938eb7"
+    },
+    {
+      "name": "native.header.MemberImpl/isInPrimarySquad",
+      "actual": [
+        1,
+        1,
+        1,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/isHostile",
+      "actual": "4210b3064a089aca740850e98bdbf902bb524a18f8ab525e662c03f6bbff5c37",
+      "expected": "4210b3064a089aca740850e98bdbf902bb524a18f8ab525e662c03f6bbff5c37"
+    },
+    {
+      "name": "native.header.MemberImpl/isHostile",
+      "actual": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/getAdditionalDirectAttack",
+      "actual": "f271bd6e0990ebd5238dd0463e2a0fb4f14f8d3f7fd7a7f7eedd9ce1be1cbf67",
+      "expected": "f271bd6e0990ebd5238dd0463e2a0fb4f14f8d3f7fd7a7f7eedd9ce1be1cbf67"
+    },
+    {
+      "name": "native.header.MemberImpl/getAdditionalDirectAttack",
+      "actual": [
+        3,
+        11,
+        1,
+        2
+      ],
+      "expected": [
+        3,
+        11,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/wfxMergeDirect",
+      "actual": "9e94f2904e16303fa9eb4d2db70f97357cb304f94399ad7ca1493e8509efca61",
+      "expected": "9e94f2904e16303fa9eb4d2db70f97357cb304f94399ad7ca1493e8509efca61"
+    },
+    {
+      "name": "native.header.MemberImpl/wfxMergeDirect",
+      "actual": [
+        3,
+        5,
+        1,
+        2
+      ],
+      "expected": [
+        3,
+        5,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/wfxHealFever",
+      "actual": "48af4ba4546b75523d301d7758cacd136d5cf1d6326a9e0a601e20fb8a05001d",
+      "expected": "48af4ba4546b75523d301d7758cacd136d5cf1d6326a9e0a601e20fb8a05001d"
+    },
+    {
+      "name": "native.header.MemberImpl/wfxHealFever",
+      "actual": [
+        5,
+        7,
+        1,
+        2
+      ],
+      "expected": [
+        5,
+        7,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/wfxHealDamageRecord",
+      "actual": "6b82a06ba71af5fd25c6d080d8e501a5171136bb618995916360dfac549c9737",
+      "expected": "6b82a06ba71af5fd25c6d080d8e501a5171136bb618995916360dfac549c9737"
+    },
+    {
+      "name": "native.header.MemberImpl/wfxHealDamageRecord",
+      "actual": [
+        4,
+        9,
+        1,
+        2
+      ],
+      "expected": [
+        4,
+        9,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/wfxHealDamageEmit",
+      "actual": "42df231068d465b4a8fa89e1b5229544e707d2a565d9ed7c173b5b9dca9e69b9",
+      "expected": "42df231068d465b4a8fa89e1b5229544e707d2a565d9ed7c173b5b9dca9e69b9"
+    },
+    {
+      "name": "native.header.MemberImpl/wfxHealDamageEmit",
+      "actual": [
+        8,
+        8,
+        1,
+        2
+      ],
+      "expected": [
+        8,
+        8,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.SquadImpl/getMember",
+      "actual": "6513326f19ffe6e0e72023f5fc5c0c780e21380ae0316d10b2f9d56724298d59",
+      "expected": "6513326f19ffe6e0e72023f5fc5c0c780e21380ae0316d10b2f9d56724298d59"
+    },
+    {
+      "name": "native.header.SquadImpl/getMember",
+      "actual": [
+        2,
+        2,
+        1,
+        2
+      ],
+      "expected": [
+        2,
+        2,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.SquadImpl/getMemberAt",
+      "actual": "06dc52babdeebc989330282f3f829da076b00f9db4382601bde0cbc513a26ee6",
+      "expected": "06dc52babdeebc989330282f3f829da076b00f9db4382601bde0cbc513a26ee6"
+    },
+    {
+      "name": "native.header.SquadImpl/getMemberAt",
+      "actual": [
+        2,
+        2,
+        1,
+        2
+      ],
+      "expected": [
+        2,
+        2,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.SquadImpl/isPrimary",
+      "actual": "b0e18ffcee3cf8185c1fd57f7cfd5924b280addd74ab64464b2300a2d1a383ef",
+      "expected": "b0e18ffcee3cf8185c1fd57f7cfd5924b280addd74ab64464b2300a2d1a383ef"
+    },
+    {
+      "name": "native.header.SquadImpl/isPrimary",
+      "actual": [
+        2,
+        1,
+        1,
+        2
+      ],
+      "expected": [
+        2,
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.SquadImpl/applyImpact",
+      "actual": "a06e36219f0da2abd25bf0937326195ee46ffa045ce86b41a4eed388f52b8a15",
+      "expected": "a06e36219f0da2abd25bf0937326195ee46ffa045ce86b41a4eed388f52b8a15"
+    },
+    {
+      "name": "native.header.SquadImpl/applyImpact",
+      "actual": [
+        3,
+        4,
+        1,
+        2
+      ],
+      "expected": [
+        3,
+        4,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.SquadImpl/iter",
+      "actual": "3a30183ef76bd799247edea066d95e74e0dc57e1254ae23cebf3da19a658c6a6",
+      "expected": "3a30183ef76bd799247edea066d95e74e0dc57e1254ae23cebf3da19a658c6a6"
+    },
+    {
+      "name": "native.header.SquadImpl/iter",
+      "actual": [
+        4,
+        5,
+        1,
+        2
+      ],
+      "expected": [
+        4,
+        5,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.SquadImpl/isHostile",
+      "actual": "4210b3064a089aca740850e98bdbf902bb524a18f8ab525e662c03f6bbff5c37",
+      "expected": "4210b3064a089aca740850e98bdbf902bb524a18f8ab525e662c03f6bbff5c37"
+    },
+    {
+      "name": "native.header.SquadImpl/isHostile",
+      "actual": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.ConditionSlot/wfxRows",
+      "actual": "043dc1989b5bced086cb2b10ceba115cf29139c75f6b43fe1a18fe7c1d87bba3",
+      "expected": "043dc1989b5bced086cb2b10ceba115cf29139c75f6b43fe1a18fe7c1d87bba3"
+    },
+    {
+      "name": "native.header.ConditionSlot/wfxRows",
+      "actual": [
+        3,
+        7,
+        1,
+        2
+      ],
+      "expected": [
+        3,
+        7,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ConditionSlot/getAdditionalDirectAttack",
+      "actual": "57e7a78d3c1a363bf0b55aba60b902162b6bc70a23a15bb2487f93bbd1c4796d",
+      "expected": "57e7a78d3c1a363bf0b55aba60b902162b6bc70a23a15bb2487f93bbd1c4796d"
+    },
+    {
+      "name": "native.header.ConditionSlot/getAdditionalDirectAttack",
+      "actual": [
+        3,
+        10,
+        1,
+        2
+      ],
+      "expected": [
+        3,
+        10,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.MemberAbilityTotalizerImpl/getAdditionalDirectAttack",
+      "actual": "b243b04faceff243cfadaf4eb278b32df14f1d2d5ed7e0403912567042eae3b3",
+      "expected": "b243b04faceff243cfadaf4eb278b32df14f1d2d5ed7e0403912567042eae3b3"
+    },
+    {
+      "name": "native.header.MemberAbilityTotalizerImpl/getAdditionalDirectAttack",
+      "actual": [
+        3,
+        2,
+        1,
+        2
+      ],
+      "expected": [
+        3,
+        2,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.AdditionalDirectAttackContent$/getBetter",
+      "actual": "615f1c0fc37b3bb6832124c4162747e62421aaa7370f4021dfcec5c461cb9ffe",
+      "expected": "615f1c0fc37b3bb6832124c4162747e62421aaa7370f4021dfcec5c461cb9ffe"
+    },
+    {
+      "name": "native.header.AdditionalDirectAttackContent$/getBetter",
+      "actual": [
+        2,
+        6,
+        1,
+        1
+      ],
+      "expected": [
+        2,
+        6,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.FeverPointGaugeImpl/addFeverPoint",
+      "actual": "ced6a6754f7bfdf804a275acffd21e34068f994271f5f0e69cef89c378fdd0f8",
+      "expected": "ced6a6754f7bfdf804a275acffd21e34068f994271f5f0e69cef89c378fdd0f8"
+    },
+    {
+      "name": "native.header.FeverPointGaugeImpl/addFeverPoint",
+      "actual": [
+        4,
+        6,
+        1,
+        2
+      ],
+      "expected": [
+        4,
+        6,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ZoneImpl/addFeverPoint",
+      "actual": "7e7f6fd6e6972783a72e259bd094fc49396ef85a16bcd41a5004bb3755b07c02",
+      "expected": "7e7f6fd6e6972783a72e259bd094fc49396ef85a16bcd41a5004bb3755b07c02"
+    },
+    {
+      "name": "native.header.ZoneImpl/addFeverPoint",
+      "actual": [
+        4,
+        5,
+        1,
+        2
+      ],
+      "expected": [
+        4,
+        5,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.DirectAttackScheduler/run",
+      "actual": "8a15699e0b7ec013334ae0a11ba3448bf1966e056796d89eb330e3c122795da0",
+      "expected": "8a15699e0b7ec013334ae0a11ba3448bf1966e056796d89eb330e3c122795da0"
+    },
+    {
+      "name": "native.header.DirectAttackScheduler/run",
+      "actual": [
+        2,
+        1,
+        1,
+        2
+      ],
+      "expected": [
+        2,
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.DirectAttackScheduler/schedule",
+      "actual": "5b481b61e724c59730f5dee178bade74b95eace7c47d89238f75421947b0af1f",
+      "expected": "5b481b61e724c59730f5dee178bade74b95eace7c47d89238f75421947b0af1f"
+    },
+    {
+      "name": "native.header.DirectAttackScheduler/schedule",
+      "actual": [
+        6,
+        9,
+        1,
+        2
+      ],
+      "expected": [
+        6,
+        9,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.Battle/applyCoopCommand",
+      "actual": "a93dccd92a5fd3fd1a10a8afef2f8c813ee45265c675a61bfea9b5bf0e97e9bd",
+      "expected": "a93dccd92a5fd3fd1a10a8afef2f8c813ee45265c675a61bfea9b5bf0e97e9bd"
+    },
+    {
+      "name": "native.header.Battle/applyCoopCommand",
+      "actual": [
+        14,
+        16,
+        1,
+        2
+      ],
+      "expected": [
+        14,
+        16,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ImpactManagerImpl/processImpactResult",
+      "actual": "ef66ba37672e518e77c2de370124b2d482d9bbf9f08578d6b2a65953a8c4d401",
+      "expected": "ef66ba37672e518e77c2de370124b2d482d9bbf9f08578d6b2a65953a8c4d401"
+    },
+    {
+      "name": "native.header.ImpactManagerImpl/processImpactResult",
+      "actual": [
+        4,
+        6,
+        1,
+        2
+      ],
+      "expected": [
+        4,
+        6,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ImpactManagerImpl/processImpact",
+      "actual": "9e4937177716412998cb39acb9bc924b324dfa85fd4168b1b2533a6b5b050d7b",
+      "expected": "9e4937177716412998cb39acb9bc924b324dfa85fd4168b1b2533a6b5b050d7b"
+    },
+    {
+      "name": "native.header.ImpactManagerImpl/processImpact",
+      "actual": [
+        5,
+        18,
+        1,
+        2
+      ],
+      "expected": [
+        5,
+        18,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ImpactManagerImpl/mergeAndApplyImpact",
+      "actual": "27962392e41c427ab1c82215a18878b3450a7204ac91d19019e296ebf289c4a5",
+      "expected": "27962392e41c427ab1c82215a18878b3450a7204ac91d19019e296ebf289c4a5"
+    },
+    {
+      "name": "native.header.ImpactManagerImpl/mergeAndApplyImpact",
+      "actual": [
+        9,
+        24,
+        1,
+        2
+      ],
+      "expected": [
+        9,
+        24,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ImpactManagerImpl/applyImpact",
+      "actual": "9ea8fe0854b98da00c67e9b95e5e03062922f53801033e118c6799bfa0443fd0",
+      "expected": "9ea8fe0854b98da00c67e9b95e5e03062922f53801033e118c6799bfa0443fd0"
+    },
+    {
+      "name": "native.header.ImpactManagerImpl/applyImpact",
+      "actual": [
+        4,
+        19,
+        1,
+        2
+      ],
+      "expected": [
+        4,
+        19,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ImpactManagerImpl/applyImpactImmediately",
+      "actual": "41486285229fd1ae9c90020d427e8620a23416968f7182a4f2558cfe63fec602",
+      "expected": "41486285229fd1ae9c90020d427e8620a23416968f7182a4f2558cfe63fec602"
+    },
+    {
+      "name": "native.header.ImpactManagerImpl/applyImpactImmediately",
+      "actual": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "expected": [
+        4,
+        3,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.NormalHealCalculator/calculate",
+      "actual": "f6a77b2984b6bd5b8b129607ec70332dbf2c518a640ad59bd4df519bc9f7ffd1",
+      "expected": "f6a77b2984b6bd5b8b129607ec70332dbf2c518a640ad59bd4df519bc9f7ffd1"
+    },
+    {
+      "name": "native.header.NormalHealCalculator/calculate",
+      "actual": [
+        18,
+        10,
+        1,
+        2
+      ],
+      "expected": [
+        18,
+        10,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.FixedHealCalculator/calculate",
+      "actual": "b9f7ffe303830bf73f400040fa15f35db3e8246de0a4f4ff70533496c3628d68",
+      "expected": "b9f7ffe303830bf73f400040fa15f35db3e8246de0a4f4ff70533496c3628d68"
+    },
+    {
+      "name": "native.header.FixedHealCalculator/calculate",
+      "actual": [
+        18,
+        9,
+        1,
+        1
+      ],
+      "expected": [
+        18,
+        9,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.RatioHealCalculator/calculate",
+      "actual": "61fc5bef77cf621c937ad7b24e08eba5933f1aafc1b00fb40ca71d79e114f8f6",
+      "expected": "61fc5bef77cf621c937ad7b24e08eba5933f1aafc1b00fb40ca71d79e114f8f6"
+    },
+    {
+      "name": "native.header.RatioHealCalculator/calculate",
+      "actual": [
+        18,
+        10,
+        1,
+        1
+      ],
+      "expected": [
+        18,
+        10,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.ContinuationRatioHealCalculator/calculate",
+      "actual": "3ca61f65b05e21b8df87fe74f67ae13e54d22a669b434869cff22dc0dbbebd08",
+      "expected": "3ca61f65b05e21b8df87fe74f67ae13e54d22a669b434869cff22dc0dbbebd08"
+    },
+    {
+      "name": "native.header.ContinuationRatioHealCalculator/calculate",
+      "actual": [
+        18,
+        6,
+        1,
+        1
+      ],
+      "expected": [
+        18,
+        6,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/applyRegenerationHandler",
+      "actual": "73c4f2205b675ab5cc864c52b0bb2a58f8b88ec6b538c6ac70d7c9e8a668591e",
+      "expected": "73c4f2205b675ab5cc864c52b0bb2a58f8b88ec6b538c6ac70d7c9e8a668591e"
+    },
+    {
+      "name": "native.header.MemberImpl/applyRegenerationHandler",
+      "actual": [
+        21,
+        5,
+        1,
+        2
+      ],
+      "expected": [
+        21,
+        5,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ImpactResult/toCoopCommand",
+      "actual": "afccfd52b0590b9e5873670c43a439d0fea5b952dfc73635756457c4e6fa7abe",
+      "expected": "afccfd52b0590b9e5873670c43a439d0fea5b952dfc73635756457c4e6fa7abe"
+    },
+    {
+      "name": "native.header.ImpactResult/toCoopCommand",
+      "actual": [
+        17,
+        15,
+        1,
+        2
+      ],
+      "expected": [
+        17,
+        15,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.SquadManagerImpl/summerizeHealResult",
+      "actual": "acb0e2e6f88f2752a8cb52c61416602e0e35b2defa43d4dc9286a621325c440e",
+      "expected": "acb0e2e6f88f2752a8cb52c61416602e0e35b2defa43d4dc9286a621325c440e"
+    },
+    {
+      "name": "native.header.SquadManagerImpl/summerizeHealResult",
+      "actual": [
+        3,
+        5,
+        1,
+        2
+      ],
+      "expected": [
+        3,
+        5,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.Battle/get_id",
+      "actual": "77b837a770a48569ec1c7248148b2df2eba518040975f9ae81f5c5214ac61785",
+      "expected": "77b837a770a48569ec1c7248148b2df2eba518040975f9ae81f5c5214ac61785"
+    },
+    {
+      "name": "native.header.Battle/get_id",
+      "actual": [
+        1,
+        1,
+        1,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.Battle/__isMyBattle__",
+      "actual": "b4f0f6af5999065877876061c3b95b8a14634ed5e6f700d8537d3469b703b728",
+      "expected": "b4f0f6af5999065877876061c3b95b8a14634ed5e6f700d8537d3469b703b728"
+    },
+    {
+      "name": "native.header.Battle/__isMyBattle__",
+      "actual": [
+        1,
+        1,
+        1,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.Mate/applyImpact",
+      "actual": "120087dc491965fa9bf7ecb7c1d55e3e668df2f7a9dfd898450ffe70a793838e",
+      "expected": "120087dc491965fa9bf7ecb7c1d55e3e668df2f7a9dfd898450ffe70a793838e"
+    },
+    {
+      "name": "native.header.Mate/applyImpact",
+      "actual": [
+        2,
+        4,
+        1,
+        1
+      ],
+      "expected": [
+        2,
+        4,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.ImpactManagerImpl/processImpacts",
+      "actual": "ed8e76bf9e73930d924f8e0c3e31829251f8fe96f246b30f2bf78ee4d9d063f8",
+      "expected": "ed8e76bf9e73930d924f8e0c3e31829251f8fe96f246b30f2bf78ee4d9d063f8"
+    },
+    {
+      "name": "native.header.ImpactManagerImpl/processImpacts",
+      "actual": [
+        5,
+        8,
+        1,
+        2
+      ],
+      "expected": [
+        5,
+        8,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ImpactManagerImpl/_add",
+      "actual": "061bb8fe187bc339c4a02a1d0bf9b054f8e90c4b218c4e8d1b360b4e2cdf7a95",
+      "expected": "061bb8fe187bc339c4a02a1d0bf9b054f8e90c4b218c4e8d1b360b4e2cdf7a95"
+    },
+    {
+      "name": "native.header.ImpactManagerImpl/_add",
+      "actual": [
+        5,
+        16,
+        1,
+        2
+      ],
+      "expected": [
+        5,
+        16,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ImpactManagerImpl$/shouldSync",
+      "actual": "aba74a6a2ce498b6b412aca7e78a1c6930df20d2bbc9e1c41fad1e7645e4c6cd",
+      "expected": "aba74a6a2ce498b6b412aca7e78a1c6930df20d2bbc9e1c41fad1e7645e4c6cd"
+    },
+    {
+      "name": "native.header.ImpactManagerImpl$/shouldSync",
+      "actual": [
+        2,
+        8,
+        1,
+        1
+      ],
+      "expected": [
+        2,
+        8,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.MemberImpl/applyCureDifference",
+      "actual": "963ede4983d2b3f8d60ff51caa58f185ebb7f7b7c8bee68626b2a2094030f1b3",
+      "expected": "963ede4983d2b3f8d60ff51caa58f185ebb7f7b7c8bee68626b2a2094030f1b3"
+    },
+    {
+      "name": "native.header.MemberImpl/applyCureDifference",
+      "actual": [
+        2,
+        3,
+        1,
+        1
+      ],
+      "expected": [
+        2,
+        3,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "native.sha.BattleScenePlayingStateImpl/distributeCoopCommand",
+      "actual": "2cfad3a7157c27292612a748fd7dbbbcf3dc565b80eaf7152e8cec772548e309",
+      "expected": "2cfad3a7157c27292612a748fd7dbbbcf3dc565b80eaf7152e8cec772548e309"
+    },
+    {
+      "name": "native.header.BattleScenePlayingStateImpl/distributeCoopCommand",
+      "actual": [
+        5,
+        11,
+        1,
+        2
+      ],
+      "expected": [
+        5,
+        11,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ImpactManagerImpl/add",
+      "actual": "bc2b2d602e34b4b364ee62bdec9bc022fd13fe6c62244a597943a1ad40b078b5",
+      "expected": "bc2b2d602e34b4b364ee62bdec9bc022fd13fe6c62244a597943a1ad40b078b5"
+    },
+    {
+      "name": "native.header.ImpactManagerImpl/add",
+      "actual": [
+        4,
+        3,
+        1,
+        2
+      ],
+      "expected": [
+        4,
+        3,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ActionEvaluator/addImpactToSubject",
+      "actual": "2cd4d6fee6d01e91a67829603085af9270298c361b492fa6dedab72c707e9a02",
+      "expected": "2cd4d6fee6d01e91a67829603085af9270298c361b492fa6dedab72c707e9a02"
+    },
+    {
+      "name": "native.header.ActionEvaluator/addImpactToSubject",
+      "actual": [
+        20,
+        18,
+        1,
+        2
+      ],
+      "expected": [
+        20,
+        18,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ActionEvaluator/calculateImpactId",
+      "actual": "3f3cb51b4b1320f31c94b9376557f7c612b140a6681c06418bd265f41690680e",
+      "expected": "3f3cb51b4b1320f31c94b9376557f7c612b140a6681c06418bd265f41690680e"
+    },
+    {
+      "name": "native.header.ActionEvaluator/calculateImpactId",
+      "actual": [
+        6,
+        6,
+        1,
+        2
+      ],
+      "expected": [
+        6,
+        6,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "native.sha.ActionEvaluator/evalCommand",
+      "actual": "da225036264d7261f207f3048eb28226337bfde261a84ee70803628de8f9c05a",
+      "expected": "da225036264d7261f207f3048eb28226337bfde261a84ee70803628de8f9c05a"
+    },
+    {
+      "name": "native.header.ActionEvaluator/evalCommand",
+      "actual": [
+        109,
+        191,
+        1,
+        2
+      ],
+      "expected": [
+        109,
+        191,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "direct.k0.native_best_plus_bonus",
+      "actual": 5,
+      "expected": 5
+    },
+    {
+      "name": "direct.k0.native_damage_preserved",
+      "actual": 25000.0,
+      "expected": 25000
+    },
+    {
+      "name": "direct.k1.native_best_plus_bonus",
+      "actual": 15,
+      "expected": 15
+    },
+    {
+      "name": "direct.k1.native_damage_preserved",
+      "actual": 25000.0,
+      "expected": 25000
+    },
+    {
+      "name": "direct.k2.native_best_plus_bonus",
+      "actual": 16,
+      "expected": 16
+    },
+    {
+      "name": "direct.k2.native_damage_preserved",
+      "actual": 25000.0,
+      "expected": 25000
+    },
+    {
+      "name": "direct.k6.native_best_plus_bonus",
+      "actual": 20,
+      "expected": 20
+    },
+    {
+      "name": "direct.k6.native_damage_preserved",
+      "actual": 25000.0,
+      "expected": 25000
+    },
+    {
+      "name": "direct.k10.native_best_plus_bonus",
+      "actual": 20,
+      "expected": 20
+    },
+    {
+      "name": "direct.k10.native_damage_preserved",
+      "actual": 25000.0,
+      "expected": 25000
+    },
+    {
+      "name": "direct.merge_single_schedule",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "direct.merge_native_toughness",
+      "actual": 18.0,
+      "expected": 18
+    },
+    {
+      "name": "direct.merge_extra_combo",
+      "actual": 17,
+      "expected": 17
+    },
+    {
+      "name": "direct.merge_extra_stat",
+      "actual": 17,
+      "expected": 17
+    },
+    {
+      "name": "direct.negative_sum_clamp",
+      "actual": 2,
+      "expected": 2
+    },
+    {
+      "name": "heal.490.owner_queue",
+      "actual": [],
+      "expected": []
+    },
+    {
+      "name": "heal.490.native_fever",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "heal.490.one_api_or_zero",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "heal.500.owner_queue",
+      "actual": [
+        [
+          0,
+          4.0,
+          10.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          10
+        ]
+      ]
+    },
+    {
+      "name": "heal.500.native_fever",
+      "actual": 50.0,
+      "expected": 50
+    },
+    {
+      "name": "heal.500.one_api_or_zero",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "heal.1200.owner_queue",
+      "actual": [
+        [
+          0,
+          4.0,
+          20.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          20
+        ]
+      ]
+    },
+    {
+      "name": "heal.1200.native_fever",
+      "actual": 100.0,
+      "expected": 100
+    },
+    {
+      "name": "heal.1200.one_api_or_zero",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "heal.hidden_owner_split_quantization",
+      "actual": [
+        [
+          0,
+          4.0,
+          15.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          15
+        ]
+      ]
+    },
+    {
+      "name": "heal.hidden_owner_overflow_native_fever",
+      "actual": 100.0,
+      "expected": 100
+    },
+    {
+      "name": "heal.independent_subthreshold_never_carries",
+      "actual": [],
+      "expected": []
+    },
+    {
+      "name": "heal.independent_subthreshold_no_fever",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "heal.two_owners_layer_weight",
+      "actual": [
+        [
+          0,
+          4.0,
+          10.0
+        ],
+        [
+          1,
+          4.0,
+          20.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          10
+        ],
+        [
+          1,
+          4,
+          20
+        ]
+      ]
+    },
+    {
+      "name": "heal.two_owners_two_native_calls",
+      "actual": 2,
+      "expected": 2
+    },
+    {
+      "name": "heal.two_owners_native_fever_sum",
+      "actual": 150.0,
+      "expected": 150
+    },
+    {
+      "name": "heal.coop_same_id",
+      "actual": [
+        [
+          0,
+          4.0,
+          10.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          10
+        ]
+      ]
+    },
+    {
+      "name": "heal.coop_cross_id",
+      "actual": [
+        [
+          0,
+          4.0,
+          10.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          10
+        ]
+      ]
+    },
+    {
+      "name": "heal.rejected",
+      "actual": [],
+      "expected": []
+    },
+    {
+      "name": "heal.remote_simulation_owner_gate",
+      "actual": [],
+      "expected": []
+    },
+    {
+      "name": "heal.remote_simulation_no_fever",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "heal.aliased_member_is_not_second_owner",
+      "actual": [
+        [
+          0,
+          4.0,
+          10.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          10
+        ]
+      ]
+    },
+    {
+      "name": "heal.aliased_member_one_fever_call",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fever.ruling_A.two_members_two_calls",
+      "actual": 2,
+      "expected": 2
+    },
+    {
+      "name": "fever.ruling_A.two_members_native_total",
+      "actual": 100.0,
+      "expected": 100
+    },
+    {
+      "name": "fever.ruling_A.same_holder_damage_aggregation",
+      "actual": [
+        [
+          0,
+          4.0,
+          20.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          20
+        ]
+      ]
+    },
+    {
+      "name": "legacy30_31.same_id_local.v35j_identical",
+      "actual": {
+        "pending": [
+          [
+            1,
+            4,
+            5.0
+          ]
+        ],
+        "calls": 1,
+        "fever": 50.0,
+        "hp": 550000.0,
+        "stats": {
+          "healReceiveCount": 1,
+          "healReceiveValueWithOverheal": 50000.0,
+          "healReceiveValue": 50000.0
+        },
+        "events": [
+          [
+            "count",
+            [
+              null,
+              1,
+              1,
+              true
+            ]
+          ],
+          [
+            "high",
+            [
+              500.0
+            ]
+          ],
+          [
+            "effect",
+            [
+              [
+                "cure",
+                [
+                  1,
+                  2,
+                  500.0
+                ]
+              ]
+            ]
+          ],
+          [
+            "hit"
+          ],
+          [
+            "summarize",
+            50000.0
+          ]
+        ]
+      },
+      "expected": {
+        "pending": [
+          [
+            1,
+            4,
+            5.0
+          ]
+        ],
+        "calls": 1,
+        "fever": 50.0,
+        "hp": 550000.0,
+        "stats": {
+          "healReceiveCount": 1,
+          "healReceiveValueWithOverheal": 50000.0,
+          "healReceiveValue": 50000.0
+        },
+        "events": [
+          [
+            "count",
+            [
+              null,
+              1,
+              1,
+              true
+            ]
+          ],
+          [
+            "high",
+            [
+              500.0
+            ]
+          ],
+          [
+            "effect",
+            [
+              [
+                "cure",
+                [
+                  1,
+                  2,
+                  500.0
+                ]
+              ]
+            ]
+          ],
+          [
+            "hit"
+          ],
+          [
+            "summarize",
+            50000.0
+          ]
+        ]
+      }
+    },
+    {
+      "name": "legacy30_31.same_id_local.damage_gate",
+      "actual": [
+        [
+          1,
+          4,
+          5.0
+        ]
+      ],
+      "expected": [
+        [
+          1,
+          4,
+          5
+        ]
+      ]
+    },
+    {
+      "name": "legacy30_31.same_id_local.fever_gate",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "legacy30_31.cross_id_local.v35j_identical",
+      "actual": {
+        "pending": [],
+        "calls": 0,
+        "fever": 0,
+        "hp": 550000.0,
+        "stats": {
+          "healReceiveCount": 1,
+          "healReceiveValueWithOverheal": 50000.0,
+          "healReceiveValue": 50000.0
+        },
+        "events": [
+          [
+            "count",
+            [
+              null,
+              1,
+              1,
+              true
+            ]
+          ],
+          [
+            "high",
+            [
+              500.0
+            ]
+          ],
+          [
+            "effect",
+            [
+              [
+                "cure",
+                [
+                  1,
+                  2,
+                  500.0
+                ]
+              ]
+            ]
+          ],
+          [
+            "hit"
+          ],
+          [
+            "coop"
+          ]
+        ]
+      },
+      "expected": {
+        "pending": [],
+        "calls": 0,
+        "fever": 0,
+        "hp": 550000.0,
+        "stats": {
+          "healReceiveCount": 1,
+          "healReceiveValueWithOverheal": 50000.0,
+          "healReceiveValue": 50000.0
+        },
+        "events": [
+          [
+            "count",
+            [
+              null,
+              1,
+              1,
+              true
+            ]
+          ],
+          [
+            "high",
+            [
+              500.0
+            ]
+          ],
+          [
+            "effect",
+            [
+              [
+                "cure",
+                [
+                  1,
+                  2,
+                  500.0
+                ]
+              ]
+            ]
+          ],
+          [
+            "hit"
+          ],
+          [
+            "coop"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "legacy30_31.cross_id_local.damage_gate",
+      "actual": [],
+      "expected": []
+    },
+    {
+      "name": "legacy30_31.cross_id_local.fever_gate",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "legacy30_31.same_id_coop.v35j_identical",
+      "actual": {
+        "pending": [],
+        "calls": 0,
+        "fever": 0,
+        "hp": 550000.0,
+        "stats": {
+          "healReceiveCount": 1,
+          "healReceiveValueWithOverheal": 50000.0,
+          "healReceiveValue": 50000.0
+        },
+        "events": [
+          [
+            "count",
+            [
+              null,
+              1,
+              1,
+              true
+            ]
+          ],
+          [
+            "high",
+            [
+              500.0
+            ]
+          ],
+          [
+            "effect",
+            [
+              [
+                "cure",
+                [
+                  1,
+                  2,
+                  500.0
+                ]
+              ]
+            ]
+          ],
+          [
+            "hit"
+          ],
+          [
+            "summarize",
+            50000.0
+          ]
+        ]
+      },
+      "expected": {
+        "pending": [],
+        "calls": 0,
+        "fever": 0,
+        "hp": 550000.0,
+        "stats": {
+          "healReceiveCount": 1,
+          "healReceiveValueWithOverheal": 50000.0,
+          "healReceiveValue": 50000.0
+        },
+        "events": [
+          [
+            "count",
+            [
+              null,
+              1,
+              1,
+              true
+            ]
+          ],
+          [
+            "high",
+            [
+              500.0
+            ]
+          ],
+          [
+            "effect",
+            [
+              [
+                "cure",
+                [
+                  1,
+                  2,
+                  500.0
+                ]
+              ]
+            ]
+          ],
+          [
+            "hit"
+          ],
+          [
+            "summarize",
+            50000.0
+          ]
+        ]
+      }
+    },
+    {
+      "name": "legacy30_31.same_id_coop.damage_gate",
+      "actual": [],
+      "expected": []
+    },
+    {
+      "name": "legacy30_31.same_id_coop.fever_gate",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "legacy30_31.cross_id_coop.v35j_identical",
+      "actual": {
+        "pending": [],
+        "calls": 0,
+        "fever": 0,
+        "hp": 550000.0,
+        "stats": {
+          "healReceiveCount": 1,
+          "healReceiveValueWithOverheal": 50000.0,
+          "healReceiveValue": 50000.0
+        },
+        "events": [
+          [
+            "count",
+            [
+              null,
+              1,
+              1,
+              true
+            ]
+          ],
+          [
+            "high",
+            [
+              500.0
+            ]
+          ],
+          [
+            "effect",
+            [
+              [
+                "cure",
+                [
+                  1,
+                  2,
+                  500.0
+                ]
+              ]
+            ]
+          ],
+          [
+            "hit"
+          ],
+          [
+            "coop"
+          ]
+        ]
+      },
+      "expected": {
+        "pending": [],
+        "calls": 0,
+        "fever": 0,
+        "hp": 550000.0,
+        "stats": {
+          "healReceiveCount": 1,
+          "healReceiveValueWithOverheal": 50000.0,
+          "healReceiveValue": 50000.0
+        },
+        "events": [
+          [
+            "count",
+            [
+              null,
+              1,
+              1,
+              true
+            ]
+          ],
+          [
+            "high",
+            [
+              500.0
+            ]
+          ],
+          [
+            "effect",
+            [
+              [
+                "cure",
+                [
+                  1,
+                  2,
+                  500.0
+                ]
+              ]
+            ]
+          ],
+          [
+            "hit"
+          ],
+          [
+            "coop"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "legacy30_31.cross_id_coop.damage_gate",
+      "actual": [],
+      "expected": []
+    },
+    {
+      "name": "legacy30_31.cross_id_coop.fever_gate",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "network.receiver_one_selected_member",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "network.receiver_target_identity",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "network.receiver_preserves_payload_identity",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "network.receiver_marks_coop_source",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "network.queued_without_actual_heal_no_hp_change",
+      "actual": 500000,
+      "expected": 500000
+    },
+    {
+      "name": "network.queued_without_actual_heal_no_damage",
+      "actual": [],
+      "expected": []
+    },
+    {
+      "name": "network.queued_without_actual_heal_no_fever",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "network.native_calculator_preserves_cross_id",
+      "actual": "battle-B",
+      "expected": "battle-B"
+    },
+    {
+      "name": "network.native_calculator_five_percent_heal",
+      "actual": 500.0,
+      "expected": 500
+    },
+    {
+      "name": "network.local_actual_hp_write",
+      "actual": 50000.0,
+      "expected": 50000
+    },
+    {
+      "name": "network.local_actual_once_holder_damage",
+      "actual": [
+        [
+          0,
+          4.0,
+          10.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          10
+        ]
+      ]
+    },
+    {
+      "name": "network.local_actual_once_holder_fever",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "network.local_actual_native_fever_value",
+      "actual": 50.0,
+      "expected": 50
+    },
+    {
+      "name": "network.local_actual_emits_one_feedback",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "network.feedback_destination_is_source",
+      "actual": "battle-B",
+      "expected": "battle-B"
+    },
+    {
+      "name": "network.feedback_only_statistics",
+      "actual": [
+        [
+          {
+            "isHealRejected": false,
+            "createdBySummonsMultiBall": false,
+            "originMemberIndex": 1,
+            "shouldCountForMission": false,
+            "statsBattleId": "battle-B",
+            "isFromHostile": false,
+            "createdByContinue": false,
+            "contributorBattleId": "battle-B",
+            "cure": 500.0
+          },
+          50000.0
+        ]
+      ],
+      "expected": [
+        [
+          {
+            "isHealRejected": false,
+            "createdBySummonsMultiBall": false,
+            "originMemberIndex": 1,
+            "shouldCountForMission": false,
+            "statsBattleId": "battle-B",
+            "isFromHostile": false,
+            "createdByContinue": false,
+            "contributorBattleId": "battle-B",
+            "cure": 500.0
+          },
+          50000
+        ]
+      ]
+    },
+    {
+      "name": "network.feedback_no_second_fever",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "network.feedback_no_second_damage",
+      "actual": [
+        [
+          0,
+          4.0,
+          10.0
+        ]
+      ],
+      "expected": [
+        [
+          0,
+          4,
+          10
+        ]
+      ]
+    },
+    {
+      "name": "network.feedback_no_second_hp_write",
+      "actual": 550000.0,
+      "expected": 550000
+    },
+    {
+      "name": "network.feedback_wrong_destination_ignored",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "network.friendly_heal_no_impact_broadcast",
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "network.mirror_simulation_no_holder_damage",
+      "actual": [],
+      "expected": []
+    },
+    {
+      "name": "network.mirror_simulation_no_holder_fever",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "network.distribute_remote_to_one_local_driver",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "network.distribute_skips_origin_mirror",
+      "actual": [
+        "battle-C"
+      ],
+      "expected": [
+        "battle-C"
+      ]
+    },
+    {
+      "name": "network.forwarding_only_no_actual_side_effect",
+      "actual": [
+        550000.0,
+        1,
+        [
+          [
+            0,
+            4.0,
+            10.0
+          ]
+        ]
+      ],
+      "expected": [
+        550000.0,
+        1,
+        [
+          [
+            0,
+            4.0,
+            10.0
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "network.distribute_own_source_no_local_echo",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "network.distribute_own_source_other_mirrors",
+      "actual": [
+        "battle-B",
+        "battle-C"
+      ],
+      "expected": [
+        "battle-B",
+        "battle-C"
+      ]
+    },
+    {
+      "name": "network.local_forwarding_no_second_fever",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "damage.attacker_identity_is_holder",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "damage.attack_origin_is_holder",
+      "actual": 0,
+      "expected": 0
+    },
+    {
+      "name": "damage.native_calculator_holder_attack_and_bonus",
+      "actual": 96000.0,
+      "expected": 96000
+    },
+    {
+      "name": "damage.native_category_statistics",
+      "actual": [
+        [
+          31,
+          96000.0
+        ]
+      ],
+      "expected": [
+        [
+          31,
+          96000
+        ]
+      ]
+    },
+    {
+      "name": "damage.native_member_and_origin_routing",
+      "actual": [
+        [
+          "member",
+          0,
+          9600000.0
+        ],
+        [
+          "origin",
+          0,
+          9600000.0
+        ]
+      ],
+      "expected": [
+        [
+          "member",
+          0,
+          9600000
+        ],
+        [
+          "origin",
+          0,
+          9600000
+        ]
+      ]
+    },
+    {
+      "name": "evidence.source_locks_unchanged_during_execution",
+      "actual": true,
+      "expected": true
+    }
+  ],
+  "evidence_source_locks": [
+    {
+      "path": "../run1/core_combat/runtime.py",
+      "sha256": "a200e72ead5925f95b4187b8debe63db51762341ff601baf7672a3dfc2c3b00d"
+    },
+    {
+      "path": "audit/cross_cases.py",
+      "sha256": "5450c498db18b669c988b6080df75e25e8a495ce9dc369f2f5c58640d4c7b4ef"
+    },
+    {
+      "path": "audit/cross_review.py",
+      "sha256": "7d162514a3833f2126820eab0dd13b8766875bee4617554a60e0eaeb23b64482"
+    },
+    {
+      "path": "audit/native-evidence.json",
+      "sha256": "2b47b52238c417b5dc7bf0ed2a78b8520274ceb68b2183bc71045f39a69bbcc9"
+    },
+    {
+      "path": "audit/native-pcode/ActionEvaluator__addImpactToSubject.pcode.txt",
+      "sha256": "4e1093c6477c9aa272db3f5777b46956c1c7dde8984f81d0f52e28cfa9f23d89"
+    },
+    {
+      "path": "audit/native-pcode/ActionEvaluator__calculateImpactId.pcode.txt",
+      "sha256": "bff9e2a63bcdd9844d5a869595be013a91588fcc03fd289c38b9e80cd1fe223d"
+    },
+    {
+      "path": "audit/native-pcode/ActionEvaluator__evalCommand.pcode.txt",
+      "sha256": "fee75ef52b13e8fedd35e7c6081ea43c1d2f61638c3b4b40f9cc75b39c17d444"
+    },
+    {
+      "path": "audit/native-pcode/ActionEvaluator__heal-windows.pcode.txt",
+      "sha256": "86653830dd8bdf061007d3bca674513644d803eecc8a78f0ab96bcf4f1a282b3"
+    },
+    {
+      "path": "audit/native-pcode/AdditionalDirectAttackContent$__getBetter.pcode.txt",
+      "sha256": "a468bdef74d54c793499de7db58052d9f71dc863d245c2e33d3cee9048947503"
+    },
+    {
+      "path": "audit/native-pcode/Battle____isMyBattle__.pcode.txt",
+      "sha256": "1cfbb2835f1e9ad655241cbd6b2b70eeb99c8338537e32729746739e936534c3"
+    },
+    {
+      "path": "audit/native-pcode/Battle__applyCoopCommand.pcode.txt",
+      "sha256": "87270c0fde6b441ff32530c40199610cca363bfa1b43b7399ae70c9be39f1254"
+    },
+    {
+      "path": "audit/native-pcode/Battle__get_id.pcode.txt",
+      "sha256": "276be8bd9717066905dc672ea1887f89571caeb59b78cea969588d7c183b4191"
+    },
+    {
+      "path": "audit/native-pcode/BattleScenePlayingStateImpl__distributeCoopCommand.pcode.txt",
+      "sha256": "131016e1a3f03c801a664a4840fab2629ee73d2cf4fb3de62e0786418d4f9ef6"
+    },
+    {
+      "path": "audit/native-pcode/ConditionSlot__getAdditionalDirectAttack.pcode.txt",
+      "sha256": "08bedf65ac65d5dad27e2ac5db37fb12bd44c5e3f94b7b739dac52a79b403045"
+    },
+    {
+      "path": "audit/native-pcode/ConditionSlot__wfxRows.pcode.txt",
+      "sha256": "9338b22a1fa4f02605652656bc38f75d1836c3f42c57f95191a566bcee5db0f8"
+    },
+    {
+      "path": "audit/native-pcode/ContinuationRatioHealCalculator__calculate.pcode.txt",
+      "sha256": "0d1a1fece40bc594088950aa2727e02b5ce4addb8d33a3e5b9e2444210860797"
+    },
+    {
+      "path": "audit/native-pcode/DirectAttackScheduler__run.pcode.txt",
+      "sha256": "5c9c439374c6720a7aa6556dbc24773e71b36bd2d06c39c8a98e5ce8403f7f64"
+    },
+    {
+      "path": "audit/native-pcode/DirectAttackScheduler__schedule.pcode.txt",
+      "sha256": "0d8041bc0d7714d8735a1e73e7dd55c58b978415bd063b578070a2afe7699cb7"
+    },
+    {
+      "path": "audit/native-pcode/FeverPointGaugeImpl__addFeverPoint.pcode.txt",
+      "sha256": "9585ef01a132b2999026e9106d72ba1ae3195a16bcd93d3e445aed6dcacf4461"
+    },
+    {
+      "path": "audit/native-pcode/FixedHealCalculator__calculate.pcode.txt",
+      "sha256": "99b75be643e872dfa025e674e276e42739b40ccc4a494ecfa7cb917dbd30518e"
+    },
+    {
+      "path": "audit/native-pcode/ImpactManagerImpl$__shouldSync.pcode.txt",
+      "sha256": "9350ad2fa8d4dcb70064f4f27b0dfa19b4faa557cdf3e1a652604ac3abce9491"
+    },
+    {
+      "path": "audit/native-pcode/ImpactManagerImpl___add.pcode.txt",
+      "sha256": "1ac3169cc53b15e0fb943f5a7bcdd05a6341fc416930a431682e54f4ab38bc26"
+    },
+    {
+      "path": "audit/native-pcode/ImpactManagerImpl__add.pcode.txt",
+      "sha256": "6ea04b216ee2161bc25ca63d8a7e7d443b3403da484fe2cd1a26d84a658a837b"
+    },
+    {
+      "path": "audit/native-pcode/ImpactManagerImpl__applyImpact.pcode.txt",
+      "sha256": "1472965832c8eb160d3e156810bbaac8b02318622f3c906e412a9c40aecc4143"
+    },
+    {
+      "path": "audit/native-pcode/ImpactManagerImpl__applyImpactImmediately.pcode.txt",
+      "sha256": "dadf0ef9187074f9b354a175c3e16fa9b37feb1f887833a6ce6c6f4bb904546f"
+    },
+    {
+      "path": "audit/native-pcode/ImpactManagerImpl__mergeAndApplyImpact.pcode.txt",
+      "sha256": "8ff480ba82619d9f367eadbc4e19028328ae177d96bdcb6dedea1c1a36eb5a31"
+    },
+    {
+      "path": "audit/native-pcode/ImpactManagerImpl__processImpact.pcode.txt",
+      "sha256": "0473f78ec48238e82e90cc1c4c934d78c408f25ac891aa7a6ee35ebaf9880fc6"
+    },
+    {
+      "path": "audit/native-pcode/ImpactManagerImpl__processImpactResult.pcode.txt",
+      "sha256": "94d5c79b6d0d12e0a47b7f85c826c7256d783fb71ba98ef11d96a510f18f653c"
+    },
+    {
+      "path": "audit/native-pcode/ImpactManagerImpl__processImpacts.pcode.txt",
+      "sha256": "f8ab57afce3729b07db8e1a26b7460b55b6d1ea2bf5465b70297f2bb03034e7b"
+    },
+    {
+      "path": "audit/native-pcode/ImpactResult__toCoopCommand.pcode.txt",
+      "sha256": "5ab89ed2422bd9a1121364c109b6196aaacb30cc70d2e53e32e3e2d5ad509f98"
+    },
+    {
+      "path": "audit/native-pcode/Mate__applyImpact.pcode.txt",
+      "sha256": "4a10e88de2c1a89e3f0a80ecd354729534f4bdd460b41f669cebf2071da165da"
+    },
+    {
+      "path": "audit/native-pcode/MemberAbilityTotalizerImpl__getAdditionalDirectAttack.pcode.txt",
+      "sha256": "ab031154f699ffb9b73f4f91eed9416ab3924044ce74a43f9a517c89662fb124"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__applyCureDifference.pcode.txt",
+      "sha256": "2e0d8dbcfa6c2298381ad6a39a50e8e8ac86e04c5238c5c97ef521b3ac5d7ca8"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__applyFeverDifference.pcode.txt",
+      "sha256": "7c93b1936f1d669c87177940418c4a927a900135f8d79efda4370541dcc3004b"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__applyHeal.pcode.txt",
+      "sha256": "6a381a7732fcae6a797070c0d19471cdc99f4daff1889d7ecd6998bda7c85b1b"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__applyImpact.pcode.txt",
+      "sha256": "0824ddc5d8db43e6771c556d2c9908b9d231476987bda46f460848712d0f3521"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__applyRegeneration.pcode.txt",
+      "sha256": "9fe19acb3dfd0510669fe439039d44fb859aae9d3819f128bce45a1fd36f9a59"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__applyRegenerationHandler.pcode.txt",
+      "sha256": "02424bf242eb3180f87d923e2a4fcd715841669d1bd82b66a0a7512093bf852c"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__getAdditionalDirectAttack.pcode.txt",
+      "sha256": "af3d4ac4739f75eab75a621900c22292f24979ee6225372cc375a58c4b4bdab0"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__getSquadForImpact.pcode.txt",
+      "sha256": "7129cfad8892a1a451a437af96fde990858bc354790b1421fd2edc73c8eb6ed2"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__isHostile.pcode.txt",
+      "sha256": "7906edacb5d499492bde5ee02f2827500916c8f44a83ee02af2debbaa863a79d"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__isInPrimarySquad.pcode.txt",
+      "sha256": "05d5a419c4e8ae83efc24624bf4038bbeddd2134ef3263a466eaa6a94eab3b6b"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__scheduleDirectAttack.pcode.txt",
+      "sha256": "b96411da6e870af838e6f5e7f31671152e2c359db6fc07429b0d4f497e43968d"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__wfxHealDamageEmit.pcode.txt",
+      "sha256": "afcac1d824ac2157c185d91bc97c35f91ef0ec490fb07b354f6274f4a0e3a6a9"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__wfxHealDamageRecord.pcode.txt",
+      "sha256": "9aac8453e22c8a29aa8650f234a42bc5744d51dc450d776c179d59154666d216"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__wfxHealFever.pcode.txt",
+      "sha256": "542b88eb0aa89d1fee6367c3cb4aeb9495d26870c7f1ec8ec812f0f83628ddac"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__wfxHealSample.pcode.txt",
+      "sha256": "f114a875780dcaf10d832cc711db0229b410eaeaf44dbf3ea56db994a031f92d"
+    },
+    {
+      "path": "audit/native-pcode/MemberImpl__wfxMergeDirect.pcode.txt",
+      "sha256": "2b5e35f408f635cba45178fd2feb75d010c3ba97bcb71d4c7407216600f88968"
+    },
+    {
+      "path": "audit/native-pcode/NormalHealCalculator__calculate.pcode.txt",
+      "sha256": "b364b21fcf0488fd97a8c20dd68fdeb62d199db3dae2d29ba19f35af79d1c6d0"
+    },
+    {
+      "path": "audit/native-pcode/RatioHealCalculator__calculate.pcode.txt",
+      "sha256": "78a9934661ec5133db729cdca37513b2c53e48e8c4ede6923238fb17fa1b07ab"
+    },
+    {
+      "path": "audit/native-pcode/SquadImpl__applyImpact.pcode.txt",
+      "sha256": "072dd2d811326e6e01edd7ade652b64b6e736a1136ccbcf0fcf01426fc0392b4"
+    },
+    {
+      "path": "audit/native-pcode/SquadImpl__getMember.pcode.txt",
+      "sha256": "b28ef4ceb2892531bd6e280754ec0402fa60e29d5a61b5b622c43dbe0c661efd"
+    },
+    {
+      "path": "audit/native-pcode/SquadImpl__getMemberAt.pcode.txt",
+      "sha256": "701cf272f348994f3f563806c2f48d0e097eaa120ea3a0993d85d3a2612859f7"
+    },
+    {
+      "path": "audit/native-pcode/SquadImpl__isHostile.pcode.txt",
+      "sha256": "2edb00036bcefb8b2a957d69cf8c16fef2d58c98a1dd62dbf2413d526e366c86"
+    },
+    {
+      "path": "audit/native-pcode/SquadImpl__isPrimary.pcode.txt",
+      "sha256": "c6f6b481e1696093a42bf2a1312196d3f0c56890e07a8c992aff103705bb8416"
+    },
+    {
+      "path": "audit/native-pcode/SquadImpl__iter.pcode.txt",
+      "sha256": "6b284a20cdf839e225593bf2b23e84b034595c6007b6d846e8c75fb2177b792d"
+    },
+    {
+      "path": "audit/native-pcode/SquadManagerImpl__summerizeHealResult.pcode.txt",
+      "sha256": "805e1bca558cefd4be6294477b309294ba9019fcd4baa5ad2612a89313b102af"
+    },
+    {
+      "path": "audit/native-pcode/ZoneImpl__addFeverPoint.pcode.txt",
+      "sha256": "5b450761270ac873bf2f76dc01df6500e8b67d64354335b501630e0dd8a0f9fa"
+    },
+    {
+      "path": "audit/network_cases.py",
+      "sha256": "b3a9c8c165b31da09e98b755d4c4fadf2fae7b02d8ea34c8ee970395066994fb"
+    },
+    {
+      "path": "bootstrap.py",
+      "sha256": "596ee4b5e52ff7cd5a287df9ee744de01b0aea17bd7b20586e28eb8ff5051ef3"
+    },
+    {
+      "path": "direct_count/__init__.py",
+      "sha256": "ed492e799f56c292181c25b82537d6b90b7f0bd7a401ed4d603149c43eeee07b"
+    },
+    {
+      "path": "direct_count/runtime.py",
+      "sha256": "2895692d5a54bd030a196bcb3c6a516cbdb6c3dac6af7d2ae9b722cdaeb11a09"
+    },
+    {
+      "path": "heal_any/runtime.py",
+      "sha256": "718a20d4e6c1dbd9c1086d7a903738140fb46dbc91cb2a97ff2068c28c7ddecc"
+    },
+    {
+      "path": "vendor/asm.py",
+      "sha256": "c033836d0a7aa109b81509c1cb0731be82fc543c76d8d3b43881f9dab7d81e87"
+    },
+    {
+      "path": "vendor/avm_interp.py",
+      "sha256": "c7f356e58acf570a09e9bad2e7aff427d03b3dd61d5cc6f70d998185632f6580"
+    },
+    {
+      "path": "vendor/bodies.py",
+      "sha256": "daa069c919b46d25bf6b25e367f1ac2744ffd64f76d6d0469e0eacf42d0d25d8"
+    },
+    {
+      "path": "vendor/swfabc.py",
+      "sha256": "4f1c3ea93d71af0d98dba0467cb38fe205cbfc5eef5de93633db8f838aac7528"
+    },
+    {
+      "path": "../run2/overflow/base_runtime.py",
+      "sha256": "35ae9c3dea16a74bb7f0e65a991b9f36681264642a893e42a59f80f2a9a17fff"
+    },
+    {
+      "path": "../run2/overflow/runtime.py",
+      "sha256": "7630e293d0d4ce90fa754f2ec6360cd436bd085645af2cc54a4f0ee27efe964e"
+    },
+    {
+      "path": "../run3/superfever/base_runtime.py",
+      "sha256": "a84a6e62f9fac524b260cc148818b85e221ef1bca55f53c5a395179f31875f4b"
+    },
+    {
+      "path": "../run3/superfever/runtime.py",
+      "sha256": "869cd9ce6e255b004b1c5d91158924d1910fe708979cdad58c878ded1c20a046"
+    },
+    {
+      "path": "../run4/direct_unique/runtime.py",
+      "sha256": "bbbe356d59c63359f5a943d911c60fdac78b931df9e6acaa6f8f1f4c13821b52"
+    },
+    {
+      "path": "../run6/heal_damage/damage_fixture.py",
+      "sha256": "98a26cb0c74baaf59bbc28a97e0e0a75f79aad6c18c98a2fa7b8f6df5f1ea5f5"
+    },
+    {
+      "path": "../run6/heal_damage/runtime.py",
+      "sha256": "3f2f1813b1380a7c40b6bca9700513dd73a8f684756fd63a7b3c8caf75da0836"
+    },
+    {
+      "path": "../run6/heal_fever/runtime.py",
+      "sha256": "ee1aa416fb8562f1a223f9364e7bcef06550f836fa053846e0b722f763a961f0"
+    }
+  ],
+  "scope": "独立断言执行候选真实AVM2；复用受控外围夹具，无完整AIR/设备/网络证明",
+  "rulings": {
+    "network": "B",
+    "fever": "A",
+    "pending_clarification": []
+  },
+  "network": "真实原生接收/计算/回复链保留来源ID；本端跨ID实际回复计入34/35，镜像/仅转发/回执不重复计入；未联网",
+  "fever_call_boundary": "裁定A：每受治疗成员的一次实际applyHeal，对每持有者合并多状态后一次API；无批次标记"
+}
