@@ -6,10 +6,10 @@
 
 ## 什么时候跑
 
-- 计划任务每小时跑一次（`install-task.ps1` 注册），没有变化就直接退出，不产生提交
+- 计划任务每天 04:00（服务器时间）跑一次（`install-task.ps1` 注册），没有变化就直接退出，不产生提交
 - 发布线程发布完也可以手动跑一次：`node C:\startpoint-sync\sync.cjs`
 - 有文件大小+修改时间缓存，没变化的文件不会重新读取
-- 10 分钟内有文件被改过（可能正在发布）就跳过本次，下一次再同步，避免推上换了一半的文件
+- 10 分钟内有文件被改过（可能正在发布）就跳过本次，第二天再同步，或发布后手动跑，避免推上换了一半的文件
 
 ## 同步什么
 
@@ -40,7 +40,7 @@
 
 1. 把 `sync.cjs`、`install-task.ps1` 拷到测试服，令牌存成 `C:\startpoint-sync\token.txt`
 2. 先试跑：`node C:\startpoint-sync\sync.cjs --dry-run`，看 `last-diff.txt` 和 `blocked.txt`
-3. 管理员 PowerShell 运行 `install-task.ps1`
+3. 管理员 PowerShell 运行 `install-task.ps1`（要按间隔跑就加 `-EveryMinutes 60`）
 
 ## 失败时
 
