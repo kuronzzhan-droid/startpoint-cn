@@ -36,7 +36,6 @@ import {
     buildFinishResponseCacheKey,
     acquireFinishExecution,
     cacheFinishResponse,
-    getCachedFinishResponse,
 } from "../../lib/finish-response-cache";
 import {
     settleMode15BattleSync,
@@ -48,8 +47,8 @@ import {
     type MultiSettleFinishArgs,
     type MultiSettleFinishResult,
 } from "../../lib/persistence/command-names";
-import { getPlayerOperationReceiptSync } from "../../data/domains/player-operation-receipt";
-import { MULTI_FINISH_RECEIPT_OPERATION, multiFinishPlayId, isMultiFinishResponse } from "../../lib/quest/finish/multi-finish-identity";
+import { assertBattleCanStartSync, getBattleReplaySync } from "../../data/domains/battle-settlement-ledger";
+import { multiFinishPlayId, isMultiFinishResponse } from "../../lib/quest/finish/multi-finish-identity";
 import {
     getMultiSettlementSnapshot,
     registerMultiSettlementSnapshot,
@@ -217,7 +216,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         const { viewer_id, quest_id, category, party_id, use_boost_point, use_boss_boost_point, is_auto_start_mode, room_number, mate_player_ids, play_id } = body;
         gameVerboseLog(() => `[MULTI] start: viewer=${viewer_id} quest=${quest_id} category=${category} party=${party_id} room=${room_number}`);
 
-        if (isNaN(viewer_id) || isNaN(party_id) || isNaN(quest_id) || isNaN(category) || use_boost_point === undefined || use_boss_boost_point === undefined || is_auto_start_mode === undefined) {
+        if (isNaN(viewer_id) || isNaN(party_id) || isNaN(quest_id) || isNaN(category) || multiFinishPlayId(play_id) === null || use_boost_point === undefined || use_boss_boost_point === undefined || is_auto_start_mode === undefined) {
             return reply.status(400).send({
                 "error": "Bad Request", "message": "Invalid request body."
             });
@@ -342,6 +341,7 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         // busy settlement or checkpoint race it and surface SQLITE_BUSY on
         // /multi_battle_quest/start.
         let previousActiveQuest: ActiveQuest | undefined, insertedActiveQuest: ActiveQuest | undefined;
+        let repeatedPendingStart = false;
         const startDeadline = performance.now() + Math.max(0, roomStart.remainingMs - 100);
         try {
             await runPersistenceTransaction({
@@ -349,7 +349,20 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             }, () => {
                 if (performance.now() >= startDeadline) throw new Error("START_CLAIM_EXPIRED");
                 assertRealtimeOwnerEpoch(roomStart.ownerEpoch, roomStart.claimToken ?? undefined, true);
+                assertBattleCanStartSync(ctx.playerId, play_id);
                 previousActiveQuest = activeQuests[ctx.playerId];
+                const pending = getPlayerActiveQuestSync(ctx.playerId);
+                if (pending?.playId === play_id) {
+                    if (!pending.isMulti || pending.category !== category || pending.questId !== quest_id
+                        || pending.roomNumber !== room_number || pending.useBoostPoint !== use_boost_point
+                        || pending.useBossBoostPoint !== use_boss_boost_point || pending.isAutoStartMode !== is_auto_start_mode
+                        || (questData.fixedParty === undefined && pending.partySlot !== party_id)) {
+                        throw new Error("Battle start does not match the pending play.");
+                    }
+                    Object.assign(activeQuest, activeQuestFromPersistent(pending));
+                    repeatedPendingStart = true;
+                    return;
+                }
                 insertActiveQuest(ctx.playerId, activeQuest);
                 insertedActiveQuest = activeQuests[ctx.playerId];
                 if (questData.fixedParty === undefined
@@ -373,9 +386,14 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             } catch (cancelError) {
                 console.error(`[MULTI] failed start claim cancellation: play=${play_id}`, cancelError);
             }
+            const code = (error as { code?: string })?.code;
+            if (code === "BATTLE_ALREADY_SETTLED" || code === "BATTLE_CLOCK_ABORTED"
+                || (error as Error).message === "Battle start does not match the pending play.") {
+                return reply.status(400).send({ error: "Bad Request", message: (error as Error).message });
+            }
             throw error;
         }
-        registerMultiSettlementSnapshot({
+        if (!repeatedPendingStart || !getMultiSettlementSnapshot(ctx.playerId, play_id)) registerMultiSettlementSnapshot({
             battleInstanceId: roomStart.battleSessionId,
             roomInstanceId: roomStart.roomInstanceId,
             playerId: ctx.playerId,
@@ -437,6 +455,20 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
         }
 
         const { playerId, player } = ctx;
+        const playId = multiFinishPlayId(body.play_id);
+        if (playId === null) return reply.status(400).send({
+            error: "Bad Request", message: "A multiplayer play id is required.",
+        });
+        // Check before the special-mode dispatch as well: changing the quest
+        // category cannot route a generic settled play around its ledger.
+        const initialReplay = getBattleReplaySync(playerId, "multi", playId);
+        if (initialReplay.kind !== "missing") {
+            if (initialReplay.kind !== "available" || !isMultiFinishResponse(initialReplay.response)) {
+                return reply.status(400).send({ error: "Bad Request", message: "Battle result cannot be replayed. Please reload." });
+            }
+            reply.header("content-type", "application/x-msgpack");
+            return reply.status(200).send(initialReplay.response);
+        }
         if (shouldHandleFiveBossMemberRequest(body, playerId)) {
             try { return await handleFiveBossFinish(body, playerId, reply,
                 (viewer, mates, fallback) => buildFinishFollowInfo(playerId, viewer, mates, fallback)); }
@@ -452,10 +484,6 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             viewerId,
             body as unknown as Record<string, unknown>,
         );
-        const playId = multiFinishPlayId(body.play_id);
-        if (playId === null) return reply.status(400).send({
-            error: "Bad Request", message: "A multiplayer play id is required.",
-        });
         const executionWaitStartedAt = process.hrtime.bigint();
         const releaseFinishExecution = await acquireFinishExecution(`multi:${playerId}`);
         recordSettlementPhase(
@@ -463,21 +491,13 @@ export function registerBattleRoutes(fastify: FastifyInstance): void {
             Number(process.hrtime.bigint() - executionWaitStartedAt) / 1_000_000,
         );
         try {
-            const receipt = getPlayerOperationReceiptSync<unknown>(playerId, MULTI_FINISH_RECEIPT_OPERATION, playId);
-            if (receipt !== null) {
-                if (!isMultiFinishResponse(receipt.response)) return reply.status(400).send({
-                    error: "Bad Request", message: "Multiplayer finish receipt cannot be replayed.",
+            const replay = getBattleReplaySync(playerId, "multi", playId);
+            if (replay.kind !== "missing") {
+                if (replay.kind !== "available" || !isMultiFinishResponse(replay.response)) return reply.status(400).send({
+                    error: "Bad Request", message: "Battle result cannot be replayed. Please reload.",
                 });
                 reply.header("content-type", "application/x-msgpack");
-                return reply.status(200).send(receipt.response);
-            }
-            if (getPlayerOperationReceiptSync(playerId, "quest_finish.single", playId) !== null) {
-                return reply.status(400).send({ error: "Bad Request", message: "Play already settled as single." });
-            }
-            const cachedFinishResponse = getCachedFinishResponse(finishCacheKey);
-            if (cachedFinishResponse !== undefined) {
-                reply.header("content-type", "application/x-msgpack");
-                return reply.status(200).send(cachedFinishResponse);
+                return reply.status(200).send(replay.response);
             }
 
             const settlementSnapshot = getMultiSettlementSnapshot(playerId, body.play_id);

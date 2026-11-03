@@ -2,13 +2,13 @@ import { FIVE_BOSS_GAUNTLET, isFiveBossGauntletQuest, isFiveBossHiddenQuest } fr
 import { continueFiveBoss, fiveBossContinueAcknowledgement, FiveBossContinueError,
     isFiveBossContinueRequest } from "../../multi/five-boss/continue-runtime";
 import { isFiveBossTicketShortage, sendFiveBossTicketShortage } from "../../multi/five-boss/entry-response";
-import { startFiveBossSolo, abortFiveBossSoloSync, getFiveBossSoloReceiptSync, isActiveFiveBossSoloSync } from "../../multi/five-boss/solo-runtime";
+import { startFiveBossSoloSync, abortFiveBossSoloSync, getFiveBossSoloReceiptSync, isActiveFiveBossSoloSync } from "../../multi/five-boss/solo-runtime";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { deletePlayerActiveQuestIfPlayIdSync, deletePlayerActiveQuestSync, getPlayerActiveQuestSync, insertPlayerActiveQuestSync, updatePlayerActiveQuestContinueCountIfPlayIdSync } from "../../data/domains/quest_active"
 import { clientSerializeDate } from "../../data/utils/date"
 import { getBattleClockDate, isSupportedBattleClockVersion } from "../../lib/battle-clock-compatibility"
-import { getPlayerOperationReceiptSync } from "../../data/domains/player-operation-receipt"
-import { isSingleFinishResponse, SINGLE_FINISH_RECEIPT_OPERATION, singleFinishPlayId } from "../../lib/quest/finish/single-finish-identity"
+import { assertBattleCanStartSync, getBattleReplaySync } from "../../data/domains/battle-settlement-ledger"
+import { isSingleFinishResponse, singleFinishPlayId } from "../../lib/quest/finish/single-finish-identity"
 import { getPlayerSync, updatePlayerSync } from "../../data/domains/player"
 import { getPlayerItemSync, updatePlayerItemSync } from "../../data/domains/item"
 import { getPlayerEquipmentListSync } from "../../data/domains/equipment"
@@ -51,7 +51,7 @@ import {
     acquireFinishExecution,
     buildFinishResponseCacheKey,
     cacheFinishResponse,
-    getCachedFinishResponse,
+    getCachedFinishPlayId,
 } from "../../lib/finish-response-cache";
 import { buildPracticeBattleHistoryRecord } from "../../lib/quest/practice-battle-history";
 import { canStartAbyssQuestSync } from "../../data/domains/abyss-tower-progress";
@@ -241,24 +241,18 @@ const routes = async (fastify: FastifyInstance) => {
             const requestPlayId = singleFinishPlayId(body.play_id)
             const replayReceipt = (playId: string | null): boolean => {
                 if (playId === null) return false
-                const receipt = getPlayerOperationReceiptSync<unknown>(
-                    playerId, SINGLE_FINISH_RECEIPT_OPERATION, playId,
-                )
-                if (receipt === null) return false
-                if (!isSingleFinishResponse(receipt.response)) {
-                    reply.status(400).send({ error: "Bad Request", message: "No active quest to finish." })
+                const replay = getBattleReplaySync(playerId, "single", playId)
+                if (replay.kind === "missing") return false
+                if (replay.kind !== "available" || !isSingleFinishResponse(replay.response)) {
+                    reply.status(400).send({ error: "Bad Request", message: "Battle result cannot be replayed. Please reload." })
                 } else {
                     reply.header("content-type", "application/x-msgpack")
-                    reply.status(200).send(receipt.response)
+                    reply.status(200).send(replay.response)
                 }
                 return true
             }
             // An old explicit play can replay its receipt even while a new battle is active.
             if (replayReceipt(requestPlayId)) return reply
-            if (requestPlayId !== null
-                && getPlayerOperationReceiptSync(playerId, "quest_finish.multi", requestPlayId) !== null) {
-                return reply.status(400).send({ error: "Bad Request", message: "Play already settled as multiplayer." })
-            }
             // Runs settled before generic solo receipts were introduced still
             // have their dedicated five-boss receipt. Replay it before a newer
             // active battle is checked, without consuming the newer registration.
@@ -291,11 +285,17 @@ const routes = async (fastify: FastifyInstance) => {
                 delete activeQuests[playerId]
             }
             if (!currentRegistration) {
-                const cachedFinishResponse = getFiveBossSoloReceiptSync(playerId, legacyFinishCacheKey)
-                    ?? getCachedFinishResponse(legacyFinishCacheKey)
-                if (cachedFinishResponse !== undefined) {
+                // api_count is only an alias. Its cached payload cannot bypass
+                // an expired or pruned durable replay, even with a long cache TTL.
+                const aliasPlayId = getCachedFinishPlayId(legacyFinishCacheKey)
+                if (aliasPlayId && replayReceipt(aliasPlayId)) return reply
+                const legacySolo = getFiveBossSoloReceiptSync(playerId, legacyFinishCacheKey)
+                if (legacySolo !== undefined) {
+                    if (!isSingleFinishResponse(legacySolo)) return reply.status(400).send({
+                        error: "Bad Request", message: "Invalid single finish receipt.",
+                    })
                     reply.header("content-type", "application/x-msgpack")
-                    return reply.status(200).send(cachedFinishResponse)
+                    return reply.status(200).send(legacySolo)
                 }
             }
 
@@ -319,10 +319,6 @@ const routes = async (fastify: FastifyInstance) => {
             const registered = resolvedActiveQuest?.source !== "rebuilt"
             const receiptPlayId = requestPlayId ?? (registered ? singleFinishPlayId(activeQuestData.playId) : null)
             if (replayReceipt(receiptPlayId)) return reply
-            if (receiptPlayId !== null
-                && getPlayerOperationReceiptSync(playerId, "quest_finish.multi", receiptPlayId) !== null) {
-                return reply.status(400).send({ error: "Bad Request", message: "Play already settled as multiplayer." })
-            }
             // Bind a legacy api_count request to its registered play while that play exists.
             // The unscoped key remains only a short-lived retry alias after consumption.
             const finishCacheKey = buildFinishResponseCacheKey(
@@ -331,7 +327,6 @@ const routes = async (fastify: FastifyInstance) => {
                     : { ...body, play_id: receiptPlayId },
             )
             const cachedFinishResponse = getFiveBossSoloReceiptSync(playerId, finishCacheKey)
-                ?? getCachedFinishResponse(finishCacheKey)
             if (cachedFinishResponse !== undefined) {
                 reply.header("content-type", "application/x-msgpack")
                 return reply.status(200).send(cachedFinishResponse)
@@ -441,8 +436,8 @@ const routes = async (fastify: FastifyInstance) => {
             if (finishResponse.response === null) {
                 return reply.status(400).send({ error: "Bad Request", message: "No active quest to finish." })
             }
-            cacheFinishResponse(finishCacheKey, finishResponse.response)
-            cacheFinishResponse(legacyFinishCacheKey, finishResponse.response)
+            cacheFinishResponse(finishCacheKey, finishResponse.response, receiptPlayId ?? undefined)
+            cacheFinishResponse(legacyFinishCacheKey, finishResponse.response, receiptPlayId ?? undefined)
             reply.header("content-type", "application/x-msgpack")
             return reply.status(200).send(finishResponse.response)
         } finally {
@@ -606,7 +601,7 @@ const routes = async (fastify: FastifyInstance) => {
         const useBoostPoint = body.use_boost_point
         const useBossBoostPoint = body.use_boss_boost_point
         const isAutoStartMode = body.is_auto_start_mode
-        if (isNaN(viewerId) || isNaN(partyId) || isNaN(questId) || isNaN(category) || useBoostPoint === undefined || useBossBoostPoint === undefined || isAutoStartMode === undefined) return reply.status(400).send({
+        if (isNaN(viewerId) || isNaN(partyId) || isNaN(questId) || isNaN(category) || singleFinishPlayId(body.play_id) === null || useBoostPoint === undefined || useBossBoostPoint === undefined || isAutoStartMode === undefined) return reply.status(400).send({
             "error": "Bad Request", "message": "Invalid request body."
         })
 
@@ -668,27 +663,34 @@ const routes = async (fastify: FastifyInstance) => {
 
         if (isFiveBossGauntletQuest(category, questId)) {
             const previousMemory = activeQuests[playerId]
+            let insertedMemory: ActiveQuest | undefined
             let mission: MissionSettlementResult | undefined
             try {
-                await startFiveBossSolo(playerId, body.play_id, () => {
-                    insertActiveQuest(playerId, {
-                        questId, category, useBoostPoint: false, useBossBoostPoint: false,
-                        isAutoStartMode, isMulti: false,
-                        entryItemId: FIVE_BOSS_GAUNTLET.ticketItemId,
-                        partySlot: partyId,
-                        playId: body.play_id, continueCount: 0,
+                await runPersistenceTransaction({ domain: "single-quest", playerId, operation: "five_boss_solo_start" }, () => {
+                    assertBattleCanStartSync(playerId, body.play_id)
+                    return startFiveBossSoloSync(playerId, body.play_id, () => {
+                        insertActiveQuest(playerId, {
+                            questId, category, useBoostPoint: false, useBossBoostPoint: false,
+                            isAutoStartMode, isMulti: false,
+                            entryItemId: FIVE_BOSS_GAUNTLET.ticketItemId,
+                            partySlot: partyId,
+                            playId: body.play_id, continueCount: 0,
+                        })
+                        insertedMemory = activeQuests[playerId]
+                        if (usesNormalCurrentPartySlot(category)
+                            && isValidNormalPartySlotSync(playerId, partyId)) {
+                            updatePlayerSync({ id: playerId, partySlot: partyId })
+                        }
+                        recordActiveMissionQuestChallengeFactSync(playerId, category)
+                        mission = settleMissionCategories(playerId, [1, 2, 10], new Date(getServerTime() * 1000))
+                        return true
                     })
-                    if (usesNormalCurrentPartySlot(category)
-                        && isValidNormalPartySlotSync(playerId, partyId)) {
-                        updatePlayerSync({ id: playerId, partySlot: partyId })
-                    }
-                    recordActiveMissionQuestChallengeFactSync(playerId, category)
-                    mission = settleMissionCategories(playerId, [1, 2, 10], new Date(getServerTime() * 1000))
-                    return true
                 })
             } catch (error) {
-                if (previousMemory) activeQuests[playerId] = previousMemory
-                else delete activeQuests[playerId]
+                if (insertedMemory && activeQuests[playerId] === insertedMemory) {
+                    if (previousMemory) activeQuests[playerId] = previousMemory
+                    else delete activeQuests[playerId]
+                }
                 if (isFiveBossTicketShortage(error)) return sendFiveBossTicketShortage(reply, viewerId)
                 return reply.status(400).send({ error: "Bad Request", message: (error as Error).message })
             }
@@ -755,12 +757,27 @@ const routes = async (fastify: FastifyInstance) => {
         }
 
         let afterStamina = 0
+        let registeredMemory: ActiveQuest | undefined
         let missionSettlement: MissionSettlementResult | undefined
         try {
             await runPersistenceTransaction({
                 domain: "single-quest", playerId, operation: "start",
             }, () => {
+                assertBattleCanStartSync(playerId, body.play_id)
                 const currentPlayer = getPlayerSync(playerId) ?? player
+                const pending = getPlayerActiveQuestSync(playerId)
+                if (pending?.playId === body.play_id) {
+                    if (pending.isMulti || pending.category !== category || pending.questId !== questId
+                        || pending.useBoostPoint !== useBoostPoint || pending.useBossBoostPoint !== useBossBoostPoint
+                        || pending.isAutoStartMode !== isAutoStartMode
+                        || (questData.fixedParty === undefined && pending.partySlot !== partyId)) {
+                        throw new Error("Battle start does not match the pending play.")
+                    }
+                    // Same-play HTTP retries keep their original clock, fees,
+                    // challenge facts and continuation counters unchanged.
+                    afterStamina = currentPlayer.stamina
+                    return
+                }
                 const startedAtMs = getRealServerDate().getTime()
                 activeQuest.startedAtMs = startedAtMs
                 if (entryCost && entryCost.itemId > 0) {
@@ -799,6 +816,7 @@ const routes = async (fastify: FastifyInstance) => {
                 updatePlayerSync(playerUpdate)
 
                 activeQuests[playerId] = activeQuest
+                registeredMemory = activeQuest
                 insertPlayerActiveQuestSync(playerId, {
                     playerId,
                     playId: activeQuest.playId,
@@ -824,10 +842,15 @@ const routes = async (fastify: FastifyInstance) => {
                 )
             })
         } catch (error) {
-            if (previousMemory) activeQuests[playerId] = previousMemory
-            else delete activeQuests[playerId]
+            if (registeredMemory && activeQuests[playerId] === registeredMemory) {
+                if (previousMemory) activeQuests[playerId] = previousMemory
+                else delete activeQuests[playerId]
+            }
             const message = error instanceof Error ? error.message : String(error)
-            if (message === "Insufficient stamina." || message.startsWith("Not enough entry items")) {
+            const code = (error as { code?: string })?.code
+            if (code === "BATTLE_ALREADY_SETTLED" || code === "BATTLE_CLOCK_ABORTED"
+                || message === "Battle start does not match the pending play."
+                || message === "Insufficient stamina." || message.startsWith("Not enough entry items")) {
                 return reply.status(400).send({ error: "Bad Request", message })
             }
             throw error

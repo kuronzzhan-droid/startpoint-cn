@@ -90,11 +90,11 @@ const statistics = () => ({
     },
 })
 
-function start(p, playId, quest = BOSS) {
+function start(p, playId, quest = BOSS, extra = {}) {
     return app.inject({ method: 'POST', url: '/single_battle_quest/start', payload: {
         viewer_id: p.viewerId, quest_id: quest.questId, category: quest.category, party_id: 1,
         play_id: playId, use_boss_boost_point: false, use_boost_point: false,
-        is_auto_start_mode: false, api_count: 1,
+        is_auto_start_mode: false, api_count: 1, ...extra,
     } })
 }
 
@@ -224,10 +224,109 @@ if (replay) {
                 assert.deepEqual(decode(b), decode(a))
                 assertPaid(before, balances(p.id))
                 assert.equal(receiptRows(p.id).length, 1)
+                assert.equal(db.prepare('SELECT COUNT(*) n FROM battle_settlement_ledger WHERE player_id=?').get(p.id).n, 1)
                 const settled = snapshot(p.id)
                 decode(await finish(p, { play_id: 'concurrent', api_count: 8 }))
                 assert.deepEqual(snapshot(p.id), settled)
                 assert.equal(db.prepare('SELECT COUNT(*) AS n FROM players_active_quests WHERE player_id = ?').get(p.id).n, 0)
+            })
+
+            await t.test('same pending start preserves its clock and all costs; terminal ids cannot replace a new play', async () => {
+                const p = makePlayer()
+                assert.equal((await start(p, 'start-retry')).statusCode, 200)
+                db.prepare('UPDATE players_active_quests SET started_at_ms=started_at_ms-60000 WHERE player_id=?').run(p.id)
+                single.activeQuests[p.id].startedAtMs -= 60000
+                const pending = snapshot(p.id), memory = structuredClone(single.activeQuests[p.id])
+                assert.equal((await start(p, 'start-retry')).statusCode, 200)
+                assert.deepEqual(snapshot(p.id), pending, 'retry must not reset clock, challenge facts or nominal stamina counters')
+                assert.deepEqual(single.activeQuests[p.id], memory)
+                const mismatch = await start(p, 'start-retry', BOSS, { party_id: 2 })
+                assert.equal(mismatch.statusCode, 400, mismatch.body)
+                assert.deepEqual(snapshot(p.id), pending)
+                decode(await finish(p, { play_id: 'start-retry', api_count: 2 }))
+                assert.equal((await start(p, 'new-after-terminal')).statusCode, 200)
+                const newer = snapshot(p.id), newerMemory = structuredClone(single.activeQuests[p.id])
+                const terminal = await start(p, 'start-retry')
+                assert.equal(terminal.statusCode, 400, terminal.body)
+                assert.deepEqual(snapshot(p.id), newer)
+                assert.deepEqual(single.activeQuests[p.id], newerMemory)
+            })
+
+            await t.test('24-hour expiry and payload deletion block explicit and tokenless cached retries without paying again', async () => {
+                const p = makePlayer(), playId = 'expired-result'
+                assert.equal((await start(p, playId)).statusCode, 200)
+                decode(await finish(p, { api_count: 2 }))
+                const cache = compiled('lib/finish-response-cache')
+                const alias = cache.buildFinishResponseCacheKey('single', p.viewerId, { category: BOSS.category, quest_id: BOSS.questId, api_count: 2 })
+                assert.equal(cache.getCachedFinishPlayId(alias), playId)
+                assert.ok(cache.getCachedFinishResponse(alias), 'cached alias is deliberately still live')
+                const expiredAt = Date.now() - 24 * 60 * 60 * 1000
+                db.transaction(() => {
+                    db.prepare("UPDATE player_operation_receipts SET created_at=? WHERE player_id=? AND operation='quest_finish.single'").run(expiredAt, p.id)
+                    db.prepare('UPDATE battle_settlement_ledger SET settled_at=? WHERE player_id=?').run(expiredAt, p.id)
+                    db.prepare('UPDATE battle_receipt_payload_queue SET created_at=? WHERE player_id=?').run(expiredAt, p.id)
+                })()
+                for (const prune of [false, true]) {
+                    if (prune) db.prepare("DELETE FROM player_operation_receipts WHERE player_id=? AND operation='quest_finish.single'").run(p.id)
+                    const settled = snapshot(p.id)
+                    for (const request of [{ play_id: playId, api_count: 3 }, { api_count: 2 }]) {
+                        const rejected = await finish(p, request)
+                        assert.equal(rejected.statusCode, 400, rejected.body)
+                    }
+                    assert.equal((await start(p, playId)).statusCode, 400)
+                    assert.deepEqual(snapshot(p.id), settled, 'guard blocks expired replay, alias and old start even without response bytes')
+                }
+                assert.equal((await start(p, 'fresh-after-expiry')).statusCode, 200)
+                const newer = snapshot(p.id)
+                assert.equal((await finish(p, { play_id: playId, api_count: 4 })).statusCode, 400)
+                assert.equal((await start(p, playId)).statusCode, 400)
+                assert.deepEqual(snapshot(p.id), newer, 'expired play cannot consume or replace a newer registration')
+            })
+
+            await t.test('queued writer rechecks a terminal identity inserted after route preparation', async t => {
+                const p = makePlayer(), playId = 'queued-terminal'
+                assert.equal((await start(p, playId)).statusCode, 200)
+                const coordinator = compiled('lib/persistence-coordinator'), original = coordinator.runWriterCommand
+                let intercepted = false, terminalSnapshot
+                const hook = t.mock.method(coordinator, 'runWriterCommand', async (name, args, context) => {
+                    if (name === 'single.settle_finish' && args.playerId === p.id && !intercepted) {
+                        intercepted = true
+                        db.transaction(() => {
+                            const terminal = compiled('data/domains/battle-settlement-ledger').insertBattleSettlementSync(p.id, playId, 'multi', Date.now() - 86400000)
+                            compiled('data/domains/player-operation-receipt').insertPlayerOperationReceiptSync({
+                                playerId: p.id, operation: 'quest_finish.multi', requestKey: playId,
+                                response: { data_headers: {}, data: { is_multi: 'multi', user_info: {}, rewards: {} } },
+                            }, terminal.settledAtMs)
+                        })()
+                        terminalSnapshot = snapshot(p.id)
+                    }
+                    return original(name, args, context)
+                })
+                try {
+                    const rejected = await finish(p, { play_id: playId, api_count: 2 })
+                    assert.equal(rejected.statusCode, 400, rejected.body)
+                    assert.equal(intercepted, true)
+                    assert.deepEqual(snapshot(p.id), terminalSnapshot, 'actual writer blocks another mode without consuming the pending active row')
+                } finally { hook.mock.restore() }
+            })
+
+            await t.test('ledger insertion failure rolls back rewards, receipt and active consumption', async () => {
+                const p = makePlayer(), playId = 'ledger-failure'
+                assert.equal((await start(p, playId)).statusCode, 200)
+                const before = snapshot(p.id), memory = structuredClone(single.activeQuests[p.id])
+                db.exec(`CREATE TRIGGER single_ledger_failure BEFORE INSERT ON battle_settlement_ledger
+                    WHEN NEW.player_id=${p.id} BEGIN SELECT RAISE(ABORT, 'injected ledger failure'); END`)
+                try {
+                    const rejected = await finish(p, { play_id: playId, api_count: 2 })
+                    assert.equal(rejected.statusCode, 500, rejected.body)
+                    assert.match(rejected.body, /injected ledger failure/)
+                    assert.deepEqual(snapshot(p.id), before)
+                    assert.deepEqual(single.activeQuests[p.id], memory)
+                } finally { db.exec('DROP TRIGGER single_ledger_failure') }
+                decode(await finish(p, { play_id: playId, api_count: 3 }))
+                const settled = snapshot(p.id)
+                decode(await finish(p, { play_id: playId, api_count: 4 }))
+                assert.deepEqual(snapshot(p.id), settled)
             })
 
             await t.test('durable replay survives loss of memory and a fresh process', async () => {
@@ -287,6 +386,18 @@ if (replay) {
                 }
                 assertPaid(before, balances(p.id), 3)
                 assert.deepEqual(receiptRows(p.id).map(row => row.request_key), ['tokenless-1', 'tokenless-2', 'tokenless-3'], 'durable identity comes from each real registration')
+
+                // The old /start accepted an omitted/empty play_id. Such a
+                // malformed historical row cannot produce a permanent guard;
+                // valid tokenless finishes above still bind to their active ID.
+                const malformed = makePlayer()
+                assert.equal((await start(malformed, 'before-empty-fixture')).statusCode, 200)
+                db.prepare("UPDATE players_active_quests SET play_id='' WHERE player_id=? AND play_id='before-empty-fixture'").run(malformed.id)
+                single.activeQuests[malformed.id].playId = ''
+                const malformedBefore = snapshot(malformed.id)
+                const noIdentity = await finish(malformed, { api_count: 2 })
+                assert.equal(noIdentity.statusCode, 400, noIdentity.body)
+                assert.deepEqual(snapshot(malformed.id), malformedBefore, 'empty historical identity must not pay without a guard')
             })
 
             await t.test('settlement reads fresh balances after session validation', async t => {

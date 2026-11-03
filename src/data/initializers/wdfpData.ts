@@ -236,6 +236,27 @@ export default function init(
         ON player_operation_receipts (player_id, created_at)
     `).run()
 
+    // Permanent, compact payment facts outlive the bounded response replay cache.
+    // Single and multiplayer share one identity so a mode switch cannot pay twice.
+    database.exec(`CREATE TABLE IF NOT EXISTS battle_settlement_ledger (
+        player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        play_id TEXT NOT NULL,
+        mode TEXT NOT NULL CHECK(mode IN ('single','multi','legacy-conflict')),
+        settled_at INTEGER NOT NULL,
+        version INTEGER NOT NULL DEFAULT 1 CHECK(version = 1),
+        PRIMARY KEY(player_id,play_id)
+    ) WITHOUT ROWID;
+    CREATE TABLE IF NOT EXISTS battle_receipt_payload_queue (
+        player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        play_id TEXT NOT NULL,
+        operation TEXT NOT NULL CHECK(operation IN ('quest_finish.single','quest_finish.multi')),
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY(player_id,play_id,operation),
+        FOREIGN KEY(player_id,play_id) REFERENCES battle_settlement_ledger(player_id,play_id) ON DELETE CASCADE
+    ) WITHOUT ROWID;
+    CREATE INDEX IF NOT EXISTS idx_battle_receipt_payload_expiry
+        ON battle_receipt_payload_queue(created_at,player_id,play_id,operation);`)
+
     // create players table
     database.prepare(`CREATE TABLE IF NOT EXISTS players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

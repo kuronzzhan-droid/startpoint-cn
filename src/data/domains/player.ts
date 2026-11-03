@@ -1276,6 +1276,16 @@ const LEGACY_REPLACE_PRESERVED_RELATIONS = [
         where: "player_id = ?",
         parameters: (playerId: number) => [playerId],
     },
+    {
+        table: "battle_settlement_ledger",
+        where: "player_id = ?",
+        parameters: (playerId: number) => [playerId],
+    },
+    {
+        table: "battle_receipt_payload_queue",
+        where: "player_id = ?",
+        parameters: (playerId: number) => [playerId],
+    },
     // Deleting a host cascades through the entire shared run. Preserve every
     // affected member and receipt, then restore parent rows before children.
     {

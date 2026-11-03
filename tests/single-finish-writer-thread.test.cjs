@@ -111,6 +111,15 @@ async function finishPracticeQuest({ playerId, viewerId }) {
         'SELECT COUNT(*) AS n FROM players_practice_battle_history WHERE player_id = ?',
     ).get(playerId)
     assert.equal(history.n, 1, 'practice battle history must be committed')
+    const terminal = getDb().prepare(`SELECT ledger.mode, ledger.settled_at, receipt.created_at, queue.created_at AS queued_at
+        FROM battle_settlement_ledger AS ledger
+        JOIN player_operation_receipts AS receipt ON receipt.player_id=ledger.player_id
+            AND receipt.request_key=ledger.play_id AND receipt.operation='quest_finish.single'
+        JOIN battle_receipt_payload_queue AS queue ON queue.player_id=ledger.player_id AND queue.play_id=ledger.play_id
+        WHERE ledger.player_id=? AND ledger.play_id=?`).get(playerId, `single-finish-writer-${playerId}-play-1`)
+    assert.equal(terminal.mode, 'single', 'the real executor commits a permanent terminal identity')
+    assert.equal(terminal.settled_at, terminal.created_at, 'receipt and ledger share one real-clock timestamp')
+    assert.equal(terminal.settled_at, terminal.queued_at, 'retention CAS metadata must match the payload timestamp')
     return decoded
 }
 

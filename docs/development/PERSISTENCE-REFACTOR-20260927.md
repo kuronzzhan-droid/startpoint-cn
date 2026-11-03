@@ -42,7 +42,7 @@
 - TCP 大厅的 `ChangeParty` 只先更新房间内存态并广播，partySlot 保存改为低优先级异步持久化；五重决战 continue 也增加异步 HTTP 入口，保留同步兼容函数给旧测试和内部调用方。多人房间人数上限仍为三人。
 - Node 24 worker 诊断增加每个 worker 的累计 CPU 时间和采样窗口增量，同时记录主进程同一时间窗的 CPU 增量，用于验证多核心是否实际被使用。
 - 仍需保留同步 API 的旧调用方通过兼容入口接入；这些调用不会伪装成异步 worker，后续需要命令化后才能真正搬离主事件循环。
-- 新增 SQLite checkpoint worker（`SQLITE_CHECKPOINT_WORKER`）；4 核多核模式默认开启，可显式设为 `0` 关闭。开启后每 5 秒执行 `PASSIVE` checkpoint，并在 WAL 达到默认 131072 帧或 512 MiB 时，以至少 60 秒间隔尝试 `TRUNCATE`，防止 WAL 只回填不回收而无限增大。阈值可通过 `SQLITE_CHECKPOINT_TRUNCATE_FRAMES`、`SQLITE_CHECKPOINT_TRUNCATE_BYTES` 和 `SQLITE_CHECKPOINT_TRUNCATE_COOLDOWN_MS` 调整；维护连接默认 `busy_timeout=0`，遇到活动读写立即记为 busy 并留给下一轮重试，避免 checkpoint 反过来长时间占用 SQLite 锁；`[MEM]` 中同时记录物理 WAL 字节数、截断尝试/成功/busy 次数和截断前的 PASSIVE 帧数。checkpoint worker 也响应内存诊断探针，避免把“未响应探针”误报为 worker 停滞。
+- SQLite checkpoint worker（`SQLITE_CHECKPOINT_WORKER`）在 4 核多核模式默认开启，可显式设为 `0` 关闭。在线定时、启动及手动请求均只执行 `PASSIVE` checkpoint，默认间隔 5 秒；旧 `SQLITE_CHECKPOINT_TRUNCATE_FRAMES`、`SQLITE_CHECKPOINT_TRUNCATE_BYTES` 和 `SQLITE_CHECKPOINT_TRUNCATE_COOLDOWN_MS` 不再启用在线截断。`FULL`、`RESTART`、`TRUNCATE` 会持写锁执行数据库同步，`busy_timeout=0` 仅限制等锁时间，不能限制取得锁后的磁盘同步耗时，因此强制截断须放到停止业务写入并排空后的维护窗口。正常 `PASSIVE` 回写允许业务写入继续，遇到读者钉住旧快照时可能只完成部分回写；读者释放后后续轮次继续推进。已回写 WAL 可在后续写入中复用，物理文件可能保持历史峰值，不能仅据文件未缩小判断回写失败；长读事务仍可能导致 WAL 增长，需结合逻辑帧数、已回写帧数及物理字节数诊断。现有持久化同步等级保持不变；`[MEM]` 保留兼容的截断计数与 `lastWasTruncate` 字段，在线均为零或 false，并继续记录 PASSIVE 帧数和物理 WAL 字节数。checkpoint worker 继续响应内存诊断探针；头部恢复、最后连接关闭等生命周期路径不属于正常在线 PASSIVE 的无写锁保证。
 - 持久化协调器在连续异步事务之间通过 `setImmediate` 让出一次事件循环，保持同一全局/玩家队列的顺序，同时避免大量结算写入以微任务链形式连续占用 TCP/HTTP 回调。
 - 五重多人 `/abort` 和五重单人 `/start` 的 HTTP 路径已改用异步持久化协调器；原有同步函数仍保留给旧测试及已处于外层事务的内部调用，避免放弃或入场请求在主事件循环中直接执行完整 SQLite 事务。
 - 公告列表、公告详情和强制公告的已读回执也改用异步持久化入口；同步函数只保留给公告投放查询和管理清理等兼容调用，避免普通客户端浏览公告时直接执行 SQLite 写入。
