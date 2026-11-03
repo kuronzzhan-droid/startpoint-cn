@@ -312,7 +312,8 @@ async function main() {
 
   if (!changed.length && !deleted.length) { log('no changes'); return 0; }
 
-  const recent = files.filter((f) => { try { return Date.now() - fs.statSync(f.abs).mtimeMs < QUIET_MS; } catch { return true; } });
+  const changedSet = new Set(changed.map((c) => c.rel));
+  const recent = files.filter((f) => changedSet.has(f.rel)).filter((f) => { try { return Date.now() - fs.statSync(f.abs).mtimeMs < QUIET_MS; } catch { return true; } });
   if (recent.length) {
     log(`files changed in the last ${QUIET_MS / 60000} min (e.g. ${recent[0].rel}), deploy may be running; skip this run`);
     return 0;
