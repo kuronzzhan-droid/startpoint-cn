@@ -39,8 +39,11 @@ const CHUNK_FILES = 300;
 // Mirrored top-level paths. Everything else on the server stays out.
 // out/ is included on purpose: the live server runs from out/ and many fixes
 // since 10-22 exist only there.
-const INCLUDE_DIRS = ['src', 'out', 'assets', 'web', 'scripts', 'tools', 'admin', 'data', 'docs',
-  'client-patch', 'apk-patches', 'deployment'];
+// docs/, apk-patches/, client-patch/ and deployment/ are not deployed to the
+// server, so they are left as they are on the branch (maintained via main).
+const INCLUDE_DIRS = ['src', 'out', 'assets', 'web', 'scripts', 'tools', 'admin', 'data'];
+// Paths that exist only in the repo, never on the server: never deleted.
+const KEEP_ON_BRANCH = [/^assets\/asset-patch\/(audit|artwork)\//];
 const INCLUDE_FILES = ['package.json', 'package-lock.json', 'tsconfig.json', 'tsconfig.cn.json',
   'tailwind.config.js', 'README.md'];
 
@@ -48,7 +51,7 @@ const INCLUDE_FILES = ['package.json', 'package-lock.json', 'tsconfig.json', 'ts
 const EXCLUDE_DIRS = new Set(['node_modules', '.git', '.cdn', '.database', '.logs', 'logs', 'tmp', 'dist',
   'build', 'config', '.migration-backups', '.codex-backups', '__pycache__', 'gacha_odds', 'cn-traffic']);
 const EXCLUDE_FILE_RE = [
-  /^\.env($|\.)/i, /\.bak$/i, /\.pre-[^/]*$/i, /\.orig$/i,
+  /^\.env($|\.)/i, /\.(bak|old|orig)([-.]|$)/i, /\.pre-[^/]*$/i, /-before$/i,
   /\.(apk|aab|keystore|jks|pem|key|p12|pfx|crt)$/i,
   /\.(log|db|db-shm|db-wal|sqlite|sqlite3)$/i,
   /^save_.*\.json$/i, /^save_data\.json$/i, /^confirmed_seeds\.json$/i, /\.backup\.json$/i,
@@ -170,23 +173,57 @@ function scan(rel, text) {
   return [...new Set(hits)];
 }
 
-function gitleaks(files) {
-  // Optional second opinion: scan exactly the files about to be pushed.
+// Findings already public on main that gitleaks flags as generic-api-key:
+// a fixed protocol stub token and Kakao's public infodesk reply.
+const GITLEAKS_EXTRA_PATHS = [
+  'out/routes/openapi\\.js$', 'out/routes/infodesk\\.js$',
+  'src/routes/openapi\\.ts$', 'src/routes/infodesk\\.ts$',
+];
+
+function gitleaksConfig(repoToml) {
+  // Reuse the repo's allowlist; make every path rule match both / and \
+  // because gitleaks reports Windows paths with backslashes.
+  const Q = "'''";
+  const sep = (re) => re.replace(/\//g, '[\\\\/]');
+  const block = (name) => {
+    if (!repoToml) return [];
+    const m = repoToml.match(new RegExp(`^${name}\\s*=\\s*\\[([\\s\\S]*?)^\\]`, 'm'));
+    return m ? m[1].split(Q).filter((_, i) => i % 2 === 1) : [];
+  };
+  const paths = [...block('paths'), ...GITLEAKS_EXTRA_PATHS].map(sep);
+  const regexes = block('regexes');
+  const list = (xs) => xs.map((x) => `  ${Q}${x}${Q}`).join(',\n');
+  return `[extend]\nuseDefault = true\n\n[allowlist]\ndescription = "repo allowlist + sync extras"\n` +
+    `paths = [\n${list(paths)}\n]\nregexes = [\n${list(regexes)}\n]\n`;
+}
+
+function gitleaks(files, repoToml) {
+  // Second opinion: scan exactly the files about to be pushed.
   const exe = path.join(SYNC_ROOT, 'gitleaks.exe');
   if (!fs.existsSync(exe)) return { ran: false };
   const stage = path.join(SYNC_ROOT, 'stage');
+  const conf = path.join(SYNC_ROOT, 'gitleaks-sync.toml');
+  const report = path.join(SYNC_ROOT, 'gitleaks-report.json');
   fs.rmSync(stage, { recursive: true, force: true });
+  fs.rmSync(report, { force: true });
+  fs.writeFileSync(conf, gitleaksConfig(repoToml));
   for (const f of files) {
     const dst = path.join(stage, ...f.rel.split('/'));
     fs.mkdirSync(path.dirname(dst), { recursive: true });
     fs.writeFileSync(dst, f.buf);
   }
   try {
-    execFileSync(exe, ['dir', stage, '--no-banner', '--redact', '--exit-code', '3'], { stdio: 'pipe' });
-    return { ran: true, ok: true };
+    execFileSync(exe, ['dir', stage, '--config', conf, '--no-banner', '--redact', '--exit-code', '3',
+      '--report-format', 'json', '--report-path', report], { stdio: 'pipe' });
+    return { ran: true, ok: true, hits: [] };
   } catch (e) {
-    const out = `${e.stdout || ''}${e.stderr || ''}`.trim();
-    return { ran: true, ok: e.status !== 3, out };
+    if (e.status !== 3) return { ran: true, ok: false, hits: [`gitleaks failed to run: ${String(e.stderr || e.message).slice(0, 300)}`] };
+    let hits;
+    try {
+      hits = JSON.parse(fs.readFileSync(report, 'utf8')).map((r) =>
+        `gitleaks ${r.RuleID}: ${path.relative(stage, r.File).split(path.sep).join('/')}:${r.StartLine}`);
+    } catch { hits = ['gitleaks: leaks found (report unreadable)']; }
+    return { ran: true, ok: false, hits };
   } finally {
     fs.rmSync(stage, { recursive: true, force: true });
   }
@@ -248,7 +285,7 @@ async function main() {
   fs.writeFileSync(CACHE, JSON.stringify(nextCache));
   const deleted = [];
   for (const [p] of remote) {
-    if (inScope(p) && !excludedPath(p) && !localPaths.has(p) && !skipped.some((s) => s.startsWith(p + ' '))) deleted.push(p);
+    if (inScope(p) && !excludedPath(p) && !KEEP_ON_BRANCH.some((re) => re.test(p)) && !localPaths.has(p) && !skipped.some((s) => s.startsWith(p + ' '))) deleted.push(p);
   }
 
   const version = (() => {
@@ -275,8 +312,11 @@ async function main() {
 
   // 4. Secret scan, fail closed.
   const hits = changed.filter((c) => c.text).flatMap((c) => scan(c.rel, c.buf.toString('utf8')));
-  const gl = gitleaks(changed);
-  if (gl.ran && !gl.ok) hits.push(`gitleaks: ${gl.out.slice(0, 500)}`);
+  let repoToml = '';
+  const tomlEntry = remote.get('.gitleaks.toml');
+  if (tomlEntry) repoToml = Buffer.from((await gh('GET', `/git/blobs/${tomlEntry.sha}`)).content, 'base64').toString('utf8');
+  const gl = gitleaks(changed, repoToml);
+  if (gl.ran && !gl.ok) hits.push(...gl.hits);
   if (!gl.ran) log('gitleaks.exe not present, built-in scan only');
   if (hits.length) {
     fs.writeFileSync(path.join(SYNC_ROOT, 'blocked.txt'), hits.join('\n') + '\n');
