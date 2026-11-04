@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildShopSalesEntry = exports.getClientTotalPurchaseNum = exports.isShopItemAvailable = exports.getShopPurchaseKey = void 0;
 const shop_1 = require("./types/shop");
+const utils_1 = require("../utils");
+const time_utils_1 = require("./time-utils");
 // Keep the existing persisted keys: the two Fantasy shop screens share stock,
 // while these GENERAL products must not consume STAR_GRAIN purchase history.
 const GENERAL_EQUIPMENT_SCOPED_PURCHASE_KEYS = new Map([
@@ -13,8 +15,18 @@ const MODE15_SHARED_EVENT_PURCHASE_KEYS = new Map(Array.from({ length: 14 }, (_,
     [9700201 + index, -9702001 - index],
     [9700301 + index, -9702001 - index],
 ]).flat());
+// 开荒编排 17（1104）：荒龙六店的十连券每周一 05:00 刷新库存。购买次数按周分键记，跨周自动从 0 开始。
+const WEEKLY_BOSS_COIN_ITEMS = new Set([992023001, 992023002, 992024001, 992024002, 992025001, 992025002,
+    992027001, 992027002, 992028001, 992028002, 992029001, 992029002]);
+function weeklyPurchaseKey(shopItemId) {
+    const week = (0, time_utils_1.getWeekBucket)(new Date((0, utils_1.getServerTime)() * 1000)).w;
+    return -(shopItemId * 10000 + (week % 10000));
+}
 function getShopPurchaseKey(shopType, shopItemId) {
     var _a, _b;
+    if (shopType === shop_1.ShopType.BOSS_COIN && WEEKLY_BOSS_COIN_ITEMS.has(Number(shopItemId))) {
+        return weeklyPurchaseKey(Number(shopItemId));
+    }
     if (shopType === shop_1.ShopType.EVENT_ITEM) {
         return (_a = MODE15_SHARED_EVENT_PURCHASE_KEYS.get(shopItemId)) !== null && _a !== void 0 ? _a : shopItemId;
     }

@@ -60,6 +60,9 @@ function givePlayerScoreRewardsSync(playerId, groupId, scoreRewards, boostPointU
     let items = {};
     if (scoreRewards != null && groupId != null) {
         const dropMultiplier = parseFloat(process.env.DROP_MULTIPLIER || '1');
+        // 开荒编排 21（1104）：有共斗的副本单人结算，固定掉落按共斗的 0.4 倍发（四舍五入，至少 1）；领主币按原单人/共斗合同不动，稀有池不动
+        const soloCoopScale = Number(bossRewardContext === null || bossRewardContext === void 0 ? void 0 : bossRewardContext.soloCoopScale) || 1;
+        const scaleSolo = (amount) => soloCoopScale === 1 || amount <= 0 ? amount : Math.max(1, Math.round(amount * soloCoopScale));
         const bossRewardProfile = (0, reward_profile_1.getBossRewardProfile)(bossRewardContext === null || bossRewardContext === void 0 ? void 0 : bossRewardContext.questId, groupId);
         (0, game_logging_1.gameVerboseLog)(() => `[QUEST] givePlayerScoreRewards group=${groupId} items=${scoreRewards.length} pid=${playerId}`);
         let seqIndex = 0;
@@ -85,7 +88,7 @@ function givePlayerScoreRewardsSync(playerId, groupId, scoreRewards, boostPointU
                             }
                             else {
                                 const itemDropMultiplier = itemReward.ignore_drop_multiplier ? 1 : dropMultiplier;
-                                rewardAmount = itemReward.count * itemDropMultiplier * (boostPointUsed ? 2 : 1);
+                                rewardAmount = scaleSolo(itemReward.count * itemDropMultiplier * (boostPointUsed ? 2 : 1));
                             }
                             items[String(itemId)] = (0, item_1.givePlayerItemSync)(playerId, itemId, rewardAmount);
                             (0, game_logging_1.gameVerboseLog)(() => isBossToken
@@ -96,7 +99,7 @@ function givePlayerScoreRewardsSync(playerId, groupId, scoreRewards, boostPointU
                         case types_1.RewardType.MANA: {
                             const player = (0, player_1.getPlayerSync)(playerId);
                             const currencyReward = reward;
-                            rewardAmount = currencyReward.count * dropMultiplier * (boostPointUsed ? 2 : 1);
+                            rewardAmount = scaleSolo(currencyReward.count * dropMultiplier * (boostPointUsed ? 2 : 1));
                             const manaGrant = (0, mana_1.calculateFreeManaGrant)({
                                 freeMana: (_b = player === null || player === void 0 ? void 0 : player.freeMana) !== null && _b !== void 0 ? _b : 0,
                                 paidMana: (_c = player === null || player === void 0 ? void 0 : player.paidMana) !== null && _c !== void 0 ? _c : 0,
@@ -111,7 +114,7 @@ function givePlayerScoreRewardsSync(playerId, groupId, scoreRewards, boostPointU
                         }
                         case types_1.RewardType.EXP: {
                             const currencyReward = reward;
-                            rewardAmount = currencyReward.count * dropMultiplier * (boostPointUsed ? 2 : 1);
+                            rewardAmount = scaleSolo(currencyReward.count * dropMultiplier * (boostPointUsed ? 2 : 1));
                             expPool += rewardAmount;
                             (0, player_1.adjustPlayerExpPoolSync)(playerId, rewardAmount, 'quest_score_reward');
                             break;
@@ -121,7 +124,7 @@ function givePlayerScoreRewardsSync(playerId, groupId, scoreRewards, boostPointU
                             const itemId = resolveElementItemId(itemReward.id, questElement);
                             if (itemId === null)
                                 continue;
-                            rewardAmount = itemReward.count * dropMultiplier * (boostPointUsed ? 2 : 1);
+                            rewardAmount = scaleSolo(itemReward.count * dropMultiplier * (boostPointUsed ? 2 : 1));
                             items[String(itemId)] = (0, item_1.givePlayerItemSync)(playerId, itemId, rewardAmount);
                             (0, game_logging_1.gameVerboseLog)(() => `[QUEST-ELEMENT] rarity=${itemReward.id} →id=${itemId} cdnCount=${itemReward.count} ×drop=${dropMultiplier} ×boost=${boostPointUsed ? 2 : 1} → ${rewardAmount}`);
                             break;
@@ -131,7 +134,7 @@ function givePlayerScoreRewardsSync(playerId, groupId, scoreRewards, boostPointU
                             const itemId = resolveAetherItemId(itemReward.id, questElement);
                             if (itemId === null)
                                 continue;
-                            rewardAmount = itemReward.count * dropMultiplier * (boostPointUsed ? 2 : 1);
+                            rewardAmount = scaleSolo(itemReward.count * dropMultiplier * (boostPointUsed ? 2 : 1));
                             items[String(itemId)] = (0, item_1.givePlayerItemSync)(playerId, itemId, rewardAmount);
                             (0, game_logging_1.gameVerboseLog)(() => `[QUEST-AETHER] rarity=${itemReward.id} →id=${itemId} cdnCount=${itemReward.count} ×drop=${dropMultiplier} ×boost=${boostPointUsed ? 2 : 1} → ${rewardAmount}`);
                             break;

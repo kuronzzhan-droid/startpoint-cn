@@ -20,6 +20,8 @@ const utils_1 = require("../../utils");
 const singleBattleQuest_1 = require("../../routes/api/singleBattleQuest");
 const quest_active_1 = require("../../data/domains/quest_active");
 const player_1 = require("../../data/domains/player");
+const stamina_1 = require("../../lib/stamina");
+const stamina_cost_1 = require("../../lib/stamina-cost");
 const assets_1 = require("../../lib/assets");
 const steam_robot_challenge_1 = require("../../lib/mission/steam-robot-challenge");
 const game_logging_1 = require("../../lib/game-logging");
@@ -296,6 +298,15 @@ function registerBattleRoutes(fastify) {
         // /multi_battle_quest/start.
         let previousActiveQuest, insertedActiveQuest;
         let repeatedPendingStart = false;
+        // 作者 1104：协力开战扣体力。房主全扣；协力者看和房主的关注关系：互相关注不扣，单向关注扣一半（向上取整），没关注全扣
+        const fullStaminaCost = (0, stamina_cost_1.getStaminaCost)(`${category}_${quest_id}`).cost;
+        let hostStaminaCost = fullStaminaCost;
+        if (!roomStart.isHost && fullStaminaCost > 0) {
+            const hostPlayerId = roomStart.room === null || roomStart.room === void 0 ? void 0 : roomStart.room.host_player_id;
+            const relation = hostPlayerId ? require("../../data/domains/follow").getFollowRelationSync(ctx.playerId, Number(hostPlayerId)).state : 0;
+            hostStaminaCost = relation === 1 ? 0 : (relation === 2 || relation === 3) ? Math.ceil(fullStaminaCost / 2) : fullStaminaCost;
+        }
+        let hostStaminaAfter;
         let rivenParties = [];
         const startDeadline = node_perf_hooks_1.performance.now() + Math.max(0, roomStart.remainingMs - 100);
         try {
@@ -319,6 +330,15 @@ function registerBattleRoutes(fastify) {
                     Object.assign(activeQuest, activeQuestFromPersistent(pending));
                     repeatedPendingStart = true;
                     return;
+                }
+                if (hostStaminaCost > 0) {
+                    const hostPlayer = (0, player_1.getPlayerSync)(ctx.playerId);
+                    const currentStamina = (0, stamina_1.computeRealTimeStamina)(hostPlayer);
+                    if (currentStamina < hostStaminaCost)
+                        throw new Error("Insufficient stamina.");
+                    hostStaminaAfter = currentStamina - hostStaminaCost;
+                    (0, player_1.updatePlayerSync)({ id: ctx.playerId, stamina: hostStaminaAfter, staminaHealTime: new Date(),
+                        totalStaminaUsed: (hostPlayer.totalStaminaUsed || 0) + hostStaminaCost });
                 }
                 (0, singleBattleQuest_1.insertActiveQuest)(ctx.playerId, activeQuest);
                 insertedActiveQuest = singleBattleQuest_1.activeQuests[ctx.playerId];
@@ -355,7 +375,8 @@ function registerBattleRoutes(fastify) {
             }
             const code = error === null || error === void 0 ? void 0 : error.code;
             if (code === "BATTLE_ALREADY_SETTLED" || code === "BATTLE_CLOCK_ABORTED"
-                || error.message === "Battle start does not match the pending play.") {
+                || error.message === "Battle start does not match the pending play."
+                || error.message === "Insufficient stamina.") {
                 return reply.status(400).send({ error: "Bad Request", message: error.message });
             }
             throw error;
@@ -399,7 +420,8 @@ function registerBattleRoutes(fastify) {
         reply.header("content-type", "application/x-msgpack");
         return reply.status(200).send({
             "data_headers": (0, utils_1.generateDataHeaders)({ viewer_id }),
-            "data": Object.assign({ "is_multi": "multi", "play_id": play_id, "client_checks": (0, steam_robot_challenge_1.getSteamRobotMissionClientChecks)(category, quest_id) }, rivenPartyData)
+            "data": Object.assign({ "is_multi": "multi", "play_id": play_id, "client_checks": (0, steam_robot_challenge_1.getSteamRobotMissionClientChecks)(category, quest_id) }, rivenPartyData,
+                hostStaminaAfter === undefined ? {} : { "user_info": { "stamina": hostStaminaAfter, "stamina_heal_time": (0, utils_1.realToVirtual)(new Date()) } })
         });
     }));
     // ---- finish ----
@@ -558,6 +580,8 @@ function registerBattleRoutes(fastify) {
                 allowFrozenSnapshot: settlementSnapshot !== undefined,
                 playId, finishedAsHost, finishedAsRescueGuest, finishedAsRescueFragmentEligible,
                 finishedAsNewbieRescueGuest, matePlayerResult, followInfo,
+                // 开荒编排 19：房主奖励按房间里除房主外的真人数发紫碎
+                hostRealMateCount: expectedRealViewerIds.filter(id => id !== Number(viewerId)).length,
                 evaluationTimeMs: (0, utils_1.getServerTime)() * 1000,
             }, { domain: "multi-settlement", playerId, operation: "finish" })));
             if (settled.response === null) {

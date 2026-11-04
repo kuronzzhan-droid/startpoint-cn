@@ -1,20 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.awardBattleStarCrumbSync = exports.STAR_CRUMB_BATTLE_RULES = void 0;
-// 星之碎片战斗奖励（作者 1103，开荒编排「星之碎片优化推荐」）：
-// 每局胜利单人 +5、协力 +10，直接入账；当天第一局协力胜利另发 300、每周第三局协力胜利另发 1000，走邮件。
+// 星之碎片战斗奖励（作者 1103，开荒编排「星之碎片优化推荐」；1104 编排 16 回调）：
+// 只保留每周第三局协力胜利发 1200，走邮件；单局入账和每日第一局协力奖励取消（数值为 0 即不发）。
 // 客户端任务奖励没有星碎类型，所以每日 / 每周这两档不进任务面板，只发邮件。
 const db_1 = require("../data/db");
 const player_1 = require("../data/domains/player");
 const mail_1 = require("../data/domains/mail");
 const time_utils_1 = require("./time-utils");
 exports.STAR_CRUMB_BATTLE_RULES = {
-    single: 5,
-    multi: 10,
+    single: 0,
+    multi: 0,
     dailyMultiCount: 1,
-    dailyMultiReward: 300,
+    dailyMultiReward: 0,
     weeklyMultiCount: 3,
-    weeklyMultiReward: 1000,
+    weeklyMultiReward: 1200,
 };
 let tableReady = false;
 function ensureTable() {
@@ -56,7 +56,9 @@ function awardBattleStarCrumbSync(ctx, evaluationTime) {
     const player = (0, player_1.getPlayerSync)(ctx.playerId);
     if (!player)
         return;
-    (0, player_1.updatePlayerSync)({ id: ctx.playerId, starCrumb: player.starCrumb + (ctx.isMulti === true ? rules.multi : rules.single) });
+    const perBattle = ctx.isMulti === true ? rules.multi : rules.single;
+    if (perBattle > 0)
+        (0, player_1.updatePlayerSync)({ id: ctx.playerId, starCrumb: player.starCrumb + perBattle });
     if (ctx.isMulti !== true)
         return;
     ensureTable();
@@ -69,9 +71,9 @@ function awardBattleStarCrumbSync(ctx, evaluationTime) {
     db.prepare(`INSERT INTO players_star_crumb_battle (player_id, day_key, day_multi_count, week_key, week_multi_count) VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(player_id) DO UPDATE SET day_key = excluded.day_key, day_multi_count = excluded.day_multi_count,
         week_key = excluded.week_key, week_multi_count = excluded.week_multi_count`).run(ctx.playerId, today, dayCount, week, weekCount);
-    if (dayCount === rules.dailyMultiCount)
+    if (dayCount === rules.dailyMultiCount && rules.dailyMultiReward > 0)
         sendStarCrumbMail(ctx.playerId, rules.dailyMultiReward, '每日协力奖励');
-    if (weekCount === rules.weeklyMultiCount)
+    if (weekCount === rules.weeklyMultiCount && rules.weeklyMultiReward > 0)
         sendStarCrumbMail(ctx.playerId, rules.weeklyMultiReward, '每周协力奖励');
 }
 exports.awardBattleStarCrumbSync = awardBattleStarCrumbSync;

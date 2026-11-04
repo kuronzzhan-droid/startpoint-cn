@@ -58,7 +58,7 @@ function getDefaultPlayerData() {
         vmoney: 100,
         freeVmoney: 10000,
         rankPoint: 0,
-        starCrumb: 9000,
+        starCrumb: 20000,
         bondToken: 10,
         expPool: 0,
         expPooledTime: now,

@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.380",
+  "cdn_version": "1.4.384",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -45005,6 +45005,210 @@
         }
       ],
       "created_at": "2026-11-03"
+    },
+    {
+      "id": "kaihuang-16-21-1104",
+      "type": "patch",
+      "name": "开荒编排 16–21",
+      "description": "",
+      "version": "1.4.381",
+      "depends_on": "1.4.380",
+      "enabled": true,
+      "archive": "pinball-1.4.380-1.4.381-1-kaihuang-16-21-1104-local.zip",
+      "archive_size": 1405137,
+      "chain": [
+        "pinball-1.4.380-1.4.381-1-kaihuang-16-21-1104-local.zip"
+      ],
+      "files": [
+        "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0",
+        "production/upload/10/96d9b6db4e50e48c2490a821fe4b239ae10fd8",
+        "production/upload/80/77e5e596bc2a742f1c6f0bd4dc284d2b49abd9"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.380-1.4.381-1-kaihuang-16-21-1104-local.zip",
+          "size": 1405137,
+          "sha256": "01090614a3e1cf4d66dc127f0c2dcfa825256d5eea6faf4db3dfd6ea39c8008e",
+          "members": 3,
+          "files": [
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0",
+            "production/upload/10/96d9b6db4e50e48c2490a821fe4b239ae10fd8",
+            "production/upload/80/77e5e596bc2a742f1c6f0bd4dc284d2b49abd9"
+          ],
+          "member_sha256": {
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "8ef732516f69c0455c3df595a28c76b47b20ad0ab914146fa1aaeb78e21916ea",
+            "production/upload/10/96d9b6db4e50e48c2490a821fe4b239ae10fd8": "81831c25295ee489608cfdad8b1607f2b4ee5903848a4f2efbc3c83a8af1d807",
+            "production/upload/80/77e5e596bc2a742f1c6f0bd4dc284d2b49abd9": "eacd1ae94046db28a3acbd0306c0cd41648683f9914f92c7f3e239d6225491e0"
+          },
+          "logical_paths": {
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "master/shop/boss_coin_shop.orderedmap",
+            "production/upload/10/96d9b6db4e50e48c2490a821fe4b239ae10fd8": "master/box_gacha/box_reward.orderedmap",
+            "production/upload/80/77e5e596bc2a742f1c6f0bd4dc284d2b49abd9": "master/active_mission/active_mission_reward.orderedmap"
+          },
+          "applies_on": "1.4.380",
+          "version": "1.4.381",
+          "server_files": {},
+          "log": [
+            "荒龙六店各加通用角色十连券、通用装备十连券：每张 50 金币，各 30 张，置顶，每周一刷新",
+            "战阵之宴最终箱加 ★4星铁钢 ×10",
+            "内容指南：共 100 张通用角色十连券阶梯分布；开始内容指南加送经验 1,000,000、锻造石 5000"
+          ]
+        }
+      ],
+      "created_at": "2026-11-04"
+    },
+    {
+      "id": "kaihuang-22-23-1104",
+      "type": "patch",
+      "name": "开荒编排 22–23",
+      "description": "",
+      "version": "1.4.382",
+      "depends_on": "1.4.381",
+      "enabled": true,
+      "archive": "pinball-1.4.381-1.4.382-1-kaihuang-22-23-1104-local.zip",
+      "archive_size": 1543542,
+      "chain": [
+        "pinball-1.4.381-1.4.382-1-kaihuang-22-23-1104-local.zip"
+      ],
+      "files": [
+        "production/upload/24/eecf0418222b143f11d2839a802a92041af066",
+        "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b",
+        "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64",
+        "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0",
+        "production/upload/38/9ee6ccbe584f8fbb6b346de1ee83e9ebdeda4a",
+        "production/upload/2e/fb999d207f711e23d3d678daf48209143f7705",
+        "production/upload/13/3f5273100bb4a825854fbcf9bb17d5fde75e4c"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.381-1.4.382-1-kaihuang-22-23-1104-local.zip",
+          "size": 1543542,
+          "sha256": "bdb4f2aa9aada9c5d9d076564b6eb412631f0e906feda06e217da6b11c1f8f64",
+          "members": 7,
+          "files": [
+            "production/upload/24/eecf0418222b143f11d2839a802a92041af066",
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0",
+            "production/upload/38/9ee6ccbe584f8fbb6b346de1ee83e9ebdeda4a",
+            "production/upload/2e/fb999d207f711e23d3d678daf48209143f7705",
+            "production/upload/13/3f5273100bb4a825854fbcf9bb17d5fde75e4c"
+          ],
+          "member_sha256": {
+            "production/upload/24/eecf0418222b143f11d2839a802a92041af066": "f03cccd08f4d11b8afccd0710b5b07bba3faec13f834c19ffd6c83920116c1e0",
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "961206bd7bba169dbe70702e8ba095ba7f8595f58f8281c21bc6606734ac7831",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "ed03f44a01d3d9831f91d720e650d734702f7fcd118c98a8561db4459d05f5ba",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "d8cfa06a8d99276776c117031d33b8e9aa37b3b331bdcebd0e1f3e322f1ae11b",
+            "production/upload/38/9ee6ccbe584f8fbb6b346de1ee83e9ebdeda4a": "0d34e95a3e1300763c9b8d2e6c4845f82f756b128c3612da6ba0a934dce855b0",
+            "production/upload/2e/fb999d207f711e23d3d678daf48209143f7705": "fb081eaa57d90ec9c83332dbc8b4166a278576d3420d0ed4eee4798794fd38d5",
+            "production/upload/13/3f5273100bb4a825854fbcf9bb17d5fde75e4c": "d0961c935ab5561b23e7f63dcbfbdd246f8a9ca7d9878388bc53ab3af0e2798b"
+          },
+          "logical_paths": {
+            "production/upload/24/eecf0418222b143f11d2839a802a92041af066": "master/shop/boss_coin_shop_category.orderedmap",
+            "production/upload/97/efacb322621f7bf6671dad3bdf7bdc55cb350b": "master/quest/boss_battle_stage_node.orderedmap",
+            "production/upload/eb/f8ef19148af9c1330b78c7fb3ce75e3f202e64": "master/quest/boss_battle_quest.orderedmap",
+            "production/upload/a5/35aaa48a5290e76d07c40e497742e4a407a0d0": "master/shop/boss_coin_shop.orderedmap",
+            "production/upload/38/9ee6ccbe584f8fbb6b346de1ee83e9ebdeda4a": "master/shop/general_shop.orderedmap",
+            "production/upload/2e/fb999d207f711e23d3d678daf48209143f7705": "master/shop/equipment_enhancement_shop.orderedmap",
+            "production/upload/13/3f5273100bb4a825854fbcf9bb17d5fde75e4c": "quest/boss_battle/banner/mod_purple_fragment_exchange.png"
+          },
+          "applies_on": "1.4.381",
+          "version": "1.4.382",
+          "server_files": {
+            "assets/boss_coin_shop.json": "64964753091718cfa1b371023d3b7356a8dcc8297ad54eb507030c4cd8815fc7",
+            "assets/boss_coin_shop_item_category_map.json": "6c2dc4a3e68507f99df48ea8bcd5b1a73d9ab78d0f56367e6cc577c513262fdf",
+            "assets/general_shop.json": "4fe4eec212d0dded47718a6625e734d0cd284cc65b3ad90a2d3f26447f4cb63e",
+            "assets/equipment_enhancement_shop.json": "20c82783e3dae226389958afa6b4896a22958408b999195055232b12c3739784"
+          },
+          "log": [
+            "22 紫色碎片交易所：影刺·Shazixnar，4444 紫币碎片，限购1",
+            "23 羁绊武器：兑换30信赖之证；结束8魂珠；11行强化、六属性紫币各100、信赖之证20"
+          ]
+        }
+      ],
+      "created_at": "2026-11-04"
+    },
+    {
+      "id": "riven-fragment-label-1104",
+      "type": "patch",
+      "name": "裂罅碎片显示",
+      "description": "",
+      "version": "1.4.383",
+      "depends_on": "1.4.382",
+      "enabled": true,
+      "archive": "pinball-1.4.382-1.4.383-1-riven-fragment-label-1104-local.zip",
+      "archive_size": 246385,
+      "chain": [
+        "pinball-1.4.382-1.4.383-1-riven-fragment-label-1104-local.zip"
+      ],
+      "files": [
+        "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.382-1.4.383-1-riven-fragment-label-1104-local.zip",
+          "size": 246385,
+          "sha256": "ef189aa8395c05ce1aac39f5c32e47d95364b391ef2d26db71c48dc3e3377e55",
+          "members": 1,
+          "files": [
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+          ],
+          "member_sha256": {
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "ad3399b2ad6cb6f46fab82d3e44f55f6f81fdd0c5a814d926115a1f25231b454"
+          },
+          "logical_paths": {
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "master/item/item.orderedmap"
+          },
+          "applies_on": "1.4.382",
+          "version": "1.4.383",
+          "server_files": {},
+          "log": [
+            "仓库裂罅碎片去掉图标下的小字"
+          ]
+        }
+      ],
+      "created_at": "2026-11-04"
+    },
+    {
+      "id": "bond-enhance-path-fix-1104",
+      "type": "patch",
+      "name": "羁绊武器强化表修正",
+      "description": "",
+      "version": "1.4.384",
+      "depends_on": "1.4.383",
+      "enabled": true,
+      "archive": "pinball-1.4.383-1.4.384-1-bond-enhance-path-fix-1104-local.zip",
+      "archive_size": 49369,
+      "chain": [
+        "pinball-1.4.383-1.4.384-1-bond-enhance-path-fix-1104-local.zip"
+      ],
+      "files": [
+        "production/upload/e3/ef959b85852427577252f1651c3a93a8d2dc1e"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.383-1.4.384-1-bond-enhance-path-fix-1104-local.zip",
+          "size": 49369,
+          "sha256": "ea488a6f5ffdf0ec62e943c343aefa679046625951acf5daa31ad68a9252656b",
+          "members": 1,
+          "files": [
+            "production/upload/e3/ef959b85852427577252f1651c3a93a8d2dc1e"
+          ],
+          "member_sha256": {
+            "production/upload/e3/ef959b85852427577252f1651c3a93a8d2dc1e": "fb081eaa57d90ec9c83332dbc8b4166a278576d3420d0ed4eee4798794fd38d5"
+          },
+          "logical_paths": {
+            "production/upload/e3/ef959b85852427577252f1651c3a93a8d2dc1e": "master/equipment_enhancement/equipment_enhancement_shop.orderedmap"
+          },
+          "applies_on": "1.4.383",
+          "version": "1.4.384",
+          "server_files": {},
+          "log": [
+            "羁绊武器强化表放回正确路径"
+          ]
+        }
+      ],
+      "created_at": "2026-11-04"
     }
   ],
   "generated_for": "official active chain"

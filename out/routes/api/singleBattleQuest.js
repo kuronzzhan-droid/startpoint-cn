@@ -622,7 +622,8 @@ const routes = (fastify) => __awaiter(void 0, void 0, void 0, function* () {
             }
         }
         // Deduct stamina cost
-        const staminaCost = 0;
+        // 作者 1104：测试服恢复正常扣体力（此前写死为 0）
+        const staminaCost = nominalStaminaCost;
         if (staminaCost > 0) {
             const currentStamina = (0, stamina_1.computeRealTimeStamina)(player);
             if (currentStamina < staminaCost) {

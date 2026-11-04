@@ -81,6 +81,9 @@ catch (_a) { } // Init failed silently; carnival scoring won't work
  * writer thread when it is on, so it must not reference anything from the
  * request scope except the arguments above.
  */
+// 开荒编排 21（1104）：有共斗的副本（领主战、降临、世界剧情领主、战阵、高难协力）单人结算掉落按 0.4 倍
+const SOLO_COOP_DROP_SCALE = Number(process.env.SOLO_COOP_DROP_SCALE || "0.4");
+const SOLO_COOP_SCALE_CATEGORIES = new Set([2, 7, 8, 19, 23, 26]);
 function settleSingleQuestFinishInTransaction(args) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1;
     const { playerId, viewerId, questCategory, questId, questData, activeQuestData, body, clearTime, clearRank, questAccomplished, fiveBossSoloQuest, registered, scoreAttackBorderTiers, manaObtained, displayMode15ManaAsFieldDrop, finishCacheKey, receiptPlayId, } = args;
@@ -258,7 +261,7 @@ function settleSingleQuestFinishInTransaction(args) {
             (0, game_logging_1.gameVerboseLog)(() => `[SCORE_ATTACK] questData={localQuest:${questData.scoreAttackQuestId}, bRank:${questData.bRankScore}, aRank:${questData.aRankScore}, sRank:${questData.sRankScore}, ssRank:${questData.ssRankScore}, rankPt:${questData.rankPointReward}, charExp:${questData.characterExpReward}, mana:${questData.manaReward}, poolExp:${questData.poolExpReward}}`);
         }
         (0, game_logging_1.gameVerboseLog)(() => { var _a; return `[BATTLE] scoreReward groupId=${effectiveScoreRewardGroupId !== null && effectiveScoreRewardGroupId !== void 0 ? effectiveScoreRewardGroupId : (fiveBossSoloQuest ? 'skipped-five-boss-solo' : 'null')} groupLen=${(_a = effectiveScoreRewardGroup === null || effectiveScoreRewardGroup === void 0 ? void 0 : effectiveScoreRewardGroup.length) !== null && _a !== void 0 ? _a : 'null'} questId=${questId} category=${questCategory}`; });
-        const scoreRewardsResult = (0, quest_2.givePlayerScoreRewardsSync)(playerId, effectiveScoreRewardGroupId, effectiveScoreRewardGroup, useBoostPoint, questData.element, { questId, mode: "solo" });
+        const scoreRewardsResult = (0, quest_2.givePlayerScoreRewardsSync)(playerId, effectiveScoreRewardGroupId, effectiveScoreRewardGroup, useBoostPoint, questData.element, { questId, mode: "solo", soloCoopScale: SOLO_COOP_SCALE_CATEGORIES.has(Number(questCategory)) ? SOLO_COOP_DROP_SCALE : 1 });
         if (isTowerDungeonEvent && !skipTowerDungeonScoreReward) {
             const towerStage = Number.isInteger(Number(questId)) && Number(questId) >= 1001
                 ? (((Number(questId) - 1001) % 10) + 1)

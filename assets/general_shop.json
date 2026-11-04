@@ -13,7 +13,7 @@
     "stock": 1,
     "userCost": {
       "type": 2,
-      "amount": 50
+      "amount": 30
     }
   },
   "100002": {
@@ -30,7 +30,7 @@
     "stock": 1,
     "userCost": {
       "type": 2,
-      "amount": 50
+      "amount": 30
     }
   },
   "200001": {
@@ -5494,7 +5494,7 @@
     "stock": 1,
     "userCost": {
       "type": 2,
-      "amount": 50
+      "amount": 30
     }
   },
   "100008": {
@@ -5511,7 +5511,7 @@
     "stock": 1,
     "userCost": {
       "type": 2,
-      "amount": 50
+      "amount": 30
     }
   },
   "100003": {
@@ -5528,7 +5528,7 @@
     "stock": 1,
     "userCost": {
       "type": 2,
-      "amount": 50
+      "amount": 30
     }
   },
   "100004": {
@@ -5545,7 +5545,7 @@
     "stock": 1,
     "userCost": {
       "type": 2,
-      "amount": 50
+      "amount": 30
     }
   },
   "100005": {
@@ -5562,7 +5562,7 @@
     "stock": 1,
     "userCost": {
       "type": 2,
-      "amount": 50
+      "amount": 30
     }
   },
   "100006": {
@@ -5579,7 +5579,7 @@
     "stock": 1,
     "userCost": {
       "type": 2,
-      "amount": 50
+      "amount": 30
     }
   },
   "240001": {
@@ -5904,8 +5904,8 @@
         "count": 1
       }
     ],
-    "availableFrom": "2015-12-31 23:59:59",
-    "availableUntil": null,
+    "availableFrom": "2000-01-01 00:00:00",
+    "availableUntil": "2000-01-02 00:00:00",
     "stock": 1
   },
   "9100002": {
@@ -5922,8 +5922,8 @@
         "count": 1
       }
     ],
-    "availableFrom": "2015-12-31 23:59:59",
-    "availableUntil": null,
+    "availableFrom": "2000-01-01 00:00:00",
+    "availableUntil": "2000-01-02 00:00:00",
     "stock": 1
   },
   "9100003": {
@@ -5940,8 +5940,8 @@
         "count": 1
       }
     ],
-    "availableFrom": "2015-12-31 23:59:59",
-    "availableUntil": null,
+    "availableFrom": "2000-01-01 00:00:00",
+    "availableUntil": "2000-01-02 00:00:00",
     "stock": 1
   },
   "9100004": {
@@ -5958,8 +5958,8 @@
         "count": 1
       }
     ],
-    "availableFrom": "2015-12-31 23:59:59",
-    "availableUntil": null,
+    "availableFrom": "2000-01-01 00:00:00",
+    "availableUntil": "2000-01-02 00:00:00",
     "stock": 1
   },
   "9100005": {
@@ -5976,8 +5976,8 @@
         "count": 1
       }
     ],
-    "availableFrom": "2015-12-31 23:59:59",
-    "availableUntil": null,
+    "availableFrom": "2000-01-01 00:00:00",
+    "availableUntil": "2000-01-02 00:00:00",
     "stock": 1
   },
   "9100006": {
@@ -5994,8 +5994,8 @@
         "count": 1
       }
     ],
-    "availableFrom": "2015-12-31 23:59:59",
-    "availableUntil": null,
+    "availableFrom": "2000-01-01 00:00:00",
+    "availableUntil": "2000-01-02 00:00:00",
     "stock": 1
   },
   "9100007": {
@@ -6012,8 +6012,8 @@
         "count": 1
       }
     ],
-    "availableFrom": "2015-12-31 23:59:59",
-    "availableUntil": null,
+    "availableFrom": "2000-01-01 00:00:00",
+    "availableUntil": "2000-01-02 00:00:00",
     "stock": 1
   },
   "9100008": {
@@ -6030,8 +6030,8 @@
         "count": 1
       }
     ],
-    "availableFrom": "2015-12-31 23:59:59",
-    "availableUntil": null,
+    "availableFrom": "2000-01-01 00:00:00",
+    "availableUntil": "2000-01-02 00:00:00",
     "stock": 1
   },
   "9100009": {

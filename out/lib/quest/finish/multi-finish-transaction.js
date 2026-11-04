@@ -170,6 +170,13 @@ function settleMultiQuestFinishInTransaction(args) {
     // rewards. Keep it inside the same transaction as the ordinary multi
     // rewards so this path cannot reopen the main database without the
     // persistence owner.
+    // 开荒编排 19（1104）：协力房主胜利结算时，房间里每有 1 名真人队友发 1 个紫色碎片，直接入背包。
+    let hostRealMateReward = null;
+    const hostRealMateCount = Math.max(0, Math.trunc(Number(args.hostRealMateCount) || 0));
+    if (questAccomplished && finishedAsHost && hostRealMateCount > 0) {
+        hostRealMateReward = (0, quest_2.givePlayerRewardSync)(playerId, { type: types_1.RewardType.ITEM, id: 49002, count: hostRealMateCount });
+        (0, game_logging_1.gameVerboseLog)(() => `[MULTI] host mate fragment granted: player=${playerId} quest=${questId} count=${hostRealMateCount}`);
+    }
     const mode15RewardsResult = (0, mode15_optional_1.settleMode15BattleSync)(playerId, questCategory, questId, questAccomplished, {
         rescue: !finishedAsHost,
         playedParty: {
@@ -305,7 +312,7 @@ function settleMultiQuestFinishInTransaction(args) {
         "start_time": dataHeaders['servertime'],
         "is_multi": "multi",
         "quest_name": "",
-        "item_list": Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, ((_v = settledClearReward === null || settledClearReward === void 0 ? void 0 : settledClearReward.items) !== null && _v !== void 0 ? _v : {})), ((_w = settledSPlusClearReward === null || settledSPlusClearReward === void 0 ? void 0 : settledSPlusClearReward.items) !== null && _w !== void 0 ? _w : {})), scoreRewardsResult.items), ((_x = settledRescueFragmentReward === null || settledRescueFragmentReward === void 0 ? void 0 : settledRescueFragmentReward.items) !== null && _x !== void 0 ? _x : {})), ((_y = mode15RewardsResult === null || mode15RewardsResult === void 0 ? void 0 : mode15RewardsResult.items) !== null && _y !== void 0 ? _y : {})),
+        "item_list": Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, ((_v = settledClearReward === null || settledClearReward === void 0 ? void 0 : settledClearReward.items) !== null && _v !== void 0 ? _v : {})), ((_w = settledSPlusClearReward === null || settledSPlusClearReward === void 0 ? void 0 : settledSPlusClearReward.items) !== null && _w !== void 0 ? _w : {})), scoreRewardsResult.items), ((_x = settledRescueFragmentReward === null || settledRescueFragmentReward === void 0 ? void 0 : settledRescueFragmentReward.items) !== null && _x !== void 0 ? _x : {})), ((_y = mode15RewardsResult === null || mode15RewardsResult === void 0 ? void 0 : mode15RewardsResult.items) !== null && _y !== void 0 ? _y : {}), (hostRealMateReward === null ? {} : hostRealMateReward.items || {})),
         "presigned_quest_category": [],
         "mate_player_result": matePlayerResult,
         "follow_info": followInfo,
