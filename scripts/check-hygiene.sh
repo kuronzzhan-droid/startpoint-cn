@@ -85,6 +85,11 @@ while IFS= read -r f; do
     if [ "$sz" -gt 1048576 ]; then
         case "$f" in
             assets/asset-patch/active/*.zip) ;;   # 部署必需的客户端增量包
+            assets/asset-patch/artwork/starview-sway-v7/native-assets.zip)
+                # Offline artwork delivery only; public forks cannot receive new LFS objects.
+                # Keep this exact-path exception bounded; verify.py checks all archive members.
+                [ "$sz" -le 20971520 ] || note "离线美术资源包超过 20MB: $f"
+                ;;
             tools/fantasy-gauntlet-mod-tools/WF_PATHLIST_recovered.txt) ;; # MOD 工具路径索引
             *.json|*.csv|*.md) ;;                 # 允许大数据/文档
             *) note "大文件 >1MB(二进制不应入库,改用生成脚本): $f" ;;

@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/kuronzzhan-droid/startpoint-cn",
+  "ref": "6b405811795cbd6e4fddf83f0bfbbfb81d720893",
+  "path": "assets/gacha_cnmod.json",
+  "fileSHA256": "2cb45a10f957565949dd9357a7a80cc04de905a6858ef487e23d919adeeb37db",
+  "poolId": 990006,
+  "purpose": "Frozen source contract only; do not replace the entire live gacha_cnmod.json with this one-row fragment."
+}

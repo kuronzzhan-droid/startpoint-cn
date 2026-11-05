@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "scope": "isolated desktop C8601 native capture and orderedmap readback; deployment is pending",
+  "authorMain": {
+    "commit": "440a5c964ea82f1fb7bc05dc11dbbd0bb928309b",
+    "cdnVersion": "1.4.351",
+    "manifestSHA256": "d5f3ed1148eaa8935509d8723b3660fa435f00043025869136b72b400679061a"
+  },
+  "resourceManifestSHA256": "fbb052adccea2c93343eaab45f960363f826b28cd4d5f3a75a0c983e24a36910",
+  "masterRowsSHA256": "90ca67d01bf461613a3f9ccfd76563444639ff1906bf315a57772798bd0990c4",
+  "static": {
+    "completeEncodedSceneChains": 6,
+    "byteIdenticalTerrainAndReplayFiles": 12,
+    "existingRowsAndOrderPreserved": {
+      "master/gacha/gacha_skill_preview.orderedmap": 192,
+      "master/skill_preview/skill_preview_quest.orderedmap": 373,
+      "master/battle/field_data.orderedmap": 1602,
+      "master/battle/field.orderedmap": 261,
+      "master/battle/zone.orderedmap": 1253
+    },
+    "newRowsPerMaster": 6,
+    "existingAuthorMainEvolvedActionDependencies": [
+      {
+        "roleId": 119990,
+        "evolvedAction": "battle/action/skill/action/rare5/lion_swordman_moon$lion_swordman_moon_2.action.dsl.amf3.deflate",
+        "sha256": "bc163b456b780cd94ffeaa38941bc6c73d7b32a30d3a3efba653885da44ef127",
+        "authorVersion": "1.4.122",
+        "authorArchive": "pinball-1.4.121-1.4.122-1-author-balance-fox-20260930.zip",
+        "authorArchiveSHA256": "14430ddab51335c0757fc9c6357584aa79ade4766e539794bb20084514a58272"
+      },
+      {
+        "roleId": 129999,
+        "evolvedAction": "battle/action/skill/seris_dragon_king/seris_dragon_king_2.action.dsl.amf3.deflate",
+        "sha256": "daa0bbb6aadeaf85630f0ea2c6d5d131f761e5180236085fb8c4b6711149bee5",
+        "authorVersion": "1.4.209",
+        "authorArchive": "pinball-1.4.208-1.4.209-5-seris-rework-local.zip",
+        "authorArchiveSHA256": "0575be11aba731773a6f06c2cd873b3dff353145ebba908dbb9a4640273bfbbe"
+      },
+      {
+        "roleId": 139994,
+        "evolvedAction": "battle/action/skill/action/rare5/rec_android_seaside$rec_android_seaside_2.action.dsl.amf3.deflate",
+        "sha256": "ba8132fdf43b5606067d02f852f51dc66bded58c2eafad8e40427137b86e0d11",
+        "authorVersion": "1.4.122",
+        "authorArchive": "pinball-1.4.121-1.4.122-1-author-balance-fox-20260930.zip",
+        "authorArchiveSHA256": "14430ddab51335c0757fc9c6357584aa79ade4766e539794bb20084514a58272"
+      },
+      {
+        "roleId": 149987,
+        "evolvedAction": "battle/action/skill/action/rare5/combat_animal_moon$combat_animal_moon_2.action.dsl.amf3.deflate",
+        "sha256": "063b4d8dfca79c8c7819836445a24f2ed1b759c1babfe69b9b100f93e10a0273",
+        "authorVersion": "1.4.122",
+        "authorArchive": "pinball-1.4.121-1.4.122-1-author-balance-fox-20260930.zip",
+        "authorArchiveSHA256": "14430ddab51335c0757fc9c6357584aa79ade4766e539794bb20084514a58272"
+      },
+      {
+        "roleId": 149999,
+        "evolvedAction": "battle/action/skill/action/rare5/white_wolf_gerald$white_wolf_gerald_2.action.dsl.amf3.deflate",
+        "sha256": "68223ba6dcfff0c5e12f5428f7fa6fcf16965303ff7e8fa70d070b91b50dd241",
+        "authorVersion": "1.4.275",
+        "authorArchive": "pinball-1.4.274-1.4.275-1-balance-1023-local.zip",
+        "authorArchiveSHA256": "4ac19928055560d428ce206efe82864d5a0035210fdbdc2d6d69180ee250ef87"
+      },
+      {
+        "roleId": 169989,
+        "evolvedAction": "battle/action/skill/action/rare5/ruin_girl_campus$ruin_girl_campus_2.action.dsl.amf3.deflate",
+        "sha256": "374f429a8c61424f9079f638ae2c4c520ca70271bad9ce412c7c02b41c6396f2",
+        "authorVersion": "1.4.119",
+        "authorArchive": "pinball-1.4.118-1.4.119-1-author-1047-wind-dragon.zip",
+        "authorArchiveSHA256": "5a93f4f1b097db3f9274e35e3d50c59e6757718a7e4e827412a286eb6855f208"
+      }
+    ]
+  },
+  "neftim": {
+    "roleId": 169989,
+    "skillKey": "skill_preview_gacha_starview_sway_169989",
+    "questId": 928,
+    "fieldData": "skill_preview_gacha_starview_sway_169989",
+    "field": "skill_preview_gacha_starview_sway_169989_field",
+    "zone": "skill_preview_gacha_starview_sway_169989_zone",
+    "terrain": {
+      "logical": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_169989.amf3.deflate",
+      "sha256": "2ca40e74145cd8bbb6e4e8b5a083fde6fb133698ccfdec355324370d3afd64fd"
+    },
+    "replay": {
+      "logical": "gacha/feature_battle_preview/starview_sway/169989.battle.amf3.deflate",
+      "sha256": "966b922648c9be2c8d7576cf2b30ce77b6314dedc976abb108e974900890fec0"
+    },
+    "window": [
+      0,
+      320
+    ],
+    "clip": [
+      0,
+      -200
+    ],
+    "fps": 60,
+    "captureFrames": 322,
+    "nativeFinish": 321,
+    "nativeExecutionFrame": 171,
+    "firstObservedDamageFrame": 199,
+    "identicalToV7": {
+      "pngs": 322,
+      "pngSequenceSHA256": "60e3444771c9603fa9ee68098bbdecd7fbc66b824853889112cadd75219a832d",
+      "traceAfterSortingTargetsByKindAndId": true,
+      "nativeActionDSLSHAs": true
+    }
+  },
+  "boundaries": [
+    "Adapter binds Gacha metadata directly and reads SkillPreviewQuest/FieldData/Field/Zone/Terrain/replay through native client resources; the GachaSkillPreview table row was checked in encoded static readback.",
+    "Other five isolated links were checked by static readback; no production, test-server activation, or mobile run is represented."
+  ]
+}

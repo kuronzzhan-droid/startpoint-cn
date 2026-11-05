@@ -1,0 +1,345 @@
+{
+  "schemaVersion": 1,
+  "poolId": 990006,
+  "kind": "portable-gacha-feature-content-fragment",
+  "base": {
+    "repository": "kuronzzhan-droid/startpoint-cn",
+    "mainCommit": "440a5c964ea82f1fb7bc05dc11dbbd0bb928309b",
+    "testServerCommit": "6b405811795cbd6e4fddf83f0bfbbfb81d720893",
+    "testServerCdnVersion": "1.4.384",
+    "mainHasPool": false,
+    "testServerFiles": [
+      {
+        "path": "assets/cdndata/gacha_feature_content.json",
+        "sha256": "35dc15c0c8cbfe47fecf3e3c0b8863a9c33cc9dd54d9b945e35d33870293ca2b"
+      },
+      {
+        "path": "assets/cdndata/gacha.json",
+        "sha256": "39e1197bb84e2f38f7bcfd6915ac2524da2572267eae9f7547c9c73855e6711f"
+      },
+      {
+        "path": "assets/gacha_cnmod.json",
+        "sha256": "2cb45a10f957565949dd9357a7a80cc04de905a6858ef487e23d919adeeb37db"
+      },
+      {
+        "path": "assets/asset-patch/manifest.json",
+        "sha256": "b1ba6fd726e5ecf4911cef07a83696b97333a181f39fdd175d373bbcf8d6e8ae"
+      }
+    ],
+    "featureContentBefore": {
+      "1": [
+        [
+          "0",
+          "",
+          "gacha/feature_movie/cnmod_starview_sway/top/feature",
+          "",
+          "",
+          "",
+          "(None)",
+          "",
+          ""
+        ]
+      ]
+    },
+    "rateUpOrder": [
+      119990,
+      129999,
+      139994,
+      149987,
+      149999,
+      169989
+    ],
+    "terminalFeature": {
+      "logical": "master/gacha/gacha_feature_content.orderedmap",
+      "version": "1.4.367",
+      "patchId": "starview-gacha-1103",
+      "archive": "pinball-1.4.366-1.4.367-1-starview-gacha-1103-local.zip",
+      "archiveSHA256": "c5c71c7a8a465e20c046f3999c2f52d7eefd5b73875d02b19f27cfc7c3d16853",
+      "member": "production/upload/c8/79a1b712ae753afb0b5e796737fd141c8fa0ea",
+      "memberSHA256": "dc3715b4cf5188044a89895ff882f6f68833dfc55a16316ac6d3129bc49405d7",
+      "archiveBytesRead": false
+    },
+    "terminalPool": {
+      "logical": "master/gacha/gacha.orderedmap",
+      "version": "1.4.367",
+      "patchId": "starview-gacha-1103",
+      "archive": "pinball-1.4.366-1.4.367-1-starview-gacha-1103-local.zip",
+      "archiveSHA256": "c5c71c7a8a465e20c046f3999c2f52d7eefd5b73875d02b19f27cfc7c3d16853",
+      "member": "production/upload/15/83d96aad4b9a46d19d19b6555d3f4232b29e25",
+      "memberSHA256": "0eb0385b4397591fdfbf026567129f3f3199bc05984d51d8e2ba3d1d353ababc",
+      "archiveBytesRead": false
+    },
+    "terminalListBanner": {
+      "logical": "dynamic/gacha_list_banner/cnmod_starview_sway.png",
+      "version": "1.4.367",
+      "patchId": "starview-gacha-1103",
+      "archive": "pinball-1.4.366-1.4.367-6-starview-gacha-1103-local.zip",
+      "archiveSHA256": "4056b51e33b350f523f34374c4ccf2b0bb82969278e280e9e32e57f53ae7344a",
+      "member": "production/upload/c7/64b4375db658468269f93e4f1255935b78350e",
+      "memberSHA256": "a6a94272955d2b7193ef8961800b332ba2687fc5fc4e978dc229e29b8fd69fc3",
+      "archiveBytesRead": false
+    }
+  },
+  "apply": {
+    "sourceTable": "assets/cdndata/gacha_feature_content.json",
+    "compiledTable": "master/gacha/gacha_feature_content.orderedmap",
+    "operation": "replace-only-outer-key",
+    "key": "990006",
+    "fragment": {
+      "file": "gacha_feature_content.990006.json",
+      "sha256": "251309b87a1466e28509454e915cbf7d5489e82cd76a59ed8d46a793ef9f2520"
+    },
+    "pages": [
+      {
+        "page": 1,
+        "kind": 0,
+        "roleId": null,
+        "movie": "gacha/feature_movie/cnmod_starview_sway/top/feature",
+        "requiredAssets": [
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/top/feature.movie.amf3.deflate",
+            "sha256": "d0f810244e6ac7217d45d2b799b12e3f8024f222c69c331101f934f1bf43839a",
+            "bytes": 12885
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/top/feature.timeline.amf3.deflate",
+            "sha256": "95f7befd07981752c6964e82f2cae712ce220fae1da5c4230d0d09f9e6788f69",
+            "bytes": 110
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/top/sprite_sheet.atlas.amf3.deflate",
+            "sha256": "07f40f0b82a4b65c2a45ef3f78ba3575c02862284b5ff3f6592f50c9e4407ac0",
+            "bytes": 757
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/top/sprite_sheet.png",
+            "sha256": "b2a25013bde89bc5f02f40e861d118f76fc22968f9003f5ec2d73bf32c7e4c73",
+            "bytes": 4577653
+          }
+        ]
+      },
+      {
+        "page": 2,
+        "kind": 2,
+        "roleId": 119990,
+        "skillPreviewKey": "skill_preview_gacha_starview_sway_119990"
+      },
+      {
+        "page": 3,
+        "kind": 0,
+        "roleId": 119990,
+        "movie": "gacha/feature_movie/cnmod_starview_sway/119990/feature",
+        "requiredAssets": [
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/119990/feature.movie.amf3.deflate",
+            "sha256": "904c668e316a39fcccfc964733da0581795b46e082247a7a3a89b754ec55a27a",
+            "bytes": 3252
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/119990/feature.timeline.amf3.deflate",
+            "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "bytes": 147
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/119990/sprite_sheet.atlas.amf3.deflate",
+            "sha256": "e3c9e75d520831935615b9a77e7865187c229b3f809a1a4412852bdf45328d26",
+            "bytes": 391
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/119990/sprite_sheet.png",
+            "sha256": "f5b56e70c7e7561baee2f5fd0af9c148f36f93ded3a1df4f30ffcced6218f95d",
+            "bytes": 2340758
+          }
+        ]
+      },
+      {
+        "page": 4,
+        "kind": 2,
+        "roleId": 129999,
+        "skillPreviewKey": "skill_preview_gacha_starview_sway_129999"
+      },
+      {
+        "page": 5,
+        "kind": 0,
+        "roleId": 129999,
+        "movie": "gacha/feature_movie/cnmod_starview_sway/129999/feature",
+        "requiredAssets": [
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/129999/feature.movie.amf3.deflate",
+            "sha256": "19d2bb2370c952f5ca693b247be9debd4330fa33f422a5926c895bfc513ccff7",
+            "bytes": 3249
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/129999/feature.timeline.amf3.deflate",
+            "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "bytes": 147
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/129999/sprite_sheet.atlas.amf3.deflate",
+            "sha256": "65abfb7469214c6c87811da05732dc29f0173f1eb50d031df752979a7504d378",
+            "bytes": 385
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/129999/sprite_sheet.png",
+            "sha256": "a562023accf84a820d92691b3e38b279ba70de38d6e355bb9ded40075f9e9487",
+            "bytes": 2791189
+          }
+        ]
+      },
+      {
+        "page": 6,
+        "kind": 2,
+        "roleId": 139994,
+        "skillPreviewKey": "skill_preview_gacha_starview_sway_139994"
+      },
+      {
+        "page": 7,
+        "kind": 0,
+        "roleId": 139994,
+        "movie": "gacha/feature_movie/cnmod_starview_sway/139994/feature",
+        "requiredAssets": [
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/139994/feature.movie.amf3.deflate",
+            "sha256": "d1c358d32962f072ad19f8c4c01b75516c4ff400c5c7d6c7e4599cfd86816345",
+            "bytes": 3252
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/139994/feature.timeline.amf3.deflate",
+            "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "bytes": 147
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/139994/sprite_sheet.atlas.amf3.deflate",
+            "sha256": "6d71bb9129b03624e59838cd8426e9806bc8de8810e4a4d8c8972c06ccb5d954",
+            "bytes": 384
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/139994/sprite_sheet.png",
+            "sha256": "106d9041bdff2c9c79b6785b8e318cc7f721ffc06f8009cd84276dfc078f3cac",
+            "bytes": 1343177
+          }
+        ]
+      },
+      {
+        "page": 8,
+        "kind": 2,
+        "roleId": 149987,
+        "skillPreviewKey": "skill_preview_gacha_starview_sway_149987"
+      },
+      {
+        "page": 9,
+        "kind": 0,
+        "roleId": 149987,
+        "movie": "gacha/feature_movie/cnmod_starview_sway/149987/feature",
+        "requiredAssets": [
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/149987/feature.movie.amf3.deflate",
+            "sha256": "e1e103c7ca10600c212c544fd5ae1d783206689c66c3281403a960a4d0ac1818",
+            "bytes": 3253
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/149987/feature.timeline.amf3.deflate",
+            "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "bytes": 147
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/149987/sprite_sheet.atlas.amf3.deflate",
+            "sha256": "e166afa29e8ff1301fd26443129f41cb8f36ef96756b26c517bf5e60659a86e6",
+            "bytes": 384
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/149987/sprite_sheet.png",
+            "sha256": "06da1f9306f270021493ae0cfc7a1aad53295762907946f6991a4d0c5029d278",
+            "bytes": 1768902
+          }
+        ]
+      },
+      {
+        "page": 10,
+        "kind": 2,
+        "roleId": 149999,
+        "skillPreviewKey": "skill_preview_gacha_starview_sway_149999"
+      },
+      {
+        "page": 11,
+        "kind": 0,
+        "roleId": 149999,
+        "movie": "gacha/feature_movie/cnmod_starview_sway/149999/feature",
+        "requiredAssets": [
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/149999/feature.movie.amf3.deflate",
+            "sha256": "17f3edb24cbb1d4881eacffd1da4f1e40684a5760190b39fc95fb428d8cc1669",
+            "bytes": 3249
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/149999/feature.timeline.amf3.deflate",
+            "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "bytes": 147
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/149999/sprite_sheet.atlas.amf3.deflate",
+            "sha256": "6b469332cc4cb02e972e8fb7d5463364fb1c9c64b495bc7fd45751ca878334f8",
+            "bytes": 381
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/149999/sprite_sheet.png",
+            "sha256": "6d77598a3e053c2f8c071429aa871cf932662e56d63498ad3a1f24a471d4aa07",
+            "bytes": 2855370
+          }
+        ]
+      },
+      {
+        "page": 12,
+        "kind": 2,
+        "roleId": 169989,
+        "skillPreviewKey": "skill_preview_gacha_starview_sway_169989"
+      },
+      {
+        "page": 13,
+        "kind": 0,
+        "roleId": 169989,
+        "movie": "gacha/feature_movie/cnmod_starview_sway/169989/feature",
+        "requiredAssets": [
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/169989/feature.movie.amf3.deflate",
+            "sha256": "636de34564aaf6f732e96e09e92d6f9c670a9dbc3eb7af0ac8fa5f5130446356",
+            "bytes": 3251
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/169989/feature.timeline.amf3.deflate",
+            "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "bytes": 147
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/169989/sprite_sheet.atlas.amf3.deflate",
+            "sha256": "f000486370db3ca8a43dcd1c8107c3578b9eefae402b8a549ef9d89ae8957e35",
+            "bytes": 389
+          },
+          {
+            "logical": "gacha/feature_movie/cnmod_starview_sway/169989/sprite_sheet.png",
+            "sha256": "f1f47e85d916d73cb584fc07e29840c67d8826c36682f18baab260f8b3d2e028",
+            "bytes": 1436741
+          }
+        ]
+      }
+    ],
+    "listBanner": {
+      "gachaRowCellIndex": 3,
+      "existingKey": "dynamic/gacha_list_banner/cnmod_starview_sway",
+      "setMasterCell": false,
+      "asset": {
+        "logical": "dynamic/gacha_list_banner/cnmod_starview_sway.png",
+        "sha256": "15e08eb530cb3f784aafe87c4d2417c19886bc9ca99b06b023280617095aaa68",
+        "bytes": 129959
+      }
+    }
+  },
+  "resourceReadback": {
+    "moviePages": 7,
+    "skillPages": 6,
+    "artResources": 29,
+    "artBytes": 17280203,
+    "decodedInnerCSVMatchesFragment": true,
+    "effectiveTableMaterialized": false
+  }
+}

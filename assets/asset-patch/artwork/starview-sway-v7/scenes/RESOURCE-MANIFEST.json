@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 1,
+  "scenes": [
+    {
+      "roleId": 119990,
+      "skillKey": "skill_preview_gacha_starview_sway_119990",
+      "questId": 923,
+      "log": "gacha/feature_battle_preview/starview_sway/119990",
+      "clip": [
+        0,
+        30
+      ],
+      "terrain": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_119990.amf3.deflate",
+      "fieldData": "skill_preview_gacha_starview_sway_119990",
+      "field": "skill_preview_gacha_starview_sway_119990_field",
+      "zone": "skill_preview_gacha_starview_sway_119990_zone",
+      "window": [
+        90,
+        300
+      ],
+      "commands": [
+        {
+          "f": 107,
+          "c": [
+            2,
+            0
+          ]
+        }
+      ],
+      "previousQuest": 128
+    },
+    {
+      "roleId": 129999,
+      "skillKey": "skill_preview_gacha_starview_sway_129999",
+      "questId": 924,
+      "log": "gacha/feature_battle_preview/starview_sway/129999",
+      "clip": [
+        0,
+        -30
+      ],
+      "terrain": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_129999.amf3.deflate",
+      "fieldData": "skill_preview_gacha_starview_sway_129999",
+      "field": "skill_preview_gacha_starview_sway_129999_field",
+      "zone": "skill_preview_gacha_starview_sway_129999_zone",
+      "window": [
+        90,
+        400
+      ],
+      "commands": [
+        {
+          "f": 107,
+          "c": [
+            2,
+            0
+          ]
+        }
+      ],
+      "previousQuest": 185
+    },
+    {
+      "roleId": 139994,
+      "skillKey": "skill_preview_gacha_starview_sway_139994",
+      "questId": 925,
+      "log": "gacha/feature_battle_preview/starview_sway/139994",
+      "clip": [
+        0,
+        -30
+      ],
+      "terrain": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_139994.amf3.deflate",
+      "fieldData": "skill_preview_gacha_starview_sway_139994",
+      "field": "skill_preview_gacha_starview_sway_139994_field",
+      "zone": "skill_preview_gacha_starview_sway_139994_zone",
+      "window": [
+        0,
+        380
+      ],
+      "commands": [
+        {
+          "f": 160,
+          "c": [
+            2,
+            0
+          ]
+        },
+        {
+          "f": 232,
+          "c": [
+            13,
+            true
+          ]
+        }
+      ],
+      "previousQuest": 108
+    },
+    {
+      "roleId": 149987,
+      "skillKey": "skill_preview_gacha_starview_sway_149987",
+      "questId": 926,
+      "log": "gacha/feature_battle_preview/starview_sway/149987",
+      "clip": [
+        0,
+        -140
+      ],
+      "terrain": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149987.amf3.deflate",
+      "fieldData": "skill_preview_gacha_starview_sway_149987",
+      "field": "skill_preview_gacha_starview_sway_149987_field",
+      "zone": "skill_preview_gacha_starview_sway_149987_zone",
+      "window": [
+        0,
+        290
+      ],
+      "commands": [
+        {
+          "f": 107,
+          "c": [
+            2,
+            0
+          ]
+        },
+        {
+          "f": 280,
+          "c": [
+            13,
+            true
+          ]
+        }
+      ],
+      "previousQuest": 92
+    },
+    {
+      "roleId": 149999,
+      "skillKey": "skill_preview_gacha_starview_sway_149999",
+      "questId": 927,
+      "log": "gacha/feature_battle_preview/starview_sway/149999",
+      "clip": [
+        0,
+        -65
+      ],
+      "terrain": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149999.amf3.deflate",
+      "fieldData": "skill_preview_gacha_starview_sway_149999",
+      "field": "skill_preview_gacha_starview_sway_149999_field",
+      "zone": "skill_preview_gacha_starview_sway_149999_zone",
+      "window": [
+        0,
+        330
+      ],
+      "commands": [
+        {
+          "f": 107,
+          "c": [
+            2,
+            0
+          ]
+        },
+        {
+          "f": 232,
+          "c": [
+            13,
+            true
+          ]
+        }
+      ],
+      "previousQuest": 41
+    },
+    {
+      "roleId": 169989,
+      "skillKey": "skill_preview_gacha_starview_sway_169989",
+      "questId": 928,
+      "log": "gacha/feature_battle_preview/starview_sway/169989",
+      "clip": [
+        0,
+        -200
+      ],
+      "terrain": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_169989.amf3.deflate",
+      "fieldData": "skill_preview_gacha_starview_sway_169989",
+      "field": "skill_preview_gacha_starview_sway_169989_field",
+      "zone": "skill_preview_gacha_starview_sway_169989_zone",
+      "window": [
+        0,
+        320
+      ],
+      "commands": [
+        {
+          "f": 107,
+          "c": [
+            2,
+            0
+          ]
+        },
+        {
+          "f": 240,
+          "c": [
+            13,
+            true
+          ]
+        }
+      ],
+      "previousQuest": 163
+    }
+  ],
+  "files": [
+    {
+      "logical": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_119990.amf3.deflate",
+      "file": "resources/battle/terrain/skill_preview/skill_preview_gacha_starview_sway_119990.amf3.deflate",
+      "member": "production/upload/b9/af3487b44a72f24005ab9b5950e6cde232c2b4",
+      "bytes": 1212,
+      "sha256": "30214c7b6d52c784e7c6fd8a9b9a07e5a53b7a1c87b007de6f5cbd31fcc8d2c8",
+      "previousLogical": "battle/terrain/skill_preview/skill_preview_gacha_rem.amf3.deflate"
+    },
+    {
+      "logical": "gacha/feature_battle_preview/starview_sway/119990.battle.amf3.deflate",
+      "file": "resources/gacha/feature_battle_preview/starview_sway/119990.battle.amf3.deflate",
+      "member": "production/upload/c8/ba37ec2203efd156cdae63b23521439c4d694a",
+      "bytes": 133,
+      "sha256": "bcc7b42f23bcf34294035c4d62248548f44c84d6e976268f53e3be69eddc0dfc",
+      "previousLogical": "gacha/feature_battle_preview/starview_sway_v6/119990_lion_swordman_moon.battle.amf3.deflate"
+    },
+    {
+      "logical": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_129999.amf3.deflate",
+      "file": "resources/battle/terrain/skill_preview/skill_preview_gacha_starview_sway_129999.amf3.deflate",
+      "member": "production/upload/79/1332ed23e03d468892f007f334ded2c667017e",
+      "bytes": 1247,
+      "sha256": "91c65bd60ab488cbd923cc57041905c98f78b0665504548ff7e5b51bf78d2bd2",
+      "previousLogical": "battle/terrain/skill_preview/skill_preview_gacha_suzumiya_haruhi.amf3.deflate"
+    },
+    {
+      "logical": "gacha/feature_battle_preview/starview_sway/129999.battle.amf3.deflate",
+      "file": "resources/gacha/feature_battle_preview/starview_sway/129999.battle.amf3.deflate",
+      "member": "production/upload/e0/50e835bd1ea09b95ae34f0caf7f9771a3a51aa",
+      "bytes": 129,
+      "sha256": "e7fbd0e07b07e0dc7154d6f5a3b09e916ce30a090825e4384a4c752ac5c2039b",
+      "previousLogical": "gacha/feature_battle_preview/starview_sway_v6/129999_seris_dragon_king.battle.amf3.deflate"
+    },
+    {
+      "logical": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_139994.amf3.deflate",
+      "file": "resources/battle/terrain/skill_preview/skill_preview_gacha_starview_sway_139994.amf3.deflate",
+      "member": "production/upload/4a/7be37e403a640607235e6b68975190a3048872",
+      "bytes": 1073,
+      "sha256": "40858b1c87869b9fe57f10a1d3e9e579a90f4fd2c29576878206c8b95da59111",
+      "previousLogical": "battle/terrain/skill_preview/skill_preview_gacha_rec_android_1anv.amf3.deflate"
+    },
+    {
+      "logical": "gacha/feature_battle_preview/starview_sway/139994.battle.amf3.deflate",
+      "file": "resources/gacha/feature_battle_preview/starview_sway/139994.battle.amf3.deflate",
+      "member": "production/upload/92/48674cc9cbbcd0f3769b51aa593056b777d0e9",
+      "bytes": 143,
+      "sha256": "f5d28279231d4ee44e99547e2417f384a4d956bf36bf9ee9520166c1ae744018",
+      "previousLogical": "gacha/feature_battle_preview/starview_sway_v6/139994_rec_android_seaside.battle.amf3.deflate"
+    },
+    {
+      "logical": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149987.amf3.deflate",
+      "file": "resources/battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149987.amf3.deflate",
+      "member": "production/upload/78/6d9dd3f68baa8432c1a1c26dcd8cec4799ff04",
+      "bytes": 1097,
+      "sha256": "d7b91aa94496cd7abcf6208d4de41b195a3ba604190b46ad93558f7c38bfe3b8",
+      "previousLogical": "battle/terrain/skill_preview/skill_preview_gacha_nikaido_saki.amf3.deflate"
+    },
+    {
+      "logical": "gacha/feature_battle_preview/starview_sway/149987.battle.amf3.deflate",
+      "file": "resources/gacha/feature_battle_preview/starview_sway/149987.battle.amf3.deflate",
+      "member": "production/upload/22/22734046f20798e599a8f3ebe43da4f04140ca",
+      "bytes": 140,
+      "sha256": "f0673a7fa4b8bb3d188c9a4680bc46d4ff9e9d081659c17f4113ab3b4afe63af",
+      "previousLogical": "gacha/feature_battle_preview/starview_sway_v6/149987_combat_animal_moon.battle.amf3.deflate"
+    },
+    {
+      "logical": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149999.amf3.deflate",
+      "file": "resources/battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149999.amf3.deflate",
+      "member": "production/upload/51/edd82760858bd39210608902985aafb31c8b5d",
+      "bytes": 1255,
+      "sha256": "198675d65978edcb1efb2458e7716c12a12b34851838bad5cd75e9dd129cadf0",
+      "previousLogical": "battle/terrain/skill_preview/skill_preview_gacha_black_wolf_knight.amf3.deflate"
+    },
+    {
+      "logical": "gacha/feature_battle_preview/starview_sway/149999.battle.amf3.deflate",
+      "file": "resources/gacha/feature_battle_preview/starview_sway/149999.battle.amf3.deflate",
+      "member": "production/upload/3f/db0c299c2f7697eb86c90fd01f79dfd51e6ccd",
+      "bytes": 146,
+      "sha256": "f538825f5ef11f3c14f8514984c6c3fc0413b7f0aadb4cade54021dc1dfb9f9a",
+      "previousLogical": "gacha/feature_battle_preview/starview_sway_v6/149999_white_wolf_gerald_aligned.battle.amf3.deflate"
+    },
+    {
+      "logical": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_169989.amf3.deflate",
+      "file": "resources/battle/terrain/skill_preview/skill_preview_gacha_starview_sway_169989.amf3.deflate",
+      "member": "production/upload/49/97fad9cb2a45b861b5a238deae006963fcaa17",
+      "bytes": 1184,
+      "sha256": "2ca40e74145cd8bbb6e4e8b5a083fde6fb133698ccfdec355324370d3afd64fd",
+      "previousLogical": "battle/terrain/skill_preview/skill_preview_gacha_ruin_girl_halfanv_new_layout.amf3.deflate"
+    },
+    {
+      "logical": "gacha/feature_battle_preview/starview_sway/169989.battle.amf3.deflate",
+      "file": "resources/gacha/feature_battle_preview/starview_sway/169989.battle.amf3.deflate",
+      "member": "production/upload/14/a7d75fd2f1d525b2842e519f9940b7494e2483",
+      "bytes": 142,
+      "sha256": "966b922648c9be2c8d7576cf2b30ce77b6314dedc976abb108e974900890fec0",
+      "previousLogical": "gacha/feature_battle_preview/starview_sway_v7/169989_ruin_girl_campus_short.battle.amf3.deflate"
+    }
+  ],
+  "authorMain": {
+    "commit": "440a5c964ea82f1fb7bc05dc11dbbd0bb928309b",
+    "cdnVersion": "1.4.351",
+    "manifestSHA256": "d5f3ed1148eaa8935509d8723b3660fa435f00043025869136b72b400679061a"
+  },
+  "questAllocation": {
+    "occupiedMax": 922,
+    "assigned": [
+      923,
+      924,
+      925,
+      926,
+      927,
+      928
+    ],
+    "enabledMainCollision": false,
+    "requiredBeforeActivation": "Recheck the actual activation branch and effective tables; no reservation claimed."
+  },
+  "masters": {
+    "master/gacha/gacha_skill_preview.orderedmap": {
+      "base": {
+        "logical": "master/gacha/gacha_skill_preview.orderedmap",
+        "version": "1.4.0",
+        "sha256": "29acbe2feff281aaed021b061c0a18835faf59e36eadf652b53e10dee3d323bd",
+        "bytes": 18338,
+        "member": "production/upload/96/010c4b95345952d5a19d699b734da66b2f0fe9",
+        "archive": "pinball-1.4.0-192-6cf639f2.zip",
+        "origin": "official base; no author enabled overlay"
+      },
+      "candidateSHA256": "759e796624522d9755d3e1c2c11118ca3f32ae98f5f79c5585990903c654ac2c",
+      "added": [
+        "skill_preview_gacha_starview_sway_119990",
+        "skill_preview_gacha_starview_sway_129999",
+        "skill_preview_gacha_starview_sway_139994",
+        "skill_preview_gacha_starview_sway_149987",
+        "skill_preview_gacha_starview_sway_149999",
+        "skill_preview_gacha_starview_sway_169989"
+      ],
+      "keptRows": 192
+    },
+    "master/skill_preview/skill_preview_quest.orderedmap": {
+      "base": {
+        "logical": "master/skill_preview/skill_preview_quest.orderedmap",
+        "version": "1.4.0",
+        "sha256": "c1018acbe2fce4b3125e25cbbc608015ca2fbcf37abc531b1afa45da84e04205",
+        "bytes": 50643,
+        "member": "production/upload/69/bb6ccf19b48beaf6436f51cdbe4e5444dde432",
+        "archive": "pinball-1.4.0-136-df085c79.zip",
+        "origin": "official base; no author enabled overlay"
+      },
+      "candidateSHA256": "990d4efdb0cc5a0ddf803c594ed15946366b299159d25949d71c8868d0dbac41",
+      "added": [
+        "923",
+        "924",
+        "925",
+        "926",
+        "927",
+        "928"
+      ],
+      "keptRows": 373
+    },
+    "master/battle/field_data.orderedmap": {
+      "base": {
+        "logical": "master/battle/field_data.orderedmap",
+        "version": "1.4.272",
+        "sha256": "0965e9eead4a96f38723de172beeff880fb98dbbcca16b851ef2287308ccd3dd",
+        "bytes": 140303,
+        "member": "production/upload/30/363f8364e183905b2d0b48b8718b7165135bc2",
+        "archive": "pinball-1.4.271-1.4.272-1-hell-pumpkin-lite-local.zip",
+        "archiveSHA256": "fc170d1e2d11c5d14f6d9fe2216081dbdc6ee7f5871a13a57e1a0d5263f0290f",
+        "origin": "author terminal enabled overlay"
+      },
+      "candidateSHA256": "b52fb997397dea61bf0df12e1da5491ec129cc84c80ec7d0acabb4b0fc1c8732",
+      "added": [
+        "skill_preview_gacha_starview_sway_119990",
+        "skill_preview_gacha_starview_sway_129999",
+        "skill_preview_gacha_starview_sway_139994",
+        "skill_preview_gacha_starview_sway_149987",
+        "skill_preview_gacha_starview_sway_149999",
+        "skill_preview_gacha_starview_sway_169989"
+      ],
+      "keptRows": 1602
+    },
+    "master/battle/field.orderedmap": {
+      "base": {
+        "logical": "master/battle/field.orderedmap",
+        "version": "1.4.259",
+        "sha256": "99815920a00db4ce503bc9b4ea972a7ef781fdfa1b738b191d0f649bc455bdb6",
+        "bytes": 34937,
+        "member": "production/upload/ec/e713173d2a64a77c28c927869135297ba5d074",
+        "archive": "pinball-1.4.258-1.4.259-2-hell-pumpkin-local.zip",
+        "archiveSHA256": "0313c52484e132903351f8af06a7d6c8fcd968d6f6565bb5ff296c62ebf85a34",
+        "origin": "author terminal enabled overlay"
+      },
+      "candidateSHA256": "bbc485fbb48eb80e42d05c0d9f0f412a473e276f44f2b87da11916ce5b415ca9",
+      "added": [
+        "skill_preview_gacha_starview_sway_119990_field",
+        "skill_preview_gacha_starview_sway_129999_field",
+        "skill_preview_gacha_starview_sway_139994_field",
+        "skill_preview_gacha_starview_sway_149987_field",
+        "skill_preview_gacha_starview_sway_149999_field",
+        "skill_preview_gacha_starview_sway_169989_field"
+      ],
+      "keptRows": 261
+    },
+    "master/battle/zone.orderedmap": {
+      "base": {
+        "logical": "master/battle/zone.orderedmap",
+        "version": "1.4.272",
+        "sha256": "73300a61b21747326dff2a64d88a38c524c8e450ecf38dc14025841e0319d9fa",
+        "bytes": 281583,
+        "member": "production/upload/cd/6336795a27ea33bf8d0c5d5a9bfb466bedcf1e",
+        "archive": "pinball-1.4.271-1.4.272-1-hell-pumpkin-lite-local.zip",
+        "archiveSHA256": "fc170d1e2d11c5d14f6d9fe2216081dbdc6ee7f5871a13a57e1a0d5263f0290f",
+        "origin": "author terminal enabled overlay"
+      },
+      "candidateSHA256": "195e7ae188e388223af8cdd04b28ad60137e1288f5ba964606122dda4a64c38c",
+      "added": [
+        "skill_preview_gacha_starview_sway_119990_zone",
+        "skill_preview_gacha_starview_sway_129999_zone",
+        "skill_preview_gacha_starview_sway_139994_zone",
+        "skill_preview_gacha_starview_sway_149987_zone",
+        "skill_preview_gacha_starview_sway_149999_zone",
+        "skill_preview_gacha_starview_sway_169989_zone"
+      ],
+      "keptRows": 1253
+    }
+  },
+  "unlistedArchiveReadback": [
+    {
+      "id": "cdn-consolidated-1.4.95-to-1.4.96-gerald0903",
+      "version": "1.4.96",
+      "members": 182,
+      "tableMembers": [
+        "production/upload/30/363f8364e183905b2d0b48b8718b7165135bc2",
+        "production/upload/cd/6336795a27ea33bf8d0c5d5a9bfb466bedcf1e"
+      ]
+    }
+  ]
+}

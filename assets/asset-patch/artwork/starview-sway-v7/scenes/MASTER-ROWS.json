@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "poolId": 990006,
+  "tables": {
+    "master/gacha/gacha_skill_preview.orderedmap": {
+      "skill_preview_gacha_starview_sway_119990": "923,gacha/feature_battle_preview/starview_sway/119990,30,0,false,false",
+      "skill_preview_gacha_starview_sway_129999": "924,gacha/feature_battle_preview/starview_sway/129999,-30,0,false,false",
+      "skill_preview_gacha_starview_sway_139994": "925,gacha/feature_battle_preview/starview_sway/139994,-30,0,false,false",
+      "skill_preview_gacha_starview_sway_149987": "926,gacha/feature_battle_preview/starview_sway/149987,-140,0,false,false",
+      "skill_preview_gacha_starview_sway_149999": "927,gacha/feature_battle_preview/starview_sway/149999,-65,0,false,false",
+      "skill_preview_gacha_starview_sway_169989": "928,gacha/feature_battle_preview/starview_sway/169989,-200,0,false,false"
+    },
+    "master/skill_preview/skill_preview_quest.orderedmap": {
+      "923": "星见镇的摇曳·玛格诺斯,quest/thumbnail/common/story,(None),2000-01-01 00:00:01,(None),0,1,false,,,,,,,,,,,1,1,1,1,1,1,1,1,1,25,2,1,skill_preview_gacha_starview_sway_119990",
+      "924": "星见镇的摇曳·赛瑞斯,quest/thumbnail/common/story,(None),2000-01-01 00:00:00,(None),0,3,false,,,,,,,,,,,1,1,1,1,1,1,1,1,1,20,2,1,skill_preview_gacha_starview_sway_129999",
+      "925": "星见镇的摇曳·雷吉斯,quest/thumbnail/common/story,(None),2000-01-01 00:00:00,(None),0,2,false,,,,,,,,,,,1,1,1,1,1,1,1,1,1,25,2,1,skill_preview_gacha_starview_sway_139994",
+      "926": "星见镇的摇曳·芙拉菲,quest/thumbnail/common/story,(None),2000-01-01 00:00:00,(None),0,3,false,,,,,,,,,,,1,1,1,1,1,1,1,1,1,10,1,1,skill_preview_gacha_starview_sway_149987",
+      "927": "星见镇的摇曳·杰拉德,quest/thumbnail/common/story,(None),2000-01-01 00:00:00,(None),0,0,false,,,,,,,,,,,1,1,1,1,1,1,1,1,1,40,3,1,skill_preview_gacha_starview_sway_149999",
+      "928": "星见镇的摇曳·奈芙提姆,quest/thumbnail/common/story,(None),2000-01-01 00:00:00,(None),0,4,false,,,,,,,,,,,1,1,1,1,1,1,1,1,1,20,2,1,skill_preview_gacha_starview_sway_169989"
+    },
+    "master/battle/field_data.orderedmap": {
+      "skill_preview_gacha_starview_sway_119990": "skill_preview_gacha_starview_sway_119990_field,battle/terrain/skill_preview/skill_preview_gacha_starview_sway_119990,skill_preview_gacha_starview_sway_119990_zone",
+      "skill_preview_gacha_starview_sway_129999": "skill_preview_gacha_starview_sway_129999_field,battle/terrain/skill_preview/skill_preview_gacha_starview_sway_129999,skill_preview_gacha_starview_sway_129999_zone",
+      "skill_preview_gacha_starview_sway_139994": "skill_preview_gacha_starview_sway_139994_field,battle/terrain/skill_preview/skill_preview_gacha_starview_sway_139994,skill_preview_gacha_starview_sway_139994_zone",
+      "skill_preview_gacha_starview_sway_149987": "skill_preview_gacha_starview_sway_149987_field,battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149987,skill_preview_gacha_starview_sway_149987_zone",
+      "skill_preview_gacha_starview_sway_149999": "skill_preview_gacha_starview_sway_149999_field,battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149999,skill_preview_gacha_starview_sway_149999_zone",
+      "skill_preview_gacha_starview_sway_169989": "skill_preview_gacha_starview_sway_169989_field,battle/terrain/skill_preview/skill_preview_gacha_starview_sway_169989,skill_preview_gacha_starview_sway_169989_zone"
+    },
+    "master/battle/field.orderedmap": {
+      "skill_preview_gacha_starview_sway_119990_field": "battle/field/world_end/end_dungeon/background/background,(None),(None),(None),(None),(None),(None),battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate,battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod,battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge",
+      "skill_preview_gacha_starview_sway_129999_field": "battle/field/world_end/end_dungeon/background/background,(None),(None),(None),(None),(None),(None),battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate,battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod,battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge",
+      "skill_preview_gacha_starview_sway_139994_field": "battle/field/world_end/end_dungeon/background/background,(None),(None),(None),(None),(None),(None),battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate,battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod,battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge",
+      "skill_preview_gacha_starview_sway_149987_field": "battle/field/world_end/end_dungeon/background/background,(None),(None),(None),(None),(None),(None),battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate,battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod,battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge",
+      "skill_preview_gacha_starview_sway_149999_field": "battle/field/world_end/end_dungeon/background/background,(None),(None),(None),(None),(None),(None),battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate,battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod,battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge",
+      "skill_preview_gacha_starview_sway_169989_field": "battle/field/world_end/end_dungeon/background/background,(None),(None),(None),(None),(None),(None),battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate,battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod,battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+    },
+    "master/battle/zone.orderedmap": {
+      "skill_preview_gacha_starview_sway_119990_zone": {
+        "copyExactNestedRow": "skill_preview_gacha",
+        "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda",
+        "rows": {
+          "0": "0,11,evil_skill_preview,(None),evil_weak_skill_preview,(None),(None),,(None),,(None),,(None),,(None),,(None),,(None),,(None),,0,(None),,(None),,(None),,(None),,(None),,(None),,battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2,battle/field_object/world_end/end_dungeon/yakumono/dash_panel,battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel,(None),(None),(None)"
+        }
+      },
+      "skill_preview_gacha_starview_sway_129999_zone": {
+        "copyExactNestedRow": "skill_preview_gacha",
+        "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda",
+        "rows": {
+          "0": "0,11,evil_skill_preview,(None),evil_weak_skill_preview,(None),(None),,(None),,(None),,(None),,(None),,(None),,(None),,(None),,0,(None),,(None),,(None),,(None),,(None),,(None),,battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2,battle/field_object/world_end/end_dungeon/yakumono/dash_panel,battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel,(None),(None),(None)"
+        }
+      },
+      "skill_preview_gacha_starview_sway_139994_zone": {
+        "copyExactNestedRow": "skill_preview_gacha_rec_android_1anv",
+        "storedRowSHA256": "3c9d5faa78420249a760fdfbfc26cae8f72f344ce163fb5bdd7d773ae6713520",
+        "rows": {
+          "0": "0,11,evil_skill_preview,(None),evil_weak_skill_preview,(None),(None),,(None),,(None),,(None),,(None),,(None),,(None),,(None),,0,1,arch_evil_water_single_skill_preview,1,arch_evil_water_single_skill_preview,(None),,(None),,(None),,(None),,battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2,battle/field_object/world_end/end_dungeon/yakumono/dash_panel,battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel,(None),(None),(None)"
+        }
+      },
+      "skill_preview_gacha_starview_sway_149987_zone": {
+        "copyExactNestedRow": "skill_preview_gacha",
+        "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda",
+        "rows": {
+          "0": "0,11,evil_skill_preview,(None),evil_weak_skill_preview,(None),(None),,(None),,(None),,(None),,(None),,(None),,(None),,(None),,0,(None),,(None),,(None),,(None),,(None),,(None),,battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2,battle/field_object/world_end/end_dungeon/yakumono/dash_panel,battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel,(None),(None),(None)"
+        }
+      },
+      "skill_preview_gacha_starview_sway_149999_zone": {
+        "copyExactNestedRow": "skill_preview_gacha",
+        "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda",
+        "rows": {
+          "0": "0,11,evil_skill_preview,(None),evil_weak_skill_preview,(None),(None),,(None),,(None),,(None),,(None),,(None),,(None),,(None),,0,(None),,(None),,(None),,(None),,(None),,(None),,battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2,battle/field_object/world_end/end_dungeon/yakumono/dash_panel,battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel,(None),(None),(None)"
+        }
+      },
+      "skill_preview_gacha_starview_sway_169989_zone": {
+        "copyExactNestedRow": "skill_preview_gacha",
+        "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda",
+        "rows": {
+          "0": "0,11,evil_skill_preview,(None),evil_weak_skill_preview,(None),(None),,(None),,(None),,(None),,(None),,(None),,(None),,(None),,0,(None),,(None),,(None),,(None),,(None),,(None),,battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2,battle/field_object/world_end/end_dungeon/yakumono/dash_panel,battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel,(None),(None),(None)"
+        }
+      }
+    }
+  },
+  "questIdsStatus": "candidate allocation; recheck enabled author branch before use"
+}

@@ -1,0 +1,100 @@
+{
+  "order": [
+    {
+      "kind": 0,
+      "page": "cover"
+    },
+    {
+      "kind": 2,
+      "roleId": "119990",
+      "page": "skill-119990",
+      "skillKey": "offline-119990"
+    },
+    {
+      "kind": 0,
+      "page": "119990"
+    },
+    {
+      "kind": 2,
+      "roleId": "129999",
+      "page": "skill-129999",
+      "skillKey": "offline-129999"
+    },
+    {
+      "kind": 0,
+      "page": "129999"
+    },
+    {
+      "kind": 2,
+      "roleId": "139994",
+      "page": "skill-139994",
+      "skillKey": "offline-139994"
+    },
+    {
+      "kind": 0,
+      "page": "139994"
+    },
+    {
+      "kind": 2,
+      "roleId": "149987",
+      "page": "skill-149987",
+      "skillKey": "offline-149987"
+    },
+    {
+      "kind": 0,
+      "page": "149987"
+    },
+    {
+      "kind": 2,
+      "roleId": "149999",
+      "page": "skill-149999",
+      "skillKey": "offline-149999"
+    },
+    {
+      "kind": 0,
+      "page": "149999"
+    },
+    {
+      "kind": 2,
+      "roleId": "169989",
+      "page": "skill-169989",
+      "skillKey": "offline-169989"
+    },
+    {
+      "kind": 0,
+      "page": "169989"
+    }
+  ],
+  "characters": [
+    {
+      "id": "119990",
+      "name": "玛格诺斯",
+      "posterPage": "119990"
+    },
+    {
+      "id": "129999",
+      "name": "赛瑞斯",
+      "posterPage": "129999"
+    },
+    {
+      "id": "139994",
+      "name": "雷吉斯",
+      "posterPage": "139994"
+    },
+    {
+      "id": "149987",
+      "name": "芙拉菲",
+      "posterPage": "149987"
+    },
+    {
+      "id": "149999",
+      "name": "杰拉德",
+      "posterPage": "149999"
+    },
+    {
+      "id": "169989",
+      "name": "奈芙提姆",
+      "posterPage": "169989"
+    }
+  ]
+}
