@@ -1,0 +1,104 @@
+[
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/cover/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/cover/feature.movie.amf3.deflate",
+    "bytes": 18502,
+    "sha256": "1b05ed6c29b6b3e608a6a25272cd6e82c203de32170e7db533d449314f506a25"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/cover/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/cover/feature.timeline.amf3.deflate",
+    "bytes": 110,
+    "sha256": "95f7befd07981752c6964e82f2cae712ce220fae1da5c4230d0d09f9e6788f69"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/cover/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/cover/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 709,
+    "sha256": "c818059ae36676eea5d883f20fd1f84fe470e51ff43c25c16f8917a6c2da6009"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/cover/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/cover/sprite_sheet.png",
+    "bytes": 2872461,
+    "sha256": "2b9d55d0316d18e032869e28e8b7b40b312b7207cbbd21ec14a49df61e5e8387"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/149986/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/149986/feature.movie.amf3.deflate",
+    "bytes": 3253,
+    "sha256": "1ee677587ce66b8053bffb28eb573696b8b75a23efcbdec48a9bf22092667d2d"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/149986/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/149986/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/149986/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/149986/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 384,
+    "sha256": "802ecb3de1d2eaa580c8d8e463a87660f7e40c5a537eb6f9937edef6c2ae94e7"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/149986/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/149986/sprite_sheet.png",
+    "bytes": 2401157,
+    "sha256": "038fca34e5a27cd1b8b705d1fc35f882ac9b905468cacafd6b2c03f546725b81"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/139990/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/139990/feature.movie.amf3.deflate",
+    "bytes": 3254,
+    "sha256": "2cc6ceb0777535be19af270ba1317e0bdc34f1a732af2f7293f13d067c3738c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/139990/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/139990/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/139990/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/139990/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 390,
+    "sha256": "213999b8990eec70435824df8a9d968dad350ddde44f545d404819d9f37ec8c9"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/139990/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/139990/sprite_sheet.png",
+    "bytes": 1865867,
+    "sha256": "6f0f18055434a8872a6d1835f936149476ae8d446d62eea9abb50490d9e22447"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/139991/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/139991/feature.movie.amf3.deflate",
+    "bytes": 3253,
+    "sha256": "37769db4bd07a477dfd559a2b6b0fffe174e80b7bc64d1b163e67243548de8ee"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/139991/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/139991/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/139991/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/139991/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 391,
+    "sha256": "376f1b5a031c9a9d2d6f0eb483e9491f7acdf153d6c3a6f802354723d4df9f31"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_beast_dice/139991/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_beast_dice/139991/sprite_sheet.png",
+    "bytes": 1464132,
+    "sha256": "954dcb3f7fd3c0a708503f7016cbbe1359cfe857e2311a42af9d8f0e323e0c73"
+  },
+  {
+    "logical": "dynamic/gacha_list_banner/cnmod_autumn_beast_dice.png",
+    "member": "dynamic/gacha_list_banner/cnmod_autumn_beast_dice.png",
+    "bytes": 104983,
+    "sha256": "4288e478836ad45a2253974382d850363890bbf680635d67ea670d78c0e5d30e"
+  }
+]
