@@ -1,0 +1,7 @@
+# Offline native packages are regular Git blobs, independent of any LFS setup.
+# Preserve frozen preview and inventory bytes across Windows/Linux checkouts.
+* -text
+*/preview/* whitespace=cr-at-eol
+*.amf3.deflate binary
+*/native-assets.zip -filter -diff -merge -text
+*/overview.jpg -filter -diff -merge -text

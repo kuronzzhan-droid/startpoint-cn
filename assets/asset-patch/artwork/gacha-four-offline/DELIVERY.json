@@ -1,0 +1,396 @@
+{
+  "schemaVersion": 1,
+  "status": "offline-art-and-native-preview-candidate",
+  "gameIntegrated": false,
+  "resourceManifestActivated": false,
+  "deviceAccepted": false,
+  "namespaceRebindRuntimeVerified": false,
+  "poolConfigurationOwner": "repository maintainer",
+  "poolCount": 4,
+  "visualRoleCount": 15,
+  "pageCount": 34,
+  "nativeFrames": 3910,
+  "artResources": 80,
+  "files": {
+    ".gitattributes": {
+      "bytes": 309,
+      "sha256": "1b2e38da0fa5b85edc627b1e9b622508f93d0b121167c32ff53acc88925a8d3f"
+    },
+    ".gitignore": {
+      "bytes": 27,
+      "sha256": "e867c1800826ef9a235d6ad5a477318d43d83c861f9063ec9550ad3c6d8502c9"
+    },
+    "autumn-beast-dice/FEATURE-RECIPE.json": {
+      "bytes": 1080,
+      "sha256": "49cf31072ac7542eebf3fad28805c587f3dabfb016162e6ed3b0d8da24539ef3"
+    },
+    "autumn-beast-dice/native-assets.zip": {
+      "bytes": 8743147,
+      "sha256": "104e62bf87a340a45b59583b35a30c6f453b0622b1d7a47ae559d50017b35826"
+    },
+    "autumn-beast-dice/native-resources.json": {
+      "bytes": 5038,
+      "sha256": "743229a07d447242f7e54fb9bdd2b90fdc0584b850a8c8743668aa6b08941bc8"
+    },
+    "autumn-beast-dice/overview.jpg": {
+      "bytes": 1013950,
+      "sha256": "569c22ed0137d9a0eec9a83ff8993d7be34224cfff1a8f52a155d5bec7cd98be"
+    },
+    "autumn-beast-dice/preview/native-clip-player.js": {
+      "bytes": 5829,
+      "sha256": "f9a25e41ca3b341b17e2c3d2f0990ed2318a3232968e7084261f1234cb8beca8"
+    },
+    "autumn-beast-dice/preview/native-recordings.json": {
+      "bytes": 951950,
+      "sha256": "31572bc233ffc69228ef05c36deed9ca020d8f252bbd8352bf7fbd7feb5c8046"
+    },
+    "autumn-beast-dice/preview/presentation.json": {
+      "bytes": 586,
+      "sha256": "a3a5c51662b2bba63ee42b007932f42b8884b57294953af6ce7c729d1c3feb21"
+    },
+    "autumn-beast-dice/preview/preview-player.js": {
+      "bytes": 21619,
+      "sha256": "85c76056918c7438c62d40edec592e722231013463ba0d8d8faf410fd97a3f91"
+    },
+    "autumn-beast-dice/preview/preview.json": {
+      "bytes": 1681,
+      "sha256": "f95a75ba058bace8624bec2df47542a94aef7c052eece73eca0a487f885fbd99"
+    },
+    "autumn-beast-dice/preview/review-data.json": {
+      "bytes": 8622041,
+      "sha256": "3e90b5f3c1bcc59a4577907514175dbbc90acd1f047fece019f49371d2c866e3"
+    },
+    "autumn-beast-dice/preview/template.html": {
+      "bytes": 4345,
+      "sha256": "9fdacba96ac61a7ddfd69a8f7972b7c8c73d1ffb3e5a9d8067cb94bc4055ac32"
+    },
+    "autumn-beast-dice/README.md": {
+      "bytes": 928,
+      "sha256": "5f3a4fe6070903a1a08f6572441c6fe8b1ebca7ce1ee58977f0b47c10756a088"
+    },
+    "autumn-beast-dice/scenes/DONOR-ROWS.json": {
+      "bytes": 14528,
+      "sha256": "995c055764b212c9039950e78f26a229965b5ada4f393dc7269819a356d3ce2c"
+    },
+    "autumn-beast-dice/scenes/payload/139990-replay.amf3.deflate": {
+      "bytes": 134,
+      "sha256": "1c5076b1d9844879ac0be1a47c74949635077813646874fd79f96884da4382dc"
+    },
+    "autumn-beast-dice/scenes/payload/139990-terrain.amf3.deflate": {
+      "bytes": 1207,
+      "sha256": "acf5ef463b24663044b69ef64524dc2dd12d5628f09209f02dd2a82195a976e9"
+    },
+    "autumn-beast-dice/scenes/payload/139991-replay.amf3.deflate": {
+      "bytes": 129,
+      "sha256": "d305e3851ab57af7fd2801057d24bbc0996fe3665fe64eed8576201cf92ecb60"
+    },
+    "autumn-beast-dice/scenes/payload/139991-terrain.amf3.deflate": {
+      "bytes": 1246,
+      "sha256": "bfd7ea94a588173b3c723a1e501163de4dbf60e2ef9f46f84a546801055a56ec"
+    },
+    "autumn-beast-dice/scenes/payload/149986-replay.amf3.deflate": {
+      "bytes": 134,
+      "sha256": "1c5076b1d9844879ac0be1a47c74949635077813646874fd79f96884da4382dc"
+    },
+    "autumn-beast-dice/scenes/payload/149986-terrain.amf3.deflate": {
+      "bytes": 1207,
+      "sha256": "acf5ef463b24663044b69ef64524dc2dd12d5628f09209f02dd2a82195a976e9"
+    },
+    "autumn-beast-dice/scenes/RESOURCE-MANIFEST.json": {
+      "bytes": 97912,
+      "sha256": "2c0b1c61cd06effe21800c55446c7b6993e02eba25ca8da98cd7cc4c28dc075d"
+    },
+    "autumn-moon-laurel/FEATURE-RECIPE.json": {
+      "bytes": 1088,
+      "sha256": "6101fd936aba15136ab7d801a14d7027c2766647a2f28dc7e5bc2b766823b011"
+    },
+    "autumn-moon-laurel/native-assets.zip": {
+      "bytes": 8899738,
+      "sha256": "663ca91762da7ea21c7f576d333ed068ea2a5cac9106eed89ff457014d375070"
+    },
+    "autumn-moon-laurel/native-resources.json": {
+      "bytes": 5072,
+      "sha256": "25339a50bd05e59567b7b6908ecaddb0c703a898a52ffd1a2bae12589c9d03ad"
+    },
+    "autumn-moon-laurel/overview.jpg": {
+      "bytes": 869626,
+      "sha256": "260842687850bacfaaf627c5cc0125298d95953b494f3d879504f90a319c3962"
+    },
+    "autumn-moon-laurel/preview/native-clip-player.js": {
+      "bytes": 5980,
+      "sha256": "c5a53cad559a311c8b29cc71451bf92041829bd51da6a4a3e13412e246fc3e0b"
+    },
+    "autumn-moon-laurel/preview/native-recordings.json": {
+      "bytes": 1199893,
+      "sha256": "2c84a2a5f43f180006042367c1e4d74f6d06353eef04178cbc395b468839122f"
+    },
+    "autumn-moon-laurel/preview/presentation.json": {
+      "bytes": 571,
+      "sha256": "9f3edfe3b7004d888e5af455ef36953ee94b9acb9e23cdba820ad0034257f6a9"
+    },
+    "autumn-moon-laurel/preview/preview-player.js": {
+      "bytes": 22328,
+      "sha256": "f7918a24c7f380e34ff576f04d0ba2920fa45a27f5355aa7a75e4b2134c1b97e"
+    },
+    "autumn-moon-laurel/preview/preview.json": {
+      "bytes": 985,
+      "sha256": "ae4ac3053d6e154db5e82c5535c4e6c3c25e554046c96dc4d7ed821c9b6e17b4"
+    },
+    "autumn-moon-laurel/preview/review-data.json": {
+      "bytes": 8785164,
+      "sha256": "77c56a4a992227a31ea536e9ab9687a7a8c088c7d7a0efcf2f7883cbfb90e2de"
+    },
+    "autumn-moon-laurel/preview/template.html": {
+      "bytes": 4296,
+      "sha256": "0dce086b4f23f046488d11aab688f65f740e6d51e8c9a36334d536e6e3a02a3f"
+    },
+    "autumn-moon-laurel/README.md": {
+      "bytes": 872,
+      "sha256": "342f4f62e067ee1d036e7fb4b2de52f3c62f687c0f9648fad7b0d5e4b49d4598"
+    },
+    "autumn-moon-laurel/scenes/DONOR-ROWS.json": {
+      "bytes": 14583,
+      "sha256": "e91915edbcf265fc79ab7d045c70465a067254a01c1ed4c9e28b776c98e551e4"
+    },
+    "autumn-moon-laurel/scenes/payload/119991-replay.amf3.deflate": {
+      "bytes": 139,
+      "sha256": "ffe9669d42d8a51fb096688752aa8febf1c1ecb8652c6728d449f5ff018b3fa0"
+    },
+    "autumn-moon-laurel/scenes/payload/119991-terrain.amf3.deflate": {
+      "bytes": 1217,
+      "sha256": "c1f78087b67056cac411d702b6790cf60d9b54ff67e447c9e4178c022421b444"
+    },
+    "autumn-moon-laurel/scenes/payload/119992-background-atlas.amf3.deflate": {
+      "bytes": 105,
+      "sha256": "40e90165f39882f6fd2a98497fdd378d3a333638f6cf0d7cc5adb9612bb04c1e"
+    },
+    "autumn-moon-laurel/scenes/payload/119992-background-image.png": {
+      "bytes": 45410,
+      "sha256": "e3c98a4cf69d7c706de8a60b26066a6207833929a48e2acddd4c367cedd594bd"
+    },
+    "autumn-moon-laurel/scenes/payload/119992-background-parts.amf3.deflate": {
+      "bytes": 164,
+      "sha256": "750e899860cb83d8d7a601a79819c7992fd3c661a4fd521714d841cc225e4b47"
+    },
+    "autumn-moon-laurel/scenes/payload/119992-background-timeline.amf3.deflate": {
+      "bytes": 91,
+      "sha256": "62c04bc3e5b315808a8809d81111115c2fa0c78e453592a9570eca041333e787"
+    },
+    "autumn-moon-laurel/scenes/payload/119992-replay.amf3.deflate": {
+      "bytes": 133,
+      "sha256": "c769fa8fd4afb19204c3e56650126ff1b9a297bb3a06135bded941db58e52f8c"
+    },
+    "autumn-moon-laurel/scenes/payload/119992-terrain.amf3.deflate": {
+      "bytes": 1074,
+      "sha256": "a6b044696d4e8090ac2763c17a1706f690b916dc9368d2b266ab8b0d0901fe39"
+    },
+    "autumn-moon-laurel/scenes/payload/159995-replay.amf3.deflate": {
+      "bytes": 131,
+      "sha256": "f4a7c57f215cec28d49e2ac28658071a3874e506e69b25751185351685b91de6"
+    },
+    "autumn-moon-laurel/scenes/payload/159995-terrain.amf3.deflate": {
+      "bytes": 1189,
+      "sha256": "6c69328cdd2a1927a737ae21f294a9501134222baa7f6c41729c3b45ad4b37a2"
+    },
+    "autumn-moon-laurel/scenes/RESOURCE-MANIFEST.json": {
+      "bytes": 56261,
+      "sha256": "afda8995e485d24feecf3424f311c739f17147c9e2fe38055201a20d7d1c9d04"
+    },
+    "autumn-prayer-rabbit/FEATURE-RECIPE.json": {
+      "bytes": 1104,
+      "sha256": "92ff133c9b747a1c94c8fe6fc7fe4c9ffd740dcc68a9b1b00b7264ab38d114fa"
+    },
+    "autumn-prayer-rabbit/native-assets.zip": {
+      "bytes": 9207199,
+      "sha256": "c34994566223823341703db21500d2481e5ae2b7c412dc839dceeca2b90cdc05"
+    },
+    "autumn-prayer-rabbit/native-resources.json": {
+      "bytes": 5140,
+      "sha256": "d981f176d30b1e21db3a351976456a137bd0bb9413127484b4a3cf93eda5d247"
+    },
+    "autumn-prayer-rabbit/overview.jpg": {
+      "bytes": 317066,
+      "sha256": "9391a093c2294728cb978939fb9fe37eb50d4712a29db68fd0e97a0e46682256"
+    },
+    "autumn-prayer-rabbit/preview/native-clip-player.js": {
+      "bytes": 5980,
+      "sha256": "c5a53cad559a311c8b29cc71451bf92041829bd51da6a4a3e13412e246fc3e0b"
+    },
+    "autumn-prayer-rabbit/preview/native-recordings.json": {
+      "bytes": 1266173,
+      "sha256": "ae8bb262857fa2a924d2731fa051903b127330b89a4cbe618f2fe1db6bdfdc90"
+    },
+    "autumn-prayer-rabbit/preview/presentation.json": {
+      "bytes": 559,
+      "sha256": "a1cfaf16a5abe123926e756cc3bfbce4dfe6935f6452dcbb93a8ab04df690d50"
+    },
+    "autumn-prayer-rabbit/preview/preview-player.js": {
+      "bytes": 21698,
+      "sha256": "0f59099b3ffbc35a7b35795bcbf07ba11f481f865307fd3a4ea47c2dac40566d"
+    },
+    "autumn-prayer-rabbit/preview/preview.json": {
+      "bytes": 575,
+      "sha256": "1bdab46191433c28b4cb73a628eda4253de2ceb669e98528a7d8edd011927f7b"
+    },
+    "autumn-prayer-rabbit/preview/review-data.json": {
+      "bytes": 8476456,
+      "sha256": "cba42d6fa2cbbe6e10123c07e236313be6cee510d78255d3834632923b2b384c"
+    },
+    "autumn-prayer-rabbit/preview/template.html": {
+      "bytes": 4299,
+      "sha256": "4e39f4466f1868bbbff00f657e10250669822b7e0cb9fdda43e3dc057c1b0680"
+    },
+    "autumn-prayer-rabbit/README.md": {
+      "bytes": 802,
+      "sha256": "355d15815640d8b720a0583d011f7961f7d899ed201cfab7a7e92aff9f25cd7a"
+    },
+    "autumn-prayer-rabbit/scenes/DONOR-ROWS.json": {
+      "bytes": 14662,
+      "sha256": "80ba3732e6ee519f1876e6040299f7447326320ba63e3c56742bdb8819eb999b"
+    },
+    "autumn-prayer-rabbit/scenes/payload/159991-replay.amf3.deflate": {
+      "bytes": 137,
+      "sha256": "d104d4a35484b1192a6b9a9d07558753e7f200892e95560c545f3569cf32b2fc"
+    },
+    "autumn-prayer-rabbit/scenes/payload/159991-terrain.amf3.deflate": {
+      "bytes": 1247,
+      "sha256": "91c65bd60ab488cbd923cc57041905c98f78b0665504548ff7e5b51bf78d2bd2"
+    },
+    "autumn-prayer-rabbit/scenes/payload/169988-replay.amf3.deflate": {
+      "bytes": 130,
+      "sha256": "60eb6c8e060298d7b2b4c05af2d8f0ade3becbe5d4165cee9468d8b8311ed93a"
+    },
+    "autumn-prayer-rabbit/scenes/payload/169988-terrain.amf3.deflate": {
+      "bytes": 1247,
+      "sha256": "91c65bd60ab488cbd923cc57041905c98f78b0665504548ff7e5b51bf78d2bd2"
+    },
+    "autumn-prayer-rabbit/scenes/payload/169991-replay.amf3.deflate": {
+      "bytes": 137,
+      "sha256": "d104d4a35484b1192a6b9a9d07558753e7f200892e95560c545f3569cf32b2fc"
+    },
+    "autumn-prayer-rabbit/scenes/payload/169991-terrain.amf3.deflate": {
+      "bytes": 1247,
+      "sha256": "91c65bd60ab488cbd923cc57041905c98f78b0665504548ff7e5b51bf78d2bd2"
+    },
+    "autumn-prayer-rabbit/scenes/RESOURCE-MANIFEST.json": {
+      "bytes": 101262,
+      "sha256": "31db8083592b89b060530123da4032ce8bc3ace591d25f30109bcfa5f5fb8f32"
+    },
+    "build-preview.cjs": {
+      "bytes": 4356,
+      "sha256": "dbb312b5b4798a99dfb238ae49f2e303b2bf7b6be9120c69d5214ec449df9f24"
+    },
+    "README.md": {
+      "bytes": 5029,
+      "sha256": "21448cbcdb74f72eaacdc41b2ef9920de6d30dbcee1184d66be91e80ffc43094"
+    },
+    "starview-encounter/FEATURE-RECIPE.json": {
+      "bytes": 1796,
+      "sha256": "28056eccb24b6c59bdcb0fabef151e5443dee5d4fce6b4ad9945b0406c868c2d"
+    },
+    "starview-encounter/native-assets.zip": {
+      "bytes": 14882858,
+      "sha256": "8bdf400a33456604d01423475cf3966ad5f2aa4b1a135aa8659760521e49cade"
+    },
+    "starview-encounter/native-resources.json": {
+      "bytes": 8687,
+      "sha256": "b29b98ba57444e39ccc9f32c86390f14cbd3dc38a7bbd754e170adf96fc33599"
+    },
+    "starview-encounter/overview.jpg": {
+      "bytes": 612364,
+      "sha256": "9d6fd939c3b489f17fc66dfc713e77657b50776afb8ddc32617696a74f11c5cd"
+    },
+    "starview-encounter/preview/native-clip-player.js": {
+      "bytes": 5829,
+      "sha256": "f9a25e41ca3b341b17e2c3d2f0990ed2318a3232968e7084261f1234cb8beca8"
+    },
+    "starview-encounter/preview/native-recordings.json": {
+      "bytes": 1925565,
+      "sha256": "27fe0083d59b1a8680f400d589960928643384d97482229c7fd75f4fc152824f"
+    },
+    "starview-encounter/preview/presentation.json": {
+      "bytes": 1102,
+      "sha256": "9105fb77957cac76c59e50d35a4a6003ae5126ab633dae1a4e98e6dfe89ac069"
+    },
+    "starview-encounter/preview/preview-player.js": {
+      "bytes": 22178,
+      "sha256": "4746a424c78d31bf7579936815b7173c79d92ab52f98948a917933dfa2a93ffe"
+    },
+    "starview-encounter/preview/preview.json": {
+      "bytes": 565,
+      "sha256": "502b5f6955c3ca343a1c66a3e32103bc67e3e27c9681cbba6ec32c045e205f01"
+    },
+    "starview-encounter/preview/review-data.json": {
+      "bytes": 6670329,
+      "sha256": "cd8eb38a8f293d0fce0c051a130696d3814199fa568cdf4e91f5c9fc39335ca6"
+    },
+    "starview-encounter/preview/template.html": {
+      "bytes": 4502,
+      "sha256": "4d9e8f2feb386bfba60fd742f04465cbec53ab72bee69f512023e86ee06f88a7"
+    },
+    "starview-encounter/README.md": {
+      "bytes": 833,
+      "sha256": "1baba5f546862b88991dca7372c1cd66cfe564ee8f227c6ce2bee27735a26b3d"
+    },
+    "starview-encounter/scenes/DONOR-ROWS.json": {
+      "bytes": 28892,
+      "sha256": "1e078312c43a7d1761916861840fd9c2dc358b803a9456c625d12efc1fa45eef"
+    },
+    "starview-encounter/scenes/payload/129991-replay.amf3.deflate": {
+      "bytes": 129,
+      "sha256": "5f57b460a169f798c7082f7d44b4286dca3f5cc05c834e738a88083c416b5b7b"
+    },
+    "starview-encounter/scenes/payload/129991-terrain.amf3.deflate": {
+      "bytes": 1244,
+      "sha256": "6712656c9672c12e4e2adde47009c7db4fd85fd7baa20b1deb50298034b529ee"
+    },
+    "starview-encounter/scenes/payload/139992-replay.amf3.deflate": {
+      "bytes": 141,
+      "sha256": "952fcf45cd9777e135c2e96c7b31fb2dfff85ef9bae8d2f7b911ef54fe909781"
+    },
+    "starview-encounter/scenes/payload/139992-terrain.amf3.deflate": {
+      "bytes": 1220,
+      "sha256": "cf2e5a4e56b665ba6199d3ee78ba3977d78800120105facc11580111c29f32c4"
+    },
+    "starview-encounter/scenes/payload/139999-replay.amf3.deflate": {
+      "bytes": 142,
+      "sha256": "2199433a02368366e9beb2669f2812f62c3e8b47d4f09555d895e4e75e03011a"
+    },
+    "starview-encounter/scenes/payload/139999-terrain.amf3.deflate": {
+      "bytes": 1177,
+      "sha256": "3d9165478fc625f6bc616522a16b734c070900153645a267f989865f48ef047b"
+    },
+    "starview-encounter/scenes/payload/149997-replay.amf3.deflate": {
+      "bytes": 147,
+      "sha256": "c2acc5c2baef48c81693142f85cebecdc21a70412304a1543a8644abca8b164e"
+    },
+    "starview-encounter/scenes/payload/149997-terrain.amf3.deflate": {
+      "bytes": 1220,
+      "sha256": "cf2e5a4e56b665ba6199d3ee78ba3977d78800120105facc11580111c29f32c4"
+    },
+    "starview-encounter/scenes/payload/169998-replay.amf3.deflate": {
+      "bytes": 137,
+      "sha256": "59ad9d4a384bf9d8cecacb98b5d1bcb9db11debc4df96cc4d8fbcfadf78f351c"
+    },
+    "starview-encounter/scenes/payload/169998-terrain.amf3.deflate": {
+      "bytes": 1154,
+      "sha256": "f6ce6fc8713ac57c94437b209a02658e4c51bf440b7d19b20d29ed25d9207dac"
+    },
+    "starview-encounter/scenes/payload/179999-replay.amf3.deflate": {
+      "bytes": 147,
+      "sha256": "c2acc5c2baef48c81693142f85cebecdc21a70412304a1543a8644abca8b164e"
+    },
+    "starview-encounter/scenes/payload/179999-terrain.amf3.deflate": {
+      "bytes": 1220,
+      "sha256": "cf2e5a4e56b665ba6199d3ee78ba3977d78800120105facc11580111c29f32c4"
+    },
+    "starview-encounter/scenes/RESOURCE-MANIFEST.json": {
+      "bytes": 203095,
+      "sha256": "8bb86ee3c184eff6360e6f840fd41860ac8bbc528271b329f5eada647d842b43"
+    },
+    "verify.py": {
+      "bytes": 8991,
+      "sha256": "c05822343bd5657a61dfe2e4a66b93ee80e437c5560b4a7db08da324d128ec85"
+    }
+  }
+}

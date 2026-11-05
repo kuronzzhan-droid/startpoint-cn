@@ -85,6 +85,10 @@ while IFS= read -r f; do
     if [ "$sz" -gt 1048576 ]; then
         case "$f" in
             assets/asset-patch/active/*.zip) ;;   # 部署必需的客户端增量包
+            assets/asset-patch/artwork/gacha-four-offline/starview-encounter/native-assets.zip|assets/asset-patch/artwork/gacha-four-offline/autumn-beast-dice/native-assets.zip|assets/asset-patch/artwork/gacha-four-offline/autumn-prayer-rabbit/native-assets.zip|assets/asset-patch/artwork/gacha-four-offline/autumn-moon-laurel/native-assets.zip)
+                # Fixed offline art deliveries only; these do not activate a resource version.
+                if [ "$sz" -gt 20971520 ]; then note "离线美术包超过 20 MiB: $f"; fi
+                ;;
             tools/fantasy-gauntlet-mod-tools/WF_PATHLIST_recovered.txt) ;; # MOD 工具路径索引
             *.json|*.csv|*.md) ;;                 # 允许大数据/文档
             *) note "大文件 >1MB(二进制不应入库,改用生成脚本): $f" ;;
