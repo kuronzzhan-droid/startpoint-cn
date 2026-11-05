@@ -1,0 +1,176 @@
+[
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/cover/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/cover/feature.movie.amf3.deflate",
+    "bytes": 12826,
+    "sha256": "2d2edb0448a8be59c4ac3a7d496684609c0f18c69e5687345d82135ce3d3f2fd"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/cover/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/cover/feature.timeline.amf3.deflate",
+    "bytes": 110,
+    "sha256": "95f7befd07981752c6964e82f2cae712ce220fae1da5c4230d0d09f9e6788f69"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/cover/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/cover/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 662,
+    "sha256": "bb01d1c87602eec173853f521c791ccfcfd788da43d1f86fc9a3cd954ff2cc6e"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/cover/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/cover/sprite_sheet.png",
+    "bytes": 3921066,
+    "sha256": "1feaa36b97a08aaf6ab2b87aef0e59244f49ec7cf9342309e25d3ccc97ee056a"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/169998/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/169998/feature.movie.amf3.deflate",
+    "bytes": 3268,
+    "sha256": "eab463a6f50f08d5443f314f492fe95038ff24ecf95171ac7415ae0d68f930dc"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/169998/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/169998/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/169998/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/169998/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 407,
+    "sha256": "674653098a65eacd7bb2bf003a2ed12d62514375a4b4d4304fe93bc452105da0"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/169998/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/169998/sprite_sheet.png",
+    "bytes": 1679642,
+    "sha256": "61f90a788edb392796b94e824f14016c8d022f0f63e9bf17c6f4be0bd982285b"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/139999/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/139999/feature.movie.amf3.deflate",
+    "bytes": 3266,
+    "sha256": "02098d4a4f476c9d1b259be6a84374ecde4cbe4e2d6adc334baa3663c30de847"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/139999/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/139999/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/139999/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/139999/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 396,
+    "sha256": "3db7fe89042285ba4ff16040d85d3dc9c33004d763a1b7e01ace36003fae0c88"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/139999/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/139999/sprite_sheet.png",
+    "bytes": 2080475,
+    "sha256": "627231c5fb03e59536a954f0e2f63de2e395e4991732c10f9b6e5847157f5401"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/149997/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/149997/feature.movie.amf3.deflate",
+    "bytes": 3268,
+    "sha256": "3fe4770dc2c5115ebee44db576aac2344ecb6abe83b5d1942f3a6383e306b847"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/149997/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/149997/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/149997/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/149997/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 401,
+    "sha256": "8d42decefed7a3b54280a0db9fc6e02a2b34ed1cf1e0c7c82d35c107ff012597"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/149997/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/149997/sprite_sheet.png",
+    "bytes": 1283564,
+    "sha256": "8dc93b4cfaddb6ed890a05baf942ade3d3213de968c012d1709971fb0bbec787"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/139992/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/139992/feature.movie.amf3.deflate",
+    "bytes": 3268,
+    "sha256": "07fbb2a0df2c51b9fbb450340460b15f035887f16745f5d89203319841c4b314"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/139992/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/139992/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/139992/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/139992/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 403,
+    "sha256": "5ca68c0bfe65bbc90182841c18a63b777e001b44e2a0a0d8b7e40ab8313afcd7"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/139992/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/139992/sprite_sheet.png",
+    "bytes": 1747135,
+    "sha256": "632df2363bd74b6e7422ff9a89f0c77a9c9d7207d6ba0fed3bf8ff714481d458"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/179999/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/179999/feature.movie.amf3.deflate",
+    "bytes": 3266,
+    "sha256": "2eeb9b85b27cf864b7de05a84a8ec8162d09976f458bc0efb56dc707df7255fa"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/179999/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/179999/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/179999/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/179999/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 400,
+    "sha256": "f8bf734eaab9486bd8a6bdc9fe4704ceb3adff239d3866df2baa2bb7486f4260"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/179999/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/179999/sprite_sheet.png",
+    "bytes": 2125384,
+    "sha256": "2f43c849d54e3744fd1935db42401a9f9a3699b065f26e23730545acadbd242c"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/129991/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/129991/feature.movie.amf3.deflate",
+    "bytes": 3268,
+    "sha256": "1b024558debf0eb5b79e00d9433beea2a95bcc7e50d22720ad38acbf229fbdae"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/129991/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/129991/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/129991/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/129991/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 402,
+    "sha256": "77fe53d84eac84cf7b2bf564266c24b5b04f351c5fc24fa7273c8a1da47dba8e"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_starview_encounter/129991/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_starview_encounter/129991/sprite_sheet.png",
+    "bytes": 1877857,
+    "sha256": "e9fd7b30c2ae65f16eb3551070045b78169a9b8513cabc9a6cbcdcb9ea40655f"
+  },
+  {
+    "logical": "dynamic/gacha_list_banner/cnmod_starview_encounter.png",
+    "member": "dynamic/gacha_list_banner/cnmod_starview_encounter.png",
+    "bytes": 124576,
+    "sha256": "cd18c396102ea6416638a3d845ce229fd0f427bdd1316e1c943a79d9cc827598"
+  }
+]
