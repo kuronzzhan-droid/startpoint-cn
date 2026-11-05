@@ -1,5 +1,5 @@
 {
-  "cdn_version": "1.4.384",
+  "cdn_version": "1.4.387",
   "patches": [
     {
       "id": "base-1.4.54-to-1.4.55-mod07141843",
@@ -45209,6 +45209,399 @@
         }
       ],
       "created_at": "2026-11-04"
+    },
+    {
+      "id": "raid-overall-ticket-1105",
+      "type": "patch",
+      "name": "战阵全服奖励调整",
+      "description": "",
+      "version": "1.4.385",
+      "depends_on": "1.4.384",
+      "enabled": true,
+      "archive": "pinball-1.4.384-1.4.385-1-raid-overall-ticket-1105-local.zip",
+      "archive_size": 1790,
+      "chain": [
+        "pinball-1.4.384-1.4.385-1-raid-overall-ticket-1105-local.zip"
+      ],
+      "files": [
+        "production/upload/46/0ebd9653705820efeec37caa61c834b7ebe9f1"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.384-1.4.385-1-raid-overall-ticket-1105-local.zip",
+          "size": 1790,
+          "sha256": "3df698764158e21c93518a60cad3f40bf118300bcce3bfe16e0f056c5d8d9b78",
+          "members": 1,
+          "files": [
+            "production/upload/46/0ebd9653705820efeec37caa61c834b7ebe9f1"
+          ],
+          "member_sha256": {
+            "production/upload/46/0ebd9653705820efeec37caa61c834b7ebe9f1": "ebe0a8d49df86d1f014c00e93004875e231e72c20a1bc43b9e58bf18803f22fc"
+          },
+          "logical_paths": {
+            "production/upload/46/0ebd9653705820efeec37caa61c834b7ebe9f1": "master/quest/event/raid_event_overall_reward.orderedmap"
+          },
+          "applies_on": "1.4.384",
+          "version": "1.4.385",
+          "server_files": {},
+          "log": [
+            "战阵之宴全服300讨伐奖励删深渊十连券"
+          ]
+        }
+      ],
+      "created_at": "2026-11-05"
+    },
+    {
+      "id": "starview-sway-v7-1105",
+      "type": "patch",
+      "name": "星见镇的摇曳六人演出",
+      "description": "本地候选",
+      "version": "1.4.386",
+      "depends_on": "1.4.385",
+      "enabled": true,
+      "archive": "pinball-1.4.385-1.4.386-1-starview-sway-v7-1105-local.zip",
+      "archive_size": 2884068,
+      "chain": [
+        "pinball-1.4.385-1.4.386-1-starview-sway-v7-1105-local.zip",
+        "pinball-1.4.385-1.4.386-2-starview-sway-v7-1105-local.zip",
+        "pinball-1.4.385-1.4.386-3-starview-sway-v7-1105-local.zip",
+        "pinball-1.4.385-1.4.386-4-starview-sway-v7-1105-local.zip",
+        "pinball-1.4.385-1.4.386-5-starview-sway-v7-1105-local.zip"
+      ],
+      "files": [
+        "production/upload/ec/e713173d2a64a77c28c927869135297ba5d074",
+        "production/upload/30/363f8364e183905b2d0b48b8718b7165135bc2",
+        "production/upload/cd/6336795a27ea33bf8d0c5d5a9bfb466bedcf1e",
+        "production/upload/c8/79a1b712ae753afb0b5e796737fd141c8fa0ea",
+        "production/upload/96/010c4b95345952d5a19d699b734da66b2f0fe9",
+        "production/upload/69/bb6ccf19b48beaf6436f51cdbe4e5444dde432",
+        "production/upload/b9/af3487b44a72f24005ab9b5950e6cde232c2b4",
+        "production/upload/79/1332ed23e03d468892f007f334ded2c667017e",
+        "production/upload/4a/7be37e403a640607235e6b68975190a3048872",
+        "production/upload/78/6d9dd3f68baa8432c1a1c26dcd8cec4799ff04",
+        "production/upload/51/edd82760858bd39210608902985aafb31c8b5d",
+        "production/upload/49/97fad9cb2a45b861b5a238deae006963fcaa17",
+        "production/upload/c7/64b4375db658468269f93e4f1255935b78350e",
+        "production/upload/c8/ba37ec2203efd156cdae63b23521439c4d694a",
+        "production/upload/e0/50e835bd1ea09b95ae34f0caf7f9771a3a51aa",
+        "production/upload/92/48674cc9cbbcd0f3769b51aa593056b777d0e9",
+        "production/upload/22/22734046f20798e599a8f3ebe43da4f04140ca",
+        "production/upload/3f/db0c299c2f7697eb86c90fd01f79dfd51e6ccd",
+        "production/upload/14/a7d75fd2f1d525b2842e519f9940b7494e2483",
+        "production/upload/1e/076910561155728a06654f80a31915243b67cf",
+        "production/upload/9d/72301fddabefcf972452758d33bfa796621c66",
+        "production/upload/fa/7a83efb069193546da97ef7fd45fb2308ebdf7",
+        "production/upload/88/13e8c39480c9ebcd6075da7dec0d6529d1a3cd",
+        "production/upload/bc/8998e72e7b718b3ee87f1babb8e5913afd5bcf",
+        "production/upload/c1/cf69afa28c37a4bf87f4164a62b7b95391a42e",
+        "production/upload/5c/64ca6609ad18c95e68b17394b85843b81e50fe",
+        "production/upload/4c/aa1aaa39b4a9aa853b43a2aca756d6d671108d",
+        "production/upload/47/1e33e37004b37d5c6507c6ed9c2144f2f70ddf",
+        "production/upload/14/1b53d55646b9eeb1ecc78a381c4edec250c07a",
+        "production/upload/22/020ac35bffc161b71bcc9d71465f7d34d6e63c",
+        "production/upload/c4/12f1e5f6be9765ad6c958ad86ddad309ac0e6a",
+        "production/upload/03/b48f09e2fc0945f4e04968b782dd060cb42333",
+        "production/upload/8a/588156c507bdafd85ffdfb432dc1c5d8e69eb2",
+        "production/upload/77/fe57a43e32c5ed74ea9b53dcacc57f007e9be8",
+        "production/upload/42/8c8f38c1019328ecbb3a9cff2b108ab44f1318",
+        "production/upload/c7/3bbcb2239cc24000f0f66957a6226ead7d9981",
+        "production/upload/b7/f36325b0785d1bdf6864124840332cc36188d3",
+        "production/upload/c7/2559dcece6efd6251d7e9e58977a20819de905",
+        "production/upload/f7/a1ce60f567a11789b8f1a18f46c925dcd0d494",
+        "production/upload/5a/8f8e0ba8832e50dd11a806682067c461550243",
+        "production/upload/a8/fd58573dc6eb69ee28d0c09af5a12f65e9e6dd",
+        "production/upload/89/aae7354237d9b6dbb21c752276f668b3525229",
+        "production/upload/bf/817a1227c7f12594b7caf448a910b76f358e6e",
+        "production/upload/d0/da51804e2e707880244f7d50d879f6fccbbc91",
+        "production/upload/b7/4464dd88f15ea03d9c3a3a8a54661d2f1d46d3",
+        "production/upload/1e/4a14fe9e8603fa0ee24530daf2414942b50a3e",
+        "production/upload/fd/061f4d7780acc40af214dc9a474e65540582c4"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.385-1.4.386-1-starview-sway-v7-1105-local.zip",
+          "size": 2884068,
+          "sha256": "af538d572aa0e558ea2884231d32ff5ad4086b0ac3da28b9aee5c301de114a62",
+          "members": 26,
+          "files": [
+            "production/upload/ec/e713173d2a64a77c28c927869135297ba5d074",
+            "production/upload/30/363f8364e183905b2d0b48b8718b7165135bc2",
+            "production/upload/cd/6336795a27ea33bf8d0c5d5a9bfb466bedcf1e",
+            "production/upload/c8/79a1b712ae753afb0b5e796737fd141c8fa0ea",
+            "production/upload/96/010c4b95345952d5a19d699b734da66b2f0fe9",
+            "production/upload/69/bb6ccf19b48beaf6436f51cdbe4e5444dde432",
+            "production/upload/b9/af3487b44a72f24005ab9b5950e6cde232c2b4",
+            "production/upload/79/1332ed23e03d468892f007f334ded2c667017e",
+            "production/upload/4a/7be37e403a640607235e6b68975190a3048872",
+            "production/upload/78/6d9dd3f68baa8432c1a1c26dcd8cec4799ff04",
+            "production/upload/51/edd82760858bd39210608902985aafb31c8b5d",
+            "production/upload/49/97fad9cb2a45b861b5a238deae006963fcaa17",
+            "production/upload/c7/64b4375db658468269f93e4f1255935b78350e",
+            "production/upload/c8/ba37ec2203efd156cdae63b23521439c4d694a",
+            "production/upload/e0/50e835bd1ea09b95ae34f0caf7f9771a3a51aa",
+            "production/upload/92/48674cc9cbbcd0f3769b51aa593056b777d0e9",
+            "production/upload/22/22734046f20798e599a8f3ebe43da4f04140ca",
+            "production/upload/3f/db0c299c2f7697eb86c90fd01f79dfd51e6ccd",
+            "production/upload/14/a7d75fd2f1d525b2842e519f9940b7494e2483",
+            "production/upload/1e/076910561155728a06654f80a31915243b67cf",
+            "production/upload/9d/72301fddabefcf972452758d33bfa796621c66",
+            "production/upload/fa/7a83efb069193546da97ef7fd45fb2308ebdf7",
+            "production/upload/88/13e8c39480c9ebcd6075da7dec0d6529d1a3cd",
+            "production/upload/bc/8998e72e7b718b3ee87f1babb8e5913afd5bcf",
+            "production/upload/c1/cf69afa28c37a4bf87f4164a62b7b95391a42e",
+            "production/upload/5c/64ca6609ad18c95e68b17394b85843b81e50fe"
+          ],
+          "member_sha256": {
+            "production/upload/ec/e713173d2a64a77c28c927869135297ba5d074": "f6499901f65324b5cfdc8b5826ac8c40736a5e7f43a32d22348621833781eceb",
+            "production/upload/30/363f8364e183905b2d0b48b8718b7165135bc2": "e3112d54ae3416bf766524d6dd200a5669575230c20f1b30458657513010b8c3",
+            "production/upload/cd/6336795a27ea33bf8d0c5d5a9bfb466bedcf1e": "195e7ae188e388223af8cdd04b28ad60137e1288f5ba964606122dda4a64c38c",
+            "production/upload/c8/79a1b712ae753afb0b5e796737fd141c8fa0ea": "9ecfbfca279fbc64cef23f3970a0069a48ca0f64e12232c0ccc5238c6f70f20d",
+            "production/upload/96/010c4b95345952d5a19d699b734da66b2f0fe9": "5ca08948bd562292b0f21cc58c725a3fbbe0e769becd869f574c26e691703b1e",
+            "production/upload/69/bb6ccf19b48beaf6436f51cdbe4e5444dde432": "743aa3bc2f6d22851842e86bd0e59951fc2ca41047d35fe4f95463e789f9c32c",
+            "production/upload/b9/af3487b44a72f24005ab9b5950e6cde232c2b4": "30214c7b6d52c784e7c6fd8a9b9a07e5a53b7a1c87b007de6f5cbd31fcc8d2c8",
+            "production/upload/79/1332ed23e03d468892f007f334ded2c667017e": "91c65bd60ab488cbd923cc57041905c98f78b0665504548ff7e5b51bf78d2bd2",
+            "production/upload/4a/7be37e403a640607235e6b68975190a3048872": "40858b1c87869b9fe57f10a1d3e9e579a90f4fd2c29576878206c8b95da59111",
+            "production/upload/78/6d9dd3f68baa8432c1a1c26dcd8cec4799ff04": "d7b91aa94496cd7abcf6208d4de41b195a3ba604190b46ad93558f7c38bfe3b8",
+            "production/upload/51/edd82760858bd39210608902985aafb31c8b5d": "198675d65978edcb1efb2458e7716c12a12b34851838bad5cd75e9dd129cadf0",
+            "production/upload/49/97fad9cb2a45b861b5a238deae006963fcaa17": "2ca40e74145cd8bbb6e4e8b5a083fde6fb133698ccfdec355324370d3afd64fd",
+            "production/upload/c7/64b4375db658468269f93e4f1255935b78350e": "15e08eb530cb3f784aafe87c4d2417c19886bc9ca99b06b023280617095aaa68",
+            "production/upload/c8/ba37ec2203efd156cdae63b23521439c4d694a": "bcc7b42f23bcf34294035c4d62248548f44c84d6e976268f53e3be69eddc0dfc",
+            "production/upload/e0/50e835bd1ea09b95ae34f0caf7f9771a3a51aa": "e7fbd0e07b07e0dc7154d6f5a3b09e916ce30a090825e4384a4c752ac5c2039b",
+            "production/upload/92/48674cc9cbbcd0f3769b51aa593056b777d0e9": "f5d28279231d4ee44e99547e2417f384a4d956bf36bf9ee9520166c1ae744018",
+            "production/upload/22/22734046f20798e599a8f3ebe43da4f04140ca": "f0673a7fa4b8bb3d188c9a4680bc46d4ff9e9d081659c17f4113ab3b4afe63af",
+            "production/upload/3f/db0c299c2f7697eb86c90fd01f79dfd51e6ccd": "f538825f5ef11f3c14f8514984c6c3fc0413b7f0aadb4cade54021dc1dfb9f9a",
+            "production/upload/14/a7d75fd2f1d525b2842e519f9940b7494e2483": "966b922648c9be2c8d7576cf2b30ce77b6314dedc976abb108e974900890fec0",
+            "production/upload/1e/076910561155728a06654f80a31915243b67cf": "904c668e316a39fcccfc964733da0581795b46e082247a7a3a89b754ec55a27a",
+            "production/upload/9d/72301fddabefcf972452758d33bfa796621c66": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "production/upload/fa/7a83efb069193546da97ef7fd45fb2308ebdf7": "e3c9e75d520831935615b9a77e7865187c229b3f809a1a4412852bdf45328d26",
+            "production/upload/88/13e8c39480c9ebcd6075da7dec0d6529d1a3cd": "f5b56e70c7e7561baee2f5fd0af9c148f36f93ded3a1df4f30ffcced6218f95d",
+            "production/upload/bc/8998e72e7b718b3ee87f1babb8e5913afd5bcf": "19d2bb2370c952f5ca693b247be9debd4330fa33f422a5926c895bfc513ccff7",
+            "production/upload/c1/cf69afa28c37a4bf87f4164a62b7b95391a42e": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "production/upload/5c/64ca6609ad18c95e68b17394b85843b81e50fe": "65abfb7469214c6c87811da05732dc29f0173f1eb50d031df752979a7504d378"
+          },
+          "logical_paths": {
+            "production/upload/ec/e713173d2a64a77c28c927869135297ba5d074": "master/battle/field.orderedmap",
+            "production/upload/30/363f8364e183905b2d0b48b8718b7165135bc2": "master/battle/field_data.orderedmap",
+            "production/upload/cd/6336795a27ea33bf8d0c5d5a9bfb466bedcf1e": "master/battle/zone.orderedmap",
+            "production/upload/c8/79a1b712ae753afb0b5e796737fd141c8fa0ea": "master/gacha/gacha_feature_content.orderedmap",
+            "production/upload/96/010c4b95345952d5a19d699b734da66b2f0fe9": "master/gacha/gacha_skill_preview.orderedmap",
+            "production/upload/69/bb6ccf19b48beaf6436f51cdbe4e5444dde432": "master/skill_preview/skill_preview_quest.orderedmap",
+            "production/upload/b9/af3487b44a72f24005ab9b5950e6cde232c2b4": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_119990.amf3.deflate",
+            "production/upload/79/1332ed23e03d468892f007f334ded2c667017e": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_129999.amf3.deflate",
+            "production/upload/4a/7be37e403a640607235e6b68975190a3048872": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_139994.amf3.deflate",
+            "production/upload/78/6d9dd3f68baa8432c1a1c26dcd8cec4799ff04": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149987.amf3.deflate",
+            "production/upload/51/edd82760858bd39210608902985aafb31c8b5d": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_149999.amf3.deflate",
+            "production/upload/49/97fad9cb2a45b861b5a238deae006963fcaa17": "battle/terrain/skill_preview/skill_preview_gacha_starview_sway_169989.amf3.deflate",
+            "production/upload/c7/64b4375db658468269f93e4f1255935b78350e": "dynamic/gacha_list_banner/cnmod_starview_sway.png",
+            "production/upload/c8/ba37ec2203efd156cdae63b23521439c4d694a": "gacha/feature_battle_preview/starview_sway/119990.battle.amf3.deflate",
+            "production/upload/e0/50e835bd1ea09b95ae34f0caf7f9771a3a51aa": "gacha/feature_battle_preview/starview_sway/129999.battle.amf3.deflate",
+            "production/upload/92/48674cc9cbbcd0f3769b51aa593056b777d0e9": "gacha/feature_battle_preview/starview_sway/139994.battle.amf3.deflate",
+            "production/upload/22/22734046f20798e599a8f3ebe43da4f04140ca": "gacha/feature_battle_preview/starview_sway/149987.battle.amf3.deflate",
+            "production/upload/3f/db0c299c2f7697eb86c90fd01f79dfd51e6ccd": "gacha/feature_battle_preview/starview_sway/149999.battle.amf3.deflate",
+            "production/upload/14/a7d75fd2f1d525b2842e519f9940b7494e2483": "gacha/feature_battle_preview/starview_sway/169989.battle.amf3.deflate",
+            "production/upload/1e/076910561155728a06654f80a31915243b67cf": "gacha/feature_movie/cnmod_starview_sway/119990/feature.movie.amf3.deflate",
+            "production/upload/9d/72301fddabefcf972452758d33bfa796621c66": "gacha/feature_movie/cnmod_starview_sway/119990/feature.timeline.amf3.deflate",
+            "production/upload/fa/7a83efb069193546da97ef7fd45fb2308ebdf7": "gacha/feature_movie/cnmod_starview_sway/119990/sprite_sheet.atlas.amf3.deflate",
+            "production/upload/88/13e8c39480c9ebcd6075da7dec0d6529d1a3cd": "gacha/feature_movie/cnmod_starview_sway/119990/sprite_sheet.png",
+            "production/upload/bc/8998e72e7b718b3ee87f1babb8e5913afd5bcf": "gacha/feature_movie/cnmod_starview_sway/129999/feature.movie.amf3.deflate",
+            "production/upload/c1/cf69afa28c37a4bf87f4164a62b7b95391a42e": "gacha/feature_movie/cnmod_starview_sway/129999/feature.timeline.amf3.deflate",
+            "production/upload/5c/64ca6609ad18c95e68b17394b85843b81e50fe": "gacha/feature_movie/cnmod_starview_sway/129999/sprite_sheet.atlas.amf3.deflate"
+          },
+          "applies_on": "1.4.385",
+          "version": "1.4.386",
+          "server_files": {
+            "assets/cdndata/gacha_feature_content.json": "73e21fc6a0e137a61cd7347f9c046ea8d7bcf322cb894bb123f5d5979ca56cc0"
+          },
+          "log": [
+            "星见镇的摇曳六人演出V7；仅990006页面与独立演示场景；本地候选"
+          ]
+        },
+        {
+          "name": "pinball-1.4.385-1.4.386-2-starview-sway-v7-1105-local.zip",
+          "size": 4124821,
+          "sha256": "2cfb4f7afd650c6797792e0da883c3139818084ec447452a39395bb1811166ac",
+          "members": 8,
+          "files": [
+            "production/upload/4c/aa1aaa39b4a9aa853b43a2aca756d6d671108d",
+            "production/upload/47/1e33e37004b37d5c6507c6ed9c2144f2f70ddf",
+            "production/upload/14/1b53d55646b9eeb1ecc78a381c4edec250c07a",
+            "production/upload/22/020ac35bffc161b71bcc9d71465f7d34d6e63c",
+            "production/upload/c4/12f1e5f6be9765ad6c958ad86ddad309ac0e6a",
+            "production/upload/03/b48f09e2fc0945f4e04968b782dd060cb42333",
+            "production/upload/8a/588156c507bdafd85ffdfb432dc1c5d8e69eb2",
+            "production/upload/77/fe57a43e32c5ed74ea9b53dcacc57f007e9be8"
+          ],
+          "member_sha256": {
+            "production/upload/4c/aa1aaa39b4a9aa853b43a2aca756d6d671108d": "a562023accf84a820d92691b3e38b279ba70de38d6e355bb9ded40075f9e9487",
+            "production/upload/47/1e33e37004b37d5c6507c6ed9c2144f2f70ddf": "d1c358d32962f072ad19f8c4c01b75516c4ff400c5c7d6c7e4599cfd86816345",
+            "production/upload/14/1b53d55646b9eeb1ecc78a381c4edec250c07a": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "production/upload/22/020ac35bffc161b71bcc9d71465f7d34d6e63c": "6d71bb9129b03624e59838cd8426e9806bc8de8810e4a4d8c8972c06ccb5d954",
+            "production/upload/c4/12f1e5f6be9765ad6c958ad86ddad309ac0e6a": "106d9041bdff2c9c79b6785b8e318cc7f721ffc06f8009cd84276dfc078f3cac",
+            "production/upload/03/b48f09e2fc0945f4e04968b782dd060cb42333": "e1e103c7ca10600c212c544fd5ae1d783206689c66c3281403a960a4d0ac1818",
+            "production/upload/8a/588156c507bdafd85ffdfb432dc1c5d8e69eb2": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "production/upload/77/fe57a43e32c5ed74ea9b53dcacc57f007e9be8": "e166afa29e8ff1301fd26443129f41cb8f36ef96756b26c517bf5e60659a86e6"
+          },
+          "logical_paths": {
+            "production/upload/4c/aa1aaa39b4a9aa853b43a2aca756d6d671108d": "gacha/feature_movie/cnmod_starview_sway/129999/sprite_sheet.png",
+            "production/upload/47/1e33e37004b37d5c6507c6ed9c2144f2f70ddf": "gacha/feature_movie/cnmod_starview_sway/139994/feature.movie.amf3.deflate",
+            "production/upload/14/1b53d55646b9eeb1ecc78a381c4edec250c07a": "gacha/feature_movie/cnmod_starview_sway/139994/feature.timeline.amf3.deflate",
+            "production/upload/22/020ac35bffc161b71bcc9d71465f7d34d6e63c": "gacha/feature_movie/cnmod_starview_sway/139994/sprite_sheet.atlas.amf3.deflate",
+            "production/upload/c4/12f1e5f6be9765ad6c958ad86ddad309ac0e6a": "gacha/feature_movie/cnmod_starview_sway/139994/sprite_sheet.png",
+            "production/upload/03/b48f09e2fc0945f4e04968b782dd060cb42333": "gacha/feature_movie/cnmod_starview_sway/149987/feature.movie.amf3.deflate",
+            "production/upload/8a/588156c507bdafd85ffdfb432dc1c5d8e69eb2": "gacha/feature_movie/cnmod_starview_sway/149987/feature.timeline.amf3.deflate",
+            "production/upload/77/fe57a43e32c5ed74ea9b53dcacc57f007e9be8": "gacha/feature_movie/cnmod_starview_sway/149987/sprite_sheet.atlas.amf3.deflate"
+          },
+          "applies_on": "1.4.385",
+          "version": "1.4.386",
+          "server_files": {
+            "assets/cdndata/gacha_feature_content.json": "73e21fc6a0e137a61cd7347f9c046ea8d7bcf322cb894bb123f5d5979ca56cc0"
+          },
+          "log": [
+            "星见镇的摇曳六人演出V7；仅990006页面与独立演示场景；本地候选"
+          ]
+        },
+        {
+          "name": "pinball-1.4.385-1.4.386-3-starview-sway-v7-1105-local.zip",
+          "size": 4580145,
+          "sha256": "24b0daf9ceddf9c402871ac2961e972156876d97bb75ae256a36eca301292529",
+          "members": 8,
+          "files": [
+            "production/upload/42/8c8f38c1019328ecbb3a9cff2b108ab44f1318",
+            "production/upload/c7/3bbcb2239cc24000f0f66957a6226ead7d9981",
+            "production/upload/b7/f36325b0785d1bdf6864124840332cc36188d3",
+            "production/upload/c7/2559dcece6efd6251d7e9e58977a20819de905",
+            "production/upload/f7/a1ce60f567a11789b8f1a18f46c925dcd0d494",
+            "production/upload/5a/8f8e0ba8832e50dd11a806682067c461550243",
+            "production/upload/a8/fd58573dc6eb69ee28d0c09af5a12f65e9e6dd",
+            "production/upload/89/aae7354237d9b6dbb21c752276f668b3525229"
+          ],
+          "member_sha256": {
+            "production/upload/42/8c8f38c1019328ecbb3a9cff2b108ab44f1318": "06da1f9306f270021493ae0cfc7a1aad53295762907946f6991a4d0c5029d278",
+            "production/upload/c7/3bbcb2239cc24000f0f66957a6226ead7d9981": "17f3edb24cbb1d4881eacffd1da4f1e40684a5760190b39fc95fb428d8cc1669",
+            "production/upload/b7/f36325b0785d1bdf6864124840332cc36188d3": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "production/upload/c7/2559dcece6efd6251d7e9e58977a20819de905": "6b469332cc4cb02e972e8fb7d5463364fb1c9c64b495bc7fd45751ca878334f8",
+            "production/upload/f7/a1ce60f567a11789b8f1a18f46c925dcd0d494": "6d77598a3e053c2f8c071429aa871cf932662e56d63498ad3a1f24a471d4aa07",
+            "production/upload/5a/8f8e0ba8832e50dd11a806682067c461550243": "636de34564aaf6f732e96e09e92d6f9c670a9dbc3eb7af0ac8fa5f5130446356",
+            "production/upload/a8/fd58573dc6eb69ee28d0c09af5a12f65e9e6dd": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8",
+            "production/upload/89/aae7354237d9b6dbb21c752276f668b3525229": "f000486370db3ca8a43dcd1c8107c3578b9eefae402b8a549ef9d89ae8957e35"
+          },
+          "logical_paths": {
+            "production/upload/42/8c8f38c1019328ecbb3a9cff2b108ab44f1318": "gacha/feature_movie/cnmod_starview_sway/149987/sprite_sheet.png",
+            "production/upload/c7/3bbcb2239cc24000f0f66957a6226ead7d9981": "gacha/feature_movie/cnmod_starview_sway/149999/feature.movie.amf3.deflate",
+            "production/upload/b7/f36325b0785d1bdf6864124840332cc36188d3": "gacha/feature_movie/cnmod_starview_sway/149999/feature.timeline.amf3.deflate",
+            "production/upload/c7/2559dcece6efd6251d7e9e58977a20819de905": "gacha/feature_movie/cnmod_starview_sway/149999/sprite_sheet.atlas.amf3.deflate",
+            "production/upload/f7/a1ce60f567a11789b8f1a18f46c925dcd0d494": "gacha/feature_movie/cnmod_starview_sway/149999/sprite_sheet.png",
+            "production/upload/5a/8f8e0ba8832e50dd11a806682067c461550243": "gacha/feature_movie/cnmod_starview_sway/169989/feature.movie.amf3.deflate",
+            "production/upload/a8/fd58573dc6eb69ee28d0c09af5a12f65e9e6dd": "gacha/feature_movie/cnmod_starview_sway/169989/feature.timeline.amf3.deflate",
+            "production/upload/89/aae7354237d9b6dbb21c752276f668b3525229": "gacha/feature_movie/cnmod_starview_sway/169989/sprite_sheet.atlas.amf3.deflate"
+          },
+          "applies_on": "1.4.385",
+          "version": "1.4.386",
+          "server_files": {
+            "assets/cdndata/gacha_feature_content.json": "73e21fc6a0e137a61cd7347f9c046ea8d7bcf322cb894bb123f5d5979ca56cc0"
+          },
+          "log": [
+            "星见镇的摇曳六人演出V7；仅990006页面与独立演示场景；本地候选"
+          ]
+        },
+        {
+          "name": "pinball-1.4.385-1.4.386-4-starview-sway-v7-1105-local.zip",
+          "size": 1443440,
+          "sha256": "a24cfa3e07be7fa083059fa34ab21cedb4bca3d49f5d7a35e5208f08302532e1",
+          "members": 4,
+          "files": [
+            "production/upload/bf/817a1227c7f12594b7caf448a910b76f358e6e",
+            "production/upload/d0/da51804e2e707880244f7d50d879f6fccbbc91",
+            "production/upload/b7/4464dd88f15ea03d9c3a3a8a54661d2f1d46d3",
+            "production/upload/1e/4a14fe9e8603fa0ee24530daf2414942b50a3e"
+          ],
+          "member_sha256": {
+            "production/upload/bf/817a1227c7f12594b7caf448a910b76f358e6e": "f1f47e85d916d73cb584fc07e29840c67d8826c36682f18baab260f8b3d2e028",
+            "production/upload/d0/da51804e2e707880244f7d50d879f6fccbbc91": "d0f810244e6ac7217d45d2b799b12e3f8024f222c69c331101f934f1bf43839a",
+            "production/upload/b7/4464dd88f15ea03d9c3a3a8a54661d2f1d46d3": "95f7befd07981752c6964e82f2cae712ce220fae1da5c4230d0d09f9e6788f69",
+            "production/upload/1e/4a14fe9e8603fa0ee24530daf2414942b50a3e": "07f40f0b82a4b65c2a45ef3f78ba3575c02862284b5ff3f6592f50c9e4407ac0"
+          },
+          "logical_paths": {
+            "production/upload/bf/817a1227c7f12594b7caf448a910b76f358e6e": "gacha/feature_movie/cnmod_starview_sway/169989/sprite_sheet.png",
+            "production/upload/d0/da51804e2e707880244f7d50d879f6fccbbc91": "gacha/feature_movie/cnmod_starview_sway/top/feature.movie.amf3.deflate",
+            "production/upload/b7/4464dd88f15ea03d9c3a3a8a54661d2f1d46d3": "gacha/feature_movie/cnmod_starview_sway/top/feature.timeline.amf3.deflate",
+            "production/upload/1e/4a14fe9e8603fa0ee24530daf2414942b50a3e": "gacha/feature_movie/cnmod_starview_sway/top/sprite_sheet.atlas.amf3.deflate"
+          },
+          "applies_on": "1.4.385",
+          "version": "1.4.386",
+          "server_files": {
+            "assets/cdndata/gacha_feature_content.json": "73e21fc6a0e137a61cd7347f9c046ea8d7bcf322cb894bb123f5d5979ca56cc0"
+          },
+          "log": [
+            "星见镇的摇曳六人演出V7；仅990006页面与独立演示场景；本地候选"
+          ]
+        },
+        {
+          "name": "pinball-1.4.385-1.4.386-5-starview-sway-v7-1105-local.zip",
+          "size": 4524515,
+          "sha256": "e8fb29ef3b9d69cc30fce557be3f807eed6cfe4e34aa4e3ec93069baedea21cf",
+          "members": 1,
+          "files": [
+            "production/upload/fd/061f4d7780acc40af214dc9a474e65540582c4"
+          ],
+          "member_sha256": {
+            "production/upload/fd/061f4d7780acc40af214dc9a474e65540582c4": "b2a25013bde89bc5f02f40e861d118f76fc22968f9003f5ec2d73bf32c7e4c73"
+          },
+          "logical_paths": {
+            "production/upload/fd/061f4d7780acc40af214dc9a474e65540582c4": "gacha/feature_movie/cnmod_starview_sway/top/sprite_sheet.png"
+          },
+          "applies_on": "1.4.385",
+          "version": "1.4.386",
+          "server_files": {
+            "assets/cdndata/gacha_feature_content.json": "73e21fc6a0e137a61cd7347f9c046ea8d7bcf322cb894bb123f5d5979ca56cc0"
+          },
+          "log": [
+            "星见镇的摇曳六人演出V7；仅990006页面与独立演示场景；本地候选"
+          ]
+        }
+      ],
+      "created_at": "2026-11-05"
+    },
+    {
+      "id": "purple-fragment-icon-1105",
+      "type": "patch",
+      "name": "紫币碎片小图标",
+      "description": "",
+      "version": "1.4.387",
+      "depends_on": "1.4.386",
+      "enabled": true,
+      "archive": "pinball-1.4.386-1.4.387-1-purple-fragment-icon-1105-local.zip",
+      "archive_size": 246431,
+      "chain": [
+        "pinball-1.4.386-1.4.387-1-purple-fragment-icon-1105-local.zip"
+      ],
+      "files": [
+        "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+      ],
+      "archive_integrity": [
+        {
+          "name": "pinball-1.4.386-1.4.387-1-purple-fragment-icon-1105-local.zip",
+          "size": 246431,
+          "sha256": "ecceae4d85fce0bd45c0417beff2a29b21e0d131ae5ff63d8d775ead70cbf396",
+          "members": 1,
+          "files": [
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa"
+          ],
+          "member_sha256": {
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "cf623a08ca93f5f0026005efb7278312eaefd7684f8ab30694b04e6d52c73df4"
+          },
+          "logical_paths": {
+            "production/upload/a4/731a843d4dc0c84120bf8c88784c1e74c03baa": "master/item/item.orderedmap"
+          },
+          "applies_on": "1.4.386",
+          "version": "1.4.387",
+          "server_files": {},
+          "log": [
+            "紫币碎片补小图标（紫碎交易所 C4208）"
+          ]
+        }
+      ],
+      "created_at": "2026-11-05"
     }
   ],
   "generated_for": "official active chain"

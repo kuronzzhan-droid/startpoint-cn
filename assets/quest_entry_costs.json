@@ -6992,52 +6992,52 @@
   "26_1001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 1
+    "stamina": 35
   },
   "26_3001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 2
+    "stamina": 35
   },
   "26_1001001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 1
+    "stamina": 35
   },
   "26_1002001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 2
+    "stamina": 35
   },
   "26_1003001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 3
+    "stamina": 35
   },
   "26_1005001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 5
+    "stamina": 35
   },
   "26_1006001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 4
+    "stamina": 35
   },
   "26_100000001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 5
+    "stamina": 35
   },
   "26_100001001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 3
+    "stamina": 35
   },
   "26_100002001": {
     "itemId": 0,
     "itemCount": 0,
-    "stamina": 4
+    "stamina": 35
   },
   "8_1001": {
     "itemId": 0,
@@ -15118,5 +15118,3190 @@
     "itemId": 10000143,
     "itemCount": 1,
     "stamina": 35
+  },
+  "2_1020004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1080001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1080002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "2_1080003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "2_1080004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1080005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "2_1081001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1081002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "2_1081003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "2_1081004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1081005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "2_1082001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1082002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "2_1082003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "2_1082004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1082005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "2_1083001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1083002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "2_1083003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "2_1083004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1083005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "2_1084001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1084002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "2_1084003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "2_1084004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1084005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "2_1085001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1085002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "2_1085003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "2_1085004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1085005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "2_1086001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1086002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "2_1086003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "2_1086004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1086005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "2_1087001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1087002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "2_1087003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "2_1087004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1087005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "2_1088001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1088002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "2_1088003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "2_1088004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "2_1088005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "7_300098001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "7_300098002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "7_300098003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "7_300097001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "7_300097002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "7_300097003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "7_300097004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "7_300097005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "10_201011001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_201012001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_100006002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100006003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100006005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100006006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100006008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_100006010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_100006011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_100006013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 12
+  },
+  "10_100006015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "10_202013001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202013002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202013003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202013004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202013005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202013006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202013007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200028010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200027010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200026010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200025010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200023010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200010010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200009010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200008010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200007010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200005015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200029010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200024010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202011001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_202012010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_400001001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "10_400001002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "10_400001003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "10_400001004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "10_400001005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 25
+  },
+  "10_200031001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031016": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031017": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200031018": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_200030001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030016": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200030017": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022016": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022017": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022018": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022019": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200022020": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200021010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200014010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200013010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200012010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200011010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200001001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 1
+  },
+  "10_100003002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100003003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100003005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100003006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100003008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_100003010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_100003011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_100003013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 12
+  },
+  "10_100003015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "10_100003016": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "10_100002007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002016": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002017": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002018": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002019": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_100002020": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_300001002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "10_300001004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 5
+  },
+  "10_300001005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 6
+  },
+  "10_100001002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100001003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 9
+  },
+  "10_100001004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 12
+  },
+  "10_100001005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "10_100004002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 7
+  },
+  "10_100004003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 9
+  },
+  "10_100004004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 12
+  },
+  "10_100004005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 14
+  },
+  "10_200004001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200004002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200004003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200004004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200004005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200004006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200004007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200004008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "10_200003015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "11_1001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "11_1000001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "11_4001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "11_2001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "11_1001001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "11_5001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "11_3001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_1001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_1002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_1003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_1004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_2001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_2002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_2003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_2004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_3001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_3002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_3003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_3004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_4001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_4002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_4003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_4004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_5001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_5002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_5003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_5004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_6001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_6002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_6003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_6004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_7001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_7002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_7003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_7004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_7005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_7006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_7007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_7008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_7009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_7010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_7011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_7012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_7013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_7014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_7015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_7016": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_7017": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_7018": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_7019": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_7020": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_7021": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_7022": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "23_7023": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 8
+  },
+  "23_7024": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 16
+  },
+  "23_7025": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 20
+  },
+  "23_7026": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 24
+  },
+  "24_700098001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "24_700098015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 4
+  },
+  "26_2001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_1004001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2080001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2081001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2082001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2083001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2084001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2085001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2086001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2087001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2088001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2035001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2037001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2038001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2039001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2040001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2041001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2025001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2026001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2027001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2028001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2029001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2030001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2051001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2052001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2053001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2054001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2055001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "26_2056001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "27_1101": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1102": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1103": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1104": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1105": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1106": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1107": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1108": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1109": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1110": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1111": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1112": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1113": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1114": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1115": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1116": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1117": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1118": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1119": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1120": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1121": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1122": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1123": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1124": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1125": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1126": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1127": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1128": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1129": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1130": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1131": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1132": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1133": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1134": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1135": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1136": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1137": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1138": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1139": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1140": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1141": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1142": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1143": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1144": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1145": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1146": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1147": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1148": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1149": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1150": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1151": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1152": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1153": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1154": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1155": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1156": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1157": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1158": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1159": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1160": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1161": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1162": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1163": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1058": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1059": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1060": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1055": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1056": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1057": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1052": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1053": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1054": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1049": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1050": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1051": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1046": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1047": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1048": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1043": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1044": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1045": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1040": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1041": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1042": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1037": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1038": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1039": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1034": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1035": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1036": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1031": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1032": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1033": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1028": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1029": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1030": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1025": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1026": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1027": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1022": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1023": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1024": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1019": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1020": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1021": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1016": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1017": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1018": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1001": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1002": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "27_1003": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 10
+  },
+  "2_1099004": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099014": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099005": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099015": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099006": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099016": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099007": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099017": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099008": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099018": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099009": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099019": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099010": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099020": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099011": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099021": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099012": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099022": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099013": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099023": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 35
+  },
+  "2_1099031": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099032": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099033": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099051": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099052": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099034": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099035": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099036": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099037": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099038": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099053": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099054": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099055": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099056": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099039": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
+  },
+  "2_1099057": {
+    "itemId": 0,
+    "itemCount": 0,
+    "stamina": 18
   }
 }

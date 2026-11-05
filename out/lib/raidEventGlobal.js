@@ -21,7 +21,7 @@ var RaidEventResponseRewardKind;
     RaidEventResponseRewardKind[RaidEventResponseRewardKind["POOLED_EXP"] = 9] = "POOLED_EXP";
 })(RaidEventResponseRewardKind || (RaidEventResponseRewardKind = {}));
 // Raid event 7 (Battle Banquet) total-kill rewards. The 300-kill special
-// reward is customized to Abyss ten-pull tickets x25 (250 pulls).
+// reward was Abyss ten-pull tickets x25; author 1105 removed the tickets, only the stones remain.
 const BATTLE_BANQUET_TOTAL_REWARDS = [
     {
         threshold: 50,
@@ -62,7 +62,6 @@ const BATTLE_BANQUET_TOTAL_REWARDS = [
         threshold: 300,
         rewards: [
             { kind: RaidEventResponseRewardKind.FREE_STONE, kind_id: null, number: 2000 },
-            { kind: RaidEventResponseRewardKind.ITEM, kind_id: 999014, number: 25 },
         ],
     },
 ];
