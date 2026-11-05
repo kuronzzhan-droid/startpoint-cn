@@ -1,0 +1,104 @@
+[
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/cover/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/cover/feature.movie.amf3.deflate",
+    "bytes": 18561,
+    "sha256": "9918b81938b5cae53eb1e838a4a705e7d57785e1a7313d7406782f0b888c409e"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/cover/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/cover/feature.timeline.amf3.deflate",
+    "bytes": 110,
+    "sha256": "95f7befd07981752c6964e82f2cae712ce220fae1da5c4230d0d09f9e6788f69"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/cover/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/cover/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 680,
+    "sha256": "3399645d1aed60069184e45754ad9b25bda98b53e452d7933ef118be26e2ccee"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/cover/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/cover/sprite_sheet.png",
+    "bytes": 3228406,
+    "sha256": "fa03a085131a8ea30dc37b2f19e1644d1e25a9d419fe6e19875d14d5a7ce9c56"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/159991/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/159991/feature.movie.amf3.deflate",
+    "bytes": 3256,
+    "sha256": "73e6e1bfc84750de41d773ea743fda3b61e4e482797929608fceb15e756b688b"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/159991/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/159991/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/159991/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/159991/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 390,
+    "sha256": "68b8409f3e9445dce497bb894c2191657a965e89877bab89d6e6ceab0001f935"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/159991/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/159991/sprite_sheet.png",
+    "bytes": 2533090,
+    "sha256": "33088af9538bcd0b327e04b8bb02e823be816d3c26e6486598e13d8f5181ba2a"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169988/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169988/feature.movie.amf3.deflate",
+    "bytes": 3256,
+    "sha256": "7b6e28821afb7bcfd9c0ba83d973883aca9bc9d659e24ab7199af665e7992c5b"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169988/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169988/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169988/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169988/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 393,
+    "sha256": "1a80b1278fcdae4857fa35d7df4d6196100a1bb9a294d3169833766a0265f8dc"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169988/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169988/sprite_sheet.png",
+    "bytes": 1730959,
+    "sha256": "aae07782ee0ab3c845826c37bc0f55d3ea4f240b3bd9290375df41a16d482688"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169991/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169991/feature.movie.amf3.deflate",
+    "bytes": 3256,
+    "sha256": "7b8a9cc184668e8b44a65ca1a12dcf39d737ac4f3764de3531d8a2817a692edc"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169991/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169991/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169991/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169991/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 392,
+    "sha256": "8ac817ce07b02004416c9f8463df17fc5411d8bec5d5618fdaa6370a24679b62"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169991/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169991/sprite_sheet.png",
+    "bytes": 1561503,
+    "sha256": "a95c29b52043b93804d07c06c20d8dcf8a3d870705937739455ad0b3c762b2bb"
+  },
+  {
+    "logical": "dynamic/gacha_list_banner/cnmod_autumn_prayer_rabbit.png",
+    "member": "dynamic/gacha_list_banner/cnmod_autumn_prayer_rabbit.png",
+    "bytes": 118544,
+    "sha256": "b5e00f8ca39b745bfffe8953a4c5458cd6a1055532cfa12e49ea191c7aa3a5fb"
+  }
+]

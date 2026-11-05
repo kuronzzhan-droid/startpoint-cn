@@ -1,0 +1,430 @@
+{
+  "schemaVersion": 1,
+  "tables": {
+    "gacha": "master/gacha/gacha_skill_preview.orderedmap",
+    "quest": "master/skill_preview/skill_preview_quest.orderedmap",
+    "fieldData": "master/battle/field_data.orderedmap",
+    "field": "master/battle/field.orderedmap",
+    "zone": "master/battle/zone.orderedmap"
+  },
+  "roles": [
+    {
+      "roleId": 159991,
+      "rows": {
+        "gacha": {
+          "logical": "master/gacha/gacha_skill_preview.orderedmap",
+          "key": "skill_preview_gacha_suzumiya_haruhi",
+          "sourceTableSHA256": "29acbe2feff281aaed021b061c0a18835faf59e36eadf652b53e10dee3d323bd",
+          "storedRowSHA256": "7adae75836608c1012c0a8bd36b6919b87b1d121704aa50ac543d1b469cd5e24",
+          "columns": [
+            "185",
+            "gacha/feature_battle_preview/new_character_pickup_scollabo_01/suzumiya_haruhi",
+            "70",
+            "0",
+            "false",
+            "false"
+          ]
+        },
+        "quest": {
+          "logical": "master/skill_preview/skill_preview_quest.orderedmap",
+          "key": "185",
+          "sourceTableSHA256": "c1018acbe2fce4b3125e25cbbc608015ca2fbcf37abc531b1afa45da84e04205",
+          "storedRowSHA256": "71f8b9ff1b11e750232962777ef10efeca098537e9d07b82faa01c7babb37494",
+          "columns": [
+            "扭蛋_ハルヒ",
+            "quest/thumbnail/common/story",
+            "(None)",
+            "2000-01-01 00:00:00",
+            "(None)",
+            "0",
+            "3",
+            "false",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "20",
+            "2",
+            "1",
+            "skill_preview_gacha_suzumiya_haruhi"
+          ]
+        },
+        "fieldData": {
+          "logical": "master/battle/field_data.orderedmap",
+          "key": "skill_preview_gacha_suzumiya_haruhi",
+          "sourceTableSHA256": "0965e9eead4a96f38723de172beeff880fb98dbbcca16b851ef2287308ccd3dd",
+          "storedRowSHA256": "8ecfacfb30565419c4692698f954872dd06180cc5e86a84146d51e9f7124a9e3",
+          "columns": [
+            "end_dungeon_gacha_skill_preview",
+            "battle/terrain/skill_preview/skill_preview_gacha_suzumiya_haruhi",
+            "skill_preview_gacha"
+          ]
+        },
+        "field": {
+          "logical": "master/battle/field.orderedmap",
+          "key": "end_dungeon_gacha_skill_preview",
+          "sourceTableSHA256": "99815920a00db4ce503bc9b4ea972a7ef781fdfa1b738b191d0f649bc455bdb6",
+          "storedRowSHA256": "291c2aa3748ea6c76c0572dc72e4f2670d926388d0d42825ea6b3a54b07a1788",
+          "columns": [
+            "battle/field/world_end/end_dungeon/background/background",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate",
+            "battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod",
+            "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+          ]
+        },
+        "zone": {
+          "logical": "master/battle/zone.orderedmap",
+          "key": "skill_preview_gacha",
+          "sourceTableSHA256": "73300a61b21747326dff2a64d88a38c524c8e450ecf38dc14025841e0319d9fa",
+          "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda",
+          "storedBase64": "FQAAAHicY2RgYGBkYGDoYWBgMAAAAw8Av3icnZBBCsIwEEWvoxBI60G8wpCar40ZZ0qaNOjpXaQLK27q6sH/vM8wnel7gyUwzTEw05SwBFRzOKvg2JoKF3/XK/5mt9sYXM4Mew1gTzrcccm2amJPEG8hnnyRG1Ssljwq4zOjNaOXCk47tp4uloeKWu/mkSYn4B120uxyUGni5qBt9fXWhjf9BZNh",
+          "children": {
+            "0": [
+              "0",
+              "11",
+              "evil_skill_preview",
+              "(None)",
+              "evil_weak_skill_preview",
+              "(None)",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "0",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2",
+              "battle/field_object/world_end/end_dungeon/yakumono/dash_panel",
+              "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel",
+              "(None)",
+              "(None)",
+              "(None)"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "roleId": 169988,
+      "rows": {
+        "gacha": {
+          "logical": "master/gacha/gacha_skill_preview.orderedmap",
+          "key": "skill_preview_gacha_suzumiya_haruhi",
+          "sourceTableSHA256": "29acbe2feff281aaed021b061c0a18835faf59e36eadf652b53e10dee3d323bd",
+          "storedRowSHA256": "7adae75836608c1012c0a8bd36b6919b87b1d121704aa50ac543d1b469cd5e24",
+          "columns": [
+            "185",
+            "gacha/feature_battle_preview/new_character_pickup_scollabo_01/suzumiya_haruhi",
+            "70",
+            "0",
+            "false",
+            "false"
+          ]
+        },
+        "quest": {
+          "logical": "master/skill_preview/skill_preview_quest.orderedmap",
+          "key": "185",
+          "sourceTableSHA256": "c1018acbe2fce4b3125e25cbbc608015ca2fbcf37abc531b1afa45da84e04205",
+          "storedRowSHA256": "71f8b9ff1b11e750232962777ef10efeca098537e9d07b82faa01c7babb37494",
+          "columns": [
+            "扭蛋_ハルヒ",
+            "quest/thumbnail/common/story",
+            "(None)",
+            "2000-01-01 00:00:00",
+            "(None)",
+            "0",
+            "3",
+            "false",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "20",
+            "2",
+            "1",
+            "skill_preview_gacha_suzumiya_haruhi"
+          ]
+        },
+        "fieldData": {
+          "logical": "master/battle/field_data.orderedmap",
+          "key": "skill_preview_gacha_suzumiya_haruhi",
+          "sourceTableSHA256": "0965e9eead4a96f38723de172beeff880fb98dbbcca16b851ef2287308ccd3dd",
+          "storedRowSHA256": "8ecfacfb30565419c4692698f954872dd06180cc5e86a84146d51e9f7124a9e3",
+          "columns": [
+            "end_dungeon_gacha_skill_preview",
+            "battle/terrain/skill_preview/skill_preview_gacha_suzumiya_haruhi",
+            "skill_preview_gacha"
+          ]
+        },
+        "field": {
+          "logical": "master/battle/field.orderedmap",
+          "key": "end_dungeon_gacha_skill_preview",
+          "sourceTableSHA256": "99815920a00db4ce503bc9b4ea972a7ef781fdfa1b738b191d0f649bc455bdb6",
+          "storedRowSHA256": "291c2aa3748ea6c76c0572dc72e4f2670d926388d0d42825ea6b3a54b07a1788",
+          "columns": [
+            "battle/field/world_end/end_dungeon/background/background",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate",
+            "battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod",
+            "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+          ]
+        },
+        "zone": {
+          "logical": "master/battle/zone.orderedmap",
+          "key": "skill_preview_gacha",
+          "sourceTableSHA256": "73300a61b21747326dff2a64d88a38c524c8e450ecf38dc14025841e0319d9fa",
+          "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda",
+          "storedBase64": "FQAAAHicY2RgYGBkYGDoYWBgMAAAAw8Av3icnZBBCsIwEEWvoxBI60G8wpCar40ZZ0qaNOjpXaQLK27q6sH/vM8wnel7gyUwzTEw05SwBFRzOKvg2JoKF3/XK/5mt9sYXM4Mew1gTzrcccm2amJPEG8hnnyRG1Ssljwq4zOjNaOXCk47tp4uloeKWu/mkSYn4B120uxyUGni5qBt9fXWhjf9BZNh",
+          "children": {
+            "0": [
+              "0",
+              "11",
+              "evil_skill_preview",
+              "(None)",
+              "evil_weak_skill_preview",
+              "(None)",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "0",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2",
+              "battle/field_object/world_end/end_dungeon/yakumono/dash_panel",
+              "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel",
+              "(None)",
+              "(None)",
+              "(None)"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "roleId": 169991,
+      "rows": {
+        "gacha": {
+          "logical": "master/gacha/gacha_skill_preview.orderedmap",
+          "key": "skill_preview_gacha_suzumiya_haruhi",
+          "sourceTableSHA256": "29acbe2feff281aaed021b061c0a18835faf59e36eadf652b53e10dee3d323bd",
+          "storedRowSHA256": "7adae75836608c1012c0a8bd36b6919b87b1d121704aa50ac543d1b469cd5e24",
+          "columns": [
+            "185",
+            "gacha/feature_battle_preview/new_character_pickup_scollabo_01/suzumiya_haruhi",
+            "70",
+            "0",
+            "false",
+            "false"
+          ]
+        },
+        "quest": {
+          "logical": "master/skill_preview/skill_preview_quest.orderedmap",
+          "key": "185",
+          "sourceTableSHA256": "c1018acbe2fce4b3125e25cbbc608015ca2fbcf37abc531b1afa45da84e04205",
+          "storedRowSHA256": "71f8b9ff1b11e750232962777ef10efeca098537e9d07b82faa01c7babb37494",
+          "columns": [
+            "扭蛋_ハルヒ",
+            "quest/thumbnail/common/story",
+            "(None)",
+            "2000-01-01 00:00:00",
+            "(None)",
+            "0",
+            "3",
+            "false",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "20",
+            "2",
+            "1",
+            "skill_preview_gacha_suzumiya_haruhi"
+          ]
+        },
+        "fieldData": {
+          "logical": "master/battle/field_data.orderedmap",
+          "key": "skill_preview_gacha_suzumiya_haruhi",
+          "sourceTableSHA256": "0965e9eead4a96f38723de172beeff880fb98dbbcca16b851ef2287308ccd3dd",
+          "storedRowSHA256": "8ecfacfb30565419c4692698f954872dd06180cc5e86a84146d51e9f7124a9e3",
+          "columns": [
+            "end_dungeon_gacha_skill_preview",
+            "battle/terrain/skill_preview/skill_preview_gacha_suzumiya_haruhi",
+            "skill_preview_gacha"
+          ]
+        },
+        "field": {
+          "logical": "master/battle/field.orderedmap",
+          "key": "end_dungeon_gacha_skill_preview",
+          "sourceTableSHA256": "99815920a00db4ce503bc9b4ea972a7ef781fdfa1b738b191d0f649bc455bdb6",
+          "storedRowSHA256": "291c2aa3748ea6c76c0572dc72e4f2670d926388d0d42825ea6b3a54b07a1788",
+          "columns": [
+            "battle/field/world_end/end_dungeon/background/background",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate",
+            "battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod",
+            "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+          ]
+        },
+        "zone": {
+          "logical": "master/battle/zone.orderedmap",
+          "key": "skill_preview_gacha",
+          "sourceTableSHA256": "73300a61b21747326dff2a64d88a38c524c8e450ecf38dc14025841e0319d9fa",
+          "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda",
+          "storedBase64": "FQAAAHicY2RgYGBkYGDoYWBgMAAAAw8Av3icnZBBCsIwEEWvoxBI60G8wpCar40ZZ0qaNOjpXaQLK27q6sH/vM8wnel7gyUwzTEw05SwBFRzOKvg2JoKF3/XK/5mt9sYXM4Mew1gTzrcccm2amJPEG8hnnyRG1Ssljwq4zOjNaOXCk47tp4uloeKWu/mkSYn4B120uxyUGni5qBt9fXWhjf9BZNh",
+          "children": {
+            "0": [
+              "0",
+              "11",
+              "evil_skill_preview",
+              "(None)",
+              "evil_weak_skill_preview",
+              "(None)",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "0",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "(None)",
+              "",
+              "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2",
+              "battle/field_object/world_end/end_dungeon/yakumono/dash_panel",
+              "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel",
+              "(None)",
+              "(None)",
+              "(None)"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "scope": "Selected scene rows only. No character balance or pool rules."
+}

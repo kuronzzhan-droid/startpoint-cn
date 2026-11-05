@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "poolKey": "autumn-prayer-rabbit",
+  "title": "秋夕祭月·祈穗灯兔",
+  "sourcePreviewSHA256": "f93597758442c164822ef16991094de4d08a8c03063797b7bc723380517fffe7",
+  "previewSHA256": "f93597758442c164822ef16991094de4d08a8c03063797b7bc723380517fffe7",
+  "previewBytes": 4112149,
+  "gzipHeaderHex": "1f8b080000000000020a",
+  "reviewDataSHA256": "cba42d6fa2cbbe6e10123c07e236313be6cee510d78255d3834632923b2b384c",
+  "gameIntegrated": false,
+  "omittedLocalReferenceFields": [],
+  "htmlCharacters": 4110869,
+  "blankLinesWhitespaceNormalized": 0
+}
