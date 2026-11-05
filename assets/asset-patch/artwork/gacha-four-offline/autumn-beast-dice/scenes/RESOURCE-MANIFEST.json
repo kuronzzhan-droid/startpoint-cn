@@ -1,0 +1,2125 @@
+{
+  "schemaVersion": 1,
+  "status": "offline-integration-recipe",
+  "gameIntegrated": false,
+  "namespaceRebindRuntimeVerified": false,
+  "files": [
+    {
+      "roleId": 149986,
+      "kind": "replay",
+      "logical": "gacha/feature_battle_preview/cnmod_autumn_beast_dice/149986.battle.amf3.deflate",
+      "file": "payload/149986-replay.amf3.deflate",
+      "bytes": 134,
+      "sha256": "1c5076b1d9844879ac0be1a47c74949635077813646874fd79f96884da4382dc",
+      "sourceLogical": "gacha/feature_battle_preview/autumn_beast_dice_offline/149986_black_wolf_knight_moon.battle.amf3.deflate",
+      "sourceSHA256": "1c5076b1d9844879ac0be1a47c74949635077813646874fd79f96884da4382dc"
+    },
+    {
+      "roleId": 149986,
+      "kind": "terrain",
+      "logical": "battle/terrain/skill_preview/cnmod_autumn_beast_dice_149986.amf3.deflate",
+      "file": "payload/149986-terrain.amf3.deflate",
+      "bytes": 1207,
+      "sha256": "acf5ef463b24663044b69ef64524dc2dd12d5628f09209f02dd2a82195a976e9",
+      "sourceLogical": "battle/terrain/skill_preview/skill_preview_gacha_rem.amf3.deflate",
+      "sourceSHA256": "acf5ef463b24663044b69ef64524dc2dd12d5628f09209f02dd2a82195a976e9"
+    },
+    {
+      "roleId": 139990,
+      "kind": "replay",
+      "logical": "gacha/feature_battle_preview/cnmod_autumn_beast_dice/139990.battle.amf3.deflate",
+      "file": "payload/139990-replay.amf3.deflate",
+      "bytes": 134,
+      "sha256": "1c5076b1d9844879ac0be1a47c74949635077813646874fd79f96884da4382dc",
+      "sourceLogical": "gacha/feature_battle_preview/autumn_beast_dice_offline/139990_kyle_moon.battle.amf3.deflate",
+      "sourceSHA256": "1c5076b1d9844879ac0be1a47c74949635077813646874fd79f96884da4382dc"
+    },
+    {
+      "roleId": 139990,
+      "kind": "terrain",
+      "logical": "battle/terrain/skill_preview/cnmod_autumn_beast_dice_139990.amf3.deflate",
+      "file": "payload/139990-terrain.amf3.deflate",
+      "bytes": 1207,
+      "sha256": "acf5ef463b24663044b69ef64524dc2dd12d5628f09209f02dd2a82195a976e9",
+      "sourceLogical": "battle/terrain/skill_preview/skill_preview_gacha_rem.amf3.deflate",
+      "sourceSHA256": "acf5ef463b24663044b69ef64524dc2dd12d5628f09209f02dd2a82195a976e9"
+    },
+    {
+      "roleId": 139991,
+      "kind": "replay",
+      "logical": "gacha/feature_battle_preview/cnmod_autumn_beast_dice/139991.battle.amf3.deflate",
+      "file": "payload/139991-replay.amf3.deflate",
+      "bytes": 129,
+      "sha256": "d305e3851ab57af7fd2801057d24bbc0996fe3665fe64eed8576201cf92ecb60",
+      "sourceLogical": "gacha/feature_battle_preview/autumn_beast_dice_offline/139991_outlaw_panther_moon.battle.amf3.deflate",
+      "sourceSHA256": "d305e3851ab57af7fd2801057d24bbc0996fe3665fe64eed8576201cf92ecb60"
+    },
+    {
+      "roleId": 139991,
+      "kind": "terrain",
+      "logical": "battle/terrain/skill_preview/cnmod_autumn_beast_dice_139991.amf3.deflate",
+      "file": "payload/139991-terrain.amf3.deflate",
+      "bytes": 1246,
+      "sha256": "bfd7ea94a588173b3c723a1e501163de4dbf60e2ef9f46f84a546801055a56ec",
+      "sourceLogical": "battle/terrain/skill_preview/skill_preview_gacha_suzumiya_haruhi.amf3.deflate",
+      "sourceSHA256": "bfd7ea94a588173b3c723a1e501163de4dbf60e2ef9f46f84a546801055a56ec"
+    }
+  ],
+  "scenes": [
+    {
+      "roleId": 149986,
+      "name": "罗尔夫",
+      "roleAssetNamespace": "black_wolf_knight_moon",
+      "nativeFrames": 232,
+      "nativeVideoSHA256": "aa29a6b3fc4ad6cdb0f1fccf1ae266caf355747efb47276233d4ab942a5818c3",
+      "sourceConfigSHA256": "76c3f8a3354e423d3b281ed66a10ccbf3a6ae3f37cde904465d75a8c61766d8f",
+      "sourceClientSHA256": "1d9dbd353c429570833ccad106ab93b76794226e66087a9fc5c3fff80fd2ae10",
+      "sourcePreview": {
+        "roleId": 149986,
+        "questId": 128,
+        "log": "gacha/feature_battle_preview/autumn_beast_dice_offline/149986_black_wolf_knight_moon",
+        "clip": [
+          0,
+          30
+        ],
+        "enablesAbility": false,
+        "enablesPowerFlip": false,
+        "terrain": "battle/terrain/skill_preview/skill_preview_gacha_rem.amf3.deflate",
+        "fieldData": "skill_preview_gacha_rem",
+        "field": "end_dungeon_gacha_skill_preview",
+        "zone": "skill_preview_gacha"
+      },
+      "sourceReplayConfig": {
+        "start_frame": 90,
+        "end_frame": 320,
+        "ball": {
+          "x": -155,
+          "y": -320,
+          "vx": 0,
+          "vy": 0
+        },
+        "hp_ratio": 1,
+        "skill_gauge_ratio": 1,
+        "power_flip_level": 0
+      },
+      "replayLogical": "gacha/feature_battle_preview/cnmod_autumn_beast_dice/149986.battle.amf3.deflate",
+      "terrainLogical": "battle/terrain/skill_preview/cnmod_autumn_beast_dice_149986.amf3.deflate",
+      "stageMask": [
+        0,
+        60,
+        1080,
+        1560
+      ],
+      "clipLeftTop": [
+        0,
+        30
+      ],
+      "recipe": {
+        "status": "unallocated-row-fragments-not-installed",
+        "gacha": {
+          "key": "cnmod_autumn_beast_dice_149986",
+          "columns": [
+            "AUTHOR_QUEST_ID_149986",
+            "gacha/feature_battle_preview/cnmod_autumn_beast_dice/149986",
+            "30",
+            "0",
+            "false",
+            "false"
+          ]
+        },
+        "quest": {
+          "key": "AUTHOR_QUEST_ID_149986",
+          "columns": [
+            "扭蛋_レム",
+            "quest/thumbnail/common/story",
+            "(None)",
+            "2000-01-01 00:00:01",
+            "(None)",
+            "0",
+            "1",
+            "false",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "25",
+            "2",
+            "1",
+            "cnmod_autumn_beast_dice_149986"
+          ]
+        },
+        "fieldData": {
+          "key": "cnmod_autumn_beast_dice_149986",
+          "columns": [
+            "cnmod_autumn_beast_dice_149986_field",
+            "battle/terrain/skill_preview/cnmod_autumn_beast_dice_149986",
+            "cnmod_autumn_beast_dice_149986_zone"
+          ]
+        },
+        "field": {
+          "key": "cnmod_autumn_beast_dice_149986_field",
+          "columns": [
+            "battle/field/world_end/end_dungeon/background/background",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate",
+            "battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod",
+            "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+          ]
+        },
+        "zone": {
+          "key": "cnmod_autumn_beast_dice_149986_zone",
+          "copyStoredBase64FromDonorRole": 149986,
+          "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda"
+        }
+      },
+      "officialVisualDependencies": [
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.atlas.amf3.deflate",
+          "bytes": 80,
+          "sha256": "c69ca5381c84765e2930f1462aa6e0105e7ee3c35f10c3e87fd425b3944e0db6"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.parts.amf3.deflate",
+          "bytes": 133,
+          "sha256": "88ec901bf517d409b91ad0574abd397dec8da19dd456d0ebed73699c6f9ea823"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.png",
+          "bytes": 45410,
+          "sha256": "e3c98a4cf69d7c706de8a60b26066a6207833929a48e2acddd4c367cedd594bd"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "62c04bc3e5b315808a8809d81111115c2fa0c78e453592a9570eca041333e787"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.atlas.amf3.deflate",
+          "bytes": 83,
+          "sha256": "851a78e0351702b404578e0eaa91f9d8e6b8adc17a290f36045773a05d52489d"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.parts.amf3.deflate",
+          "bytes": 136,
+          "sha256": "3661948f304495e4487c7f7cfa3bde4fdd7ed56d1446beb4fcdbf494c771773b"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.png",
+          "bytes": 144979,
+          "sha256": "09a4ebef0bb69e22de6d87d27ededf3bb8ff3fda326c3d6157a88a80624a48d1"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "6c5607575d44eea4f9a4bd23e0c0149cc3c8a924b4abfc69b991269d81285b45"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.atlas.amf3.deflate",
+          "bytes": 109,
+          "sha256": "6a697d3d09cdc7375bacc6855bd81f444b62ab37cbe7834358dd1018e7f7f089"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.parts.amf3.deflate",
+          "bytes": 136,
+          "sha256": "6e619667eac7c027e035f2cbdf0c84e1f42801c2f42cd6b10d4046fbf74c79eb"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.png",
+          "bytes": 11929,
+          "sha256": "edc488a23d1a0b91256336f71709b74e98ee4b037d797d8aaf13be6753b4cc87"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "6c5607575d44eea4f9a4bd23e0c0149cc3c8a924b4abfc69b991269d81285b45"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.atlas.amf3.deflate",
+          "bytes": 126,
+          "sha256": "9ed3b029fd237359fb938da168412b333648fc744ea08120bf194275d96d6ec9"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.parts.amf3.deflate",
+          "bytes": 274,
+          "sha256": "bf53b3d893b41bc544f6e55b1ee94f9a109b4891fdc8c3cdafe42520939bf2db"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.png",
+          "bytes": 322,
+          "sha256": "d3b835453a0b3bc3edff6c80e8767d411818ad9d7244652966aff05352351125"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "95a297f2c2ae21ccbed02af05d065ac2d535ac0aa85eb3926cf96d1f0375ddc2"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.atlas.amf3.deflate",
+          "bytes": 121,
+          "sha256": "a714db854a974c24d564ca385dbfdb0ca9697f31972d0acc2ab752ca2a704851"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.parts.amf3.deflate",
+          "bytes": 277,
+          "sha256": "866fbe1c1352e38532345d591933265250718daf086649cfb08e62448bff5f71"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.png",
+          "bytes": 250,
+          "sha256": "8e1aebbfad285c8f896e0dcdf98b4d21971a88c803904a4e684bcc32a9dd606d"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "95a297f2c2ae21ccbed02af05d065ac2d535ac0aa85eb3926cf96d1f0375ddc2"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.atlas.amf3.deflate",
+          "bytes": 118,
+          "sha256": "448f9a78a3d30a5bcb60a22c0f89ddd3697f1ed5e90aea967f9f09d7c04af5d1"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.parts.amf3.deflate",
+          "bytes": 275,
+          "sha256": "e415c00a7b55f8f409dcc13f55ae224eac94956cce8214315700cc7ef26097fe"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.png",
+          "bytes": 196,
+          "sha256": "20c31e180014ff8dffd40817d4d398b25766ce6d7919493d2dbde2719bf2beee"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "95a297f2c2ae21ccbed02af05d065ac2d535ac0aa85eb3926cf96d1f0375ddc2"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.parts.amf3.deflate",
+          "bytes": 351,
+          "sha256": "1fc05f248f4fb7f2ac4d86e660836db882c4bd6f7e5ade4d7c788b8fe096f8c5"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "248a65b3ea89bd5f7e772d40023f928b59d1e9a7f3cae867f0ec87e4b11aed9a"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.parts.amf3.deflate",
+          "bytes": 506,
+          "sha256": "e27a45fbaa5ac9b941a76a011df795724a11186658f8d2c51b5563d5f5171cba"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "f4af0df8a56f999dcf6c0de88c68a189af5b494941e695772a48bffc7f28da54"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.atlas.amf3.deflate",
+          "bytes": 243,
+          "sha256": "74377c4b4a62e5bd4da17ad202d5fab0a3c993d4d26671b6fffc7bab96316b4e"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.png",
+          "bytes": 504,
+          "sha256": "1a37f4e4e55aeffd32e70c18302f91a55d272eed6ab0727cdac1e1a7e663a8b7"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.atlas.amf3.deflate",
+          "bytes": 124,
+          "sha256": "249fe0902486cdee824917fa7461370b1a4e18f172e090748ea84831d6e9738e"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.parts.amf3.deflate",
+          "bytes": 278,
+          "sha256": "099e5b08970ac0edda4d8d300219aea68f1533e44488ee8020d5e7a4c23f5637"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.png",
+          "bytes": 222,
+          "sha256": "1c40fd3d18610a6fdd58c0165b9fa1a7245188215e430a78e81da924b0d45c41"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.timeline.amf3.deflate",
+          "bytes": 266,
+          "sha256": "86da52fcabf068be968cfc1e1ef65cfc543e8c7d2e0baa82a941c299a0b52112"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.parts.amf3.deflate",
+          "bytes": 237,
+          "sha256": "459ba0bd856a6fc76f4c9cb53c342af6536ca54ae14422af3f0789fa5ede73ad"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.timeline.amf3.deflate",
+          "bytes": 112,
+          "sha256": "fa4511a3b92d15ebf9e1463c29404a9047ac0aabc5bb83ae75db4d38726f5cd6"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.atlas.amf3.deflate",
+          "bytes": 133,
+          "sha256": "db766109c00db3db5cbca8413db110390f7db73b14dcf7f54503562f4e3362a8"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.png",
+          "bytes": 447,
+          "sha256": "a9172680b8f074db37a8374f7d5129ffd1184e56681fb3b59d32e75f8dc0788f"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "f48b0eaf8e8e18c16129f0a924feed4556a08e074bd37812c29b6902bfb07851"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.parts.amf3.deflate",
+          "bytes": 299,
+          "sha256": "2a716aa6e06e0fb251a4454c23c99ed026c00a1cc89433cd439f3a7b0a4db05a"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "6ddf95860e7a9af1b086cbeca7d97418c94b027699773547775630862c5e8d81"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.atlas.amf3.deflate",
+          "bytes": 251,
+          "sha256": "5f7aa1b45460a9432bdfb204739144cb7830786b6337949521ef52a1ad702246"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.png",
+          "bytes": 1179,
+          "sha256": "223858630a2f5bc94b753b9d17f6adc6b8ee8cf6435c3476273f490f3995927b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.frame.amf3.deflate",
+          "bytes": 108,
+          "sha256": "2f811fcbf538fdea3a3c83c8c7c30e4b9c361b566d9c106085f7ef420ac573d9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.atlas.amf3.deflate",
+          "bytes": 248,
+          "sha256": "0f4d8f09edbf6b024c7364fa2dee8eb55016a238467883b2ea09d1b035e92890"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.png",
+          "bytes": 800,
+          "sha256": "a888f4d2251b62c7e1c869e0d3e6db32294ebf12f42a61a0124056bab8582c6b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.atlas.amf3.deflate",
+          "bytes": 93,
+          "sha256": "666b28606cd7f276d6480b1b1210b40f5756bbcd9031646e625e71f64ff79ff5"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.parts.amf3.deflate",
+          "bytes": 293,
+          "sha256": "185e1bd546ff3a2345eec95dc517f2f87ec7e2d6a4362a1beb98d343a872f161"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.png",
+          "bytes": 147,
+          "sha256": "d6b6a2869ddb1edf4fdf3b5918a933e0f02848d45d1dc9ec589aeb9131581c94"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.timeline.amf3.deflate",
+          "bytes": 276,
+          "sha256": "17a309022fa28662e9d7174053e395657c6588b1e3dcaba3d1f8f4f458190a78"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.atlas.amf3.deflate",
+          "bytes": 937,
+          "sha256": "d6eae0bdaf2a65a6b27615f7cfb75b4e13df1b4bc775051d12b550579d972d92"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.png",
+          "bytes": 3812,
+          "sha256": "0d11fad24acf0030efd5bb5e9df3219f40a516e671c8c432abf16c57fbfe6e0d"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.frame.amf3.deflate",
+          "bytes": 112,
+          "sha256": "2a400eda1073bf36b6f75375ea40cb96c786d33facb660c018474d5ebb36e8ac"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "72383fd61963be91485ba5f7b04ba0a0b08d38a3d81688ccddbed5eb18e3d179"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "b58d07233f938765f3b4634309be9852541f0706a3958b1eb295fb7eed444c76"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "ec8ecf25cb1730cb6be8cacc1f6a07dab33af70aaf2f1e6a9abb40bcaac0df43"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "007da7ecb68c5b8b5686cd5f848d26ffa8aefe1dfa1a545645ea0d3af63cf7be"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "37c1ac9dd65ab116c9dbba0554834aa7281bbaed663aa926feba3dbc0453c3c9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "7d1d4053bf86ea10c883e8f6875a3dea2a87e14f28ae26157579140fa131d70c"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "9602c2c881d971ed4730d4d81cc1025ad7098dd93eb93c53ba05a1201adbcb38"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.frame.amf3.deflate",
+          "bytes": 110,
+          "sha256": "e80173427699e874197b33f56aec94050a143e71bd7bbf3d32a2e79f1ac35d02"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.frame.amf3.deflate",
+          "bytes": 124,
+          "sha256": "4b2bca3a1145a7151ad448d424e1bb67e483c78dcd4bb407cebfaab6b367c9ba"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "bbc62f0a0197b81b239d73eb1cd0d37865e2586fc8f01906769a6cbd20bc2feb"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.atlas.amf3.deflate",
+          "bytes": 252,
+          "sha256": "9cb374025995b637795b8dd52ba4257e93b55badb8da0af821685407b2ad058e"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.png",
+          "bytes": 543,
+          "sha256": "6c1b7a95622f13088d5856790af7f0f64d4e97f56c6528eca3524727df50685f"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/fever_gauge.atlas.amf3.deflate",
+          "bytes": 132,
+          "sha256": "cf61674d2df53674c902b4cc45a1f4b1fc165c324b91fc91efd81c81ac12f542"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/fever_gauge.png",
+          "bytes": 462,
+          "sha256": "d2e1739c4f6c2108e604686055a78f1821541dbe80f2f7e6b4fb712718fc2d21"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/town_street_fever_gauge.parts.amf3.deflate",
+          "bytes": 238,
+          "sha256": "4b2ddb48bb7063b4888aa5a5bf3fc068b517f59143e9d60aa84be3b456e9e90b"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/town_street_fever_gauge.timeline.amf3.deflate",
+          "bytes": 112,
+          "sha256": "fa4511a3b92d15ebf9e1463c29404a9047ac0aabc5bb83ae75db4d38726f5cd6"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/outhole.atlas.amf3.deflate",
+          "bytes": 162,
+          "sha256": "77865dc580b8492c7b2a2cf852e29938a8c1b889ad1488e4d43a0fed77ae2852"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/outhole.png",
+          "bytes": 1432,
+          "sha256": "804fca8d247ea549c7b3786e48bc427317fcaf82be7184a6e4d1be4f2e50aa6d"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/town_street_outhole_zone2.frame.amf3.deflate",
+          "bytes": 107,
+          "sha256": "c0f216b98212a2ddd7a102067f651c76b0a8237478a8532e9af6991467809aab"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/town_street_outhole_zone2.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "7b17d83f18f298ec24cc2fcb2fd8d1293ba54051689048f63d8365db8b90ff62"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/rotation_panel.atlas.amf3.deflate",
+          "bytes": 243,
+          "sha256": "624855eb48eff937d49b4e35e02469201374ad0b6aea6ec85cf1f2240da02350"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/rotation_panel.png",
+          "bytes": 787,
+          "sha256": "46ea20b29ff5616b710ce8aa9ab30f9fa0c92d22e877491c05a187a3c513c25c"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/town_street_rotation_panel.frame.amf3.deflate",
+          "bytes": 106,
+          "sha256": "90fb090fe078b12139497ed817ead40cd80473f1fc888f22331ba96b1723b8a3"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/town_street_rotation_panel.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/dash_panel.atlas.amf3.deflate",
+          "bytes": 934,
+          "sha256": "c17b9c174cdc9cca3e188010ab689e782f1c3ea6efb77147cc934acbe05ad63e"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/dash_panel.png",
+          "bytes": 3842,
+          "sha256": "86acdad85c61c9173114cef66caa4fca3a4d5059f5d4effe67781ff5780558b2"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_0.frame.amf3.deflate",
+          "bytes": 112,
+          "sha256": "790051f9aabb8aa9644d1fb85bcf94c27dc43de182cc0415409dfcf25fc602d9"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_0.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_135.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "4dc22bf77c3f370fcf36970c64f2699604332ee6c1d0df8d43f5b739f26fa4f3"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_135.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_180.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "2e934ad7b0dc470e2ab74b0dc2b12a4f88ed44a2813e34a4a5f23c02fe2a5a87"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_180.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_225.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "f3e66aa970b08239843e19fe89707b89a3fd25b5b22339d5c0ea4aee696ad034"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_225.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_270.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "fa05cfbdb100174ec1acec746e1643b2c541a19b306dd3aab137995646fb6e28"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_270.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_315.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "4cd6596800fbf50c79c0c450eca90e5b75baddff73726468a732845c70018cd7"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_315.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_45.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "e90f94b7bb69d4e48e52657b4659eac5ef4865036aaa76ad7d73d8a932196454"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_45.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_90.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "caf2934613b872398eec5988272ec9d61072732077615c4f257c3719d4d2d289"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_90.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/smart.frame.amf3.deflate",
+          "bytes": 110,
+          "sha256": "3f56ffb8685ad22d6455fe2a50efa2b65971ad9fe8aed04b8cd9a1d5516b6b22"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/smart.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.atlas.amf3.deflate",
+          "bytes": 100,
+          "sha256": "79fdd3d3e63e117647af31d40b381ca6ccedd70aa10b24edd64d65d7ff06089e"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.parts.amf3.deflate",
+          "bytes": 295,
+          "sha256": "23a6cb18f980cabd4746c81cad8ac03b24a4947c31df341675b7bf60640c33ff"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.png",
+          "bytes": 384,
+          "sha256": "6de5f1af5e4bf0b87e42321ddaf8fb9b18bcc044bd99d41eb4e6de43d6ce217c"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.timeline.amf3.deflate",
+          "bytes": 227,
+          "sha256": "0740cf016f362c8e75e975bca84059576652f87d901ba28cc57b6e01669f51d7"
+        }
+      ],
+      "miaBackgroundFix": null
+    },
+    {
+      "roleId": 139990,
+      "name": "凯尔",
+      "roleAssetNamespace": "kyle_moon",
+      "nativeFrames": 232,
+      "nativeVideoSHA256": "459657a0026a0b61b50827cc3b6f44c95b912a2c76cc3ebcf6c1ef31ff89d3e8",
+      "sourceConfigSHA256": "dd77b851068e51f2c675e2e2636626993f69995d10f4723cf908d8d4f816aa8a",
+      "sourceClientSHA256": "1d9dbd353c429570833ccad106ab93b76794226e66087a9fc5c3fff80fd2ae10",
+      "sourcePreview": {
+        "roleId": 139990,
+        "questId": 128,
+        "log": "gacha/feature_battle_preview/autumn_beast_dice_offline/139990_kyle_moon",
+        "clip": [
+          0,
+          30
+        ],
+        "enablesAbility": false,
+        "enablesPowerFlip": false,
+        "terrain": "battle/terrain/skill_preview/skill_preview_gacha_rem.amf3.deflate",
+        "fieldData": "skill_preview_gacha_rem",
+        "field": "end_dungeon_gacha_skill_preview",
+        "zone": "skill_preview_gacha"
+      },
+      "sourceReplayConfig": {
+        "start_frame": 90,
+        "end_frame": 320,
+        "ball": {
+          "x": -155,
+          "y": -320,
+          "vx": 0,
+          "vy": 0
+        },
+        "hp_ratio": 1,
+        "skill_gauge_ratio": 1,
+        "power_flip_level": 0
+      },
+      "replayLogical": "gacha/feature_battle_preview/cnmod_autumn_beast_dice/139990.battle.amf3.deflate",
+      "terrainLogical": "battle/terrain/skill_preview/cnmod_autumn_beast_dice_139990.amf3.deflate",
+      "stageMask": [
+        0,
+        60,
+        1080,
+        1560
+      ],
+      "clipLeftTop": [
+        0,
+        30
+      ],
+      "recipe": {
+        "status": "unallocated-row-fragments-not-installed",
+        "gacha": {
+          "key": "cnmod_autumn_beast_dice_139990",
+          "columns": [
+            "AUTHOR_QUEST_ID_139990",
+            "gacha/feature_battle_preview/cnmod_autumn_beast_dice/139990",
+            "30",
+            "0",
+            "false",
+            "false"
+          ]
+        },
+        "quest": {
+          "key": "AUTHOR_QUEST_ID_139990",
+          "columns": [
+            "扭蛋_レム",
+            "quest/thumbnail/common/story",
+            "(None)",
+            "2000-01-01 00:00:01",
+            "(None)",
+            "0",
+            "1",
+            "false",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "25",
+            "2",
+            "1",
+            "cnmod_autumn_beast_dice_139990"
+          ]
+        },
+        "fieldData": {
+          "key": "cnmod_autumn_beast_dice_139990",
+          "columns": [
+            "cnmod_autumn_beast_dice_139990_field",
+            "battle/terrain/skill_preview/cnmod_autumn_beast_dice_139990",
+            "cnmod_autumn_beast_dice_139990_zone"
+          ]
+        },
+        "field": {
+          "key": "cnmod_autumn_beast_dice_139990_field",
+          "columns": [
+            "battle/field/world_end/end_dungeon/background/background",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate",
+            "battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod",
+            "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+          ]
+        },
+        "zone": {
+          "key": "cnmod_autumn_beast_dice_139990_zone",
+          "copyStoredBase64FromDonorRole": 139990,
+          "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda"
+        }
+      },
+      "officialVisualDependencies": [
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.atlas.amf3.deflate",
+          "bytes": 80,
+          "sha256": "c69ca5381c84765e2930f1462aa6e0105e7ee3c35f10c3e87fd425b3944e0db6"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.parts.amf3.deflate",
+          "bytes": 133,
+          "sha256": "88ec901bf517d409b91ad0574abd397dec8da19dd456d0ebed73699c6f9ea823"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.png",
+          "bytes": 45410,
+          "sha256": "e3c98a4cf69d7c706de8a60b26066a6207833929a48e2acddd4c367cedd594bd"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "62c04bc3e5b315808a8809d81111115c2fa0c78e453592a9570eca041333e787"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.atlas.amf3.deflate",
+          "bytes": 83,
+          "sha256": "851a78e0351702b404578e0eaa91f9d8e6b8adc17a290f36045773a05d52489d"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.parts.amf3.deflate",
+          "bytes": 136,
+          "sha256": "3661948f304495e4487c7f7cfa3bde4fdd7ed56d1446beb4fcdbf494c771773b"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.png",
+          "bytes": 144979,
+          "sha256": "09a4ebef0bb69e22de6d87d27ededf3bb8ff3fda326c3d6157a88a80624a48d1"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "6c5607575d44eea4f9a4bd23e0c0149cc3c8a924b4abfc69b991269d81285b45"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.atlas.amf3.deflate",
+          "bytes": 109,
+          "sha256": "6a697d3d09cdc7375bacc6855bd81f444b62ab37cbe7834358dd1018e7f7f089"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.parts.amf3.deflate",
+          "bytes": 136,
+          "sha256": "6e619667eac7c027e035f2cbdf0c84e1f42801c2f42cd6b10d4046fbf74c79eb"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.png",
+          "bytes": 11929,
+          "sha256": "edc488a23d1a0b91256336f71709b74e98ee4b037d797d8aaf13be6753b4cc87"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "6c5607575d44eea4f9a4bd23e0c0149cc3c8a924b4abfc69b991269d81285b45"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.atlas.amf3.deflate",
+          "bytes": 126,
+          "sha256": "9ed3b029fd237359fb938da168412b333648fc744ea08120bf194275d96d6ec9"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.parts.amf3.deflate",
+          "bytes": 274,
+          "sha256": "bf53b3d893b41bc544f6e55b1ee94f9a109b4891fdc8c3cdafe42520939bf2db"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.png",
+          "bytes": 322,
+          "sha256": "d3b835453a0b3bc3edff6c80e8767d411818ad9d7244652966aff05352351125"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "95a297f2c2ae21ccbed02af05d065ac2d535ac0aa85eb3926cf96d1f0375ddc2"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.atlas.amf3.deflate",
+          "bytes": 121,
+          "sha256": "a714db854a974c24d564ca385dbfdb0ca9697f31972d0acc2ab752ca2a704851"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.parts.amf3.deflate",
+          "bytes": 277,
+          "sha256": "866fbe1c1352e38532345d591933265250718daf086649cfb08e62448bff5f71"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.png",
+          "bytes": 250,
+          "sha256": "8e1aebbfad285c8f896e0dcdf98b4d21971a88c803904a4e684bcc32a9dd606d"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "95a297f2c2ae21ccbed02af05d065ac2d535ac0aa85eb3926cf96d1f0375ddc2"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.atlas.amf3.deflate",
+          "bytes": 118,
+          "sha256": "448f9a78a3d30a5bcb60a22c0f89ddd3697f1ed5e90aea967f9f09d7c04af5d1"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.parts.amf3.deflate",
+          "bytes": 275,
+          "sha256": "e415c00a7b55f8f409dcc13f55ae224eac94956cce8214315700cc7ef26097fe"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.png",
+          "bytes": 196,
+          "sha256": "20c31e180014ff8dffd40817d4d398b25766ce6d7919493d2dbde2719bf2beee"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "95a297f2c2ae21ccbed02af05d065ac2d535ac0aa85eb3926cf96d1f0375ddc2"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.parts.amf3.deflate",
+          "bytes": 351,
+          "sha256": "1fc05f248f4fb7f2ac4d86e660836db882c4bd6f7e5ade4d7c788b8fe096f8c5"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "248a65b3ea89bd5f7e772d40023f928b59d1e9a7f3cae867f0ec87e4b11aed9a"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.parts.amf3.deflate",
+          "bytes": 506,
+          "sha256": "e27a45fbaa5ac9b941a76a011df795724a11186658f8d2c51b5563d5f5171cba"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "f4af0df8a56f999dcf6c0de88c68a189af5b494941e695772a48bffc7f28da54"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.atlas.amf3.deflate",
+          "bytes": 243,
+          "sha256": "74377c4b4a62e5bd4da17ad202d5fab0a3c993d4d26671b6fffc7bab96316b4e"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.png",
+          "bytes": 504,
+          "sha256": "1a37f4e4e55aeffd32e70c18302f91a55d272eed6ab0727cdac1e1a7e663a8b7"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.atlas.amf3.deflate",
+          "bytes": 124,
+          "sha256": "249fe0902486cdee824917fa7461370b1a4e18f172e090748ea84831d6e9738e"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.parts.amf3.deflate",
+          "bytes": 278,
+          "sha256": "099e5b08970ac0edda4d8d300219aea68f1533e44488ee8020d5e7a4c23f5637"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.png",
+          "bytes": 222,
+          "sha256": "1c40fd3d18610a6fdd58c0165b9fa1a7245188215e430a78e81da924b0d45c41"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.timeline.amf3.deflate",
+          "bytes": 266,
+          "sha256": "86da52fcabf068be968cfc1e1ef65cfc543e8c7d2e0baa82a941c299a0b52112"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.parts.amf3.deflate",
+          "bytes": 237,
+          "sha256": "459ba0bd856a6fc76f4c9cb53c342af6536ca54ae14422af3f0789fa5ede73ad"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.timeline.amf3.deflate",
+          "bytes": 112,
+          "sha256": "fa4511a3b92d15ebf9e1463c29404a9047ac0aabc5bb83ae75db4d38726f5cd6"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.atlas.amf3.deflate",
+          "bytes": 133,
+          "sha256": "db766109c00db3db5cbca8413db110390f7db73b14dcf7f54503562f4e3362a8"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.png",
+          "bytes": 447,
+          "sha256": "a9172680b8f074db37a8374f7d5129ffd1184e56681fb3b59d32e75f8dc0788f"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "f48b0eaf8e8e18c16129f0a924feed4556a08e074bd37812c29b6902bfb07851"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.parts.amf3.deflate",
+          "bytes": 299,
+          "sha256": "2a716aa6e06e0fb251a4454c23c99ed026c00a1cc89433cd439f3a7b0a4db05a"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "6ddf95860e7a9af1b086cbeca7d97418c94b027699773547775630862c5e8d81"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.atlas.amf3.deflate",
+          "bytes": 251,
+          "sha256": "5f7aa1b45460a9432bdfb204739144cb7830786b6337949521ef52a1ad702246"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.png",
+          "bytes": 1179,
+          "sha256": "223858630a2f5bc94b753b9d17f6adc6b8ee8cf6435c3476273f490f3995927b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.frame.amf3.deflate",
+          "bytes": 108,
+          "sha256": "2f811fcbf538fdea3a3c83c8c7c30e4b9c361b566d9c106085f7ef420ac573d9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.atlas.amf3.deflate",
+          "bytes": 248,
+          "sha256": "0f4d8f09edbf6b024c7364fa2dee8eb55016a238467883b2ea09d1b035e92890"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.png",
+          "bytes": 800,
+          "sha256": "a888f4d2251b62c7e1c869e0d3e6db32294ebf12f42a61a0124056bab8582c6b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.atlas.amf3.deflate",
+          "bytes": 93,
+          "sha256": "666b28606cd7f276d6480b1b1210b40f5756bbcd9031646e625e71f64ff79ff5"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.parts.amf3.deflate",
+          "bytes": 293,
+          "sha256": "185e1bd546ff3a2345eec95dc517f2f87ec7e2d6a4362a1beb98d343a872f161"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.png",
+          "bytes": 147,
+          "sha256": "d6b6a2869ddb1edf4fdf3b5918a933e0f02848d45d1dc9ec589aeb9131581c94"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.timeline.amf3.deflate",
+          "bytes": 276,
+          "sha256": "17a309022fa28662e9d7174053e395657c6588b1e3dcaba3d1f8f4f458190a78"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.atlas.amf3.deflate",
+          "bytes": 937,
+          "sha256": "d6eae0bdaf2a65a6b27615f7cfb75b4e13df1b4bc775051d12b550579d972d92"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.png",
+          "bytes": 3812,
+          "sha256": "0d11fad24acf0030efd5bb5e9df3219f40a516e671c8c432abf16c57fbfe6e0d"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.frame.amf3.deflate",
+          "bytes": 112,
+          "sha256": "2a400eda1073bf36b6f75375ea40cb96c786d33facb660c018474d5ebb36e8ac"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "72383fd61963be91485ba5f7b04ba0a0b08d38a3d81688ccddbed5eb18e3d179"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "b58d07233f938765f3b4634309be9852541f0706a3958b1eb295fb7eed444c76"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "ec8ecf25cb1730cb6be8cacc1f6a07dab33af70aaf2f1e6a9abb40bcaac0df43"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "007da7ecb68c5b8b5686cd5f848d26ffa8aefe1dfa1a545645ea0d3af63cf7be"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "37c1ac9dd65ab116c9dbba0554834aa7281bbaed663aa926feba3dbc0453c3c9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "7d1d4053bf86ea10c883e8f6875a3dea2a87e14f28ae26157579140fa131d70c"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "9602c2c881d971ed4730d4d81cc1025ad7098dd93eb93c53ba05a1201adbcb38"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.frame.amf3.deflate",
+          "bytes": 110,
+          "sha256": "e80173427699e874197b33f56aec94050a143e71bd7bbf3d32a2e79f1ac35d02"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.frame.amf3.deflate",
+          "bytes": 124,
+          "sha256": "4b2bca3a1145a7151ad448d424e1bb67e483c78dcd4bb407cebfaab6b367c9ba"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "bbc62f0a0197b81b239d73eb1cd0d37865e2586fc8f01906769a6cbd20bc2feb"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.atlas.amf3.deflate",
+          "bytes": 252,
+          "sha256": "9cb374025995b637795b8dd52ba4257e93b55badb8da0af821685407b2ad058e"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.png",
+          "bytes": 543,
+          "sha256": "6c1b7a95622f13088d5856790af7f0f64d4e97f56c6528eca3524727df50685f"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/fever_gauge.atlas.amf3.deflate",
+          "bytes": 132,
+          "sha256": "cf61674d2df53674c902b4cc45a1f4b1fc165c324b91fc91efd81c81ac12f542"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/fever_gauge.png",
+          "bytes": 462,
+          "sha256": "d2e1739c4f6c2108e604686055a78f1821541dbe80f2f7e6b4fb712718fc2d21"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/town_street_fever_gauge.parts.amf3.deflate",
+          "bytes": 238,
+          "sha256": "4b2ddb48bb7063b4888aa5a5bf3fc068b517f59143e9d60aa84be3b456e9e90b"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/town_street_fever_gauge.timeline.amf3.deflate",
+          "bytes": 112,
+          "sha256": "fa4511a3b92d15ebf9e1463c29404a9047ac0aabc5bb83ae75db4d38726f5cd6"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/outhole.atlas.amf3.deflate",
+          "bytes": 162,
+          "sha256": "77865dc580b8492c7b2a2cf852e29938a8c1b889ad1488e4d43a0fed77ae2852"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/outhole.png",
+          "bytes": 1432,
+          "sha256": "804fca8d247ea549c7b3786e48bc427317fcaf82be7184a6e4d1be4f2e50aa6d"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/town_street_outhole_zone2.frame.amf3.deflate",
+          "bytes": 107,
+          "sha256": "c0f216b98212a2ddd7a102067f651c76b0a8237478a8532e9af6991467809aab"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/town_street_outhole_zone2.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "7b17d83f18f298ec24cc2fcb2fd8d1293ba54051689048f63d8365db8b90ff62"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/rotation_panel.atlas.amf3.deflate",
+          "bytes": 243,
+          "sha256": "624855eb48eff937d49b4e35e02469201374ad0b6aea6ec85cf1f2240da02350"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/rotation_panel.png",
+          "bytes": 787,
+          "sha256": "46ea20b29ff5616b710ce8aa9ab30f9fa0c92d22e877491c05a187a3c513c25c"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/town_street_rotation_panel.frame.amf3.deflate",
+          "bytes": 106,
+          "sha256": "90fb090fe078b12139497ed817ead40cd80473f1fc888f22331ba96b1723b8a3"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/town_street_rotation_panel.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/dash_panel.atlas.amf3.deflate",
+          "bytes": 934,
+          "sha256": "c17b9c174cdc9cca3e188010ab689e782f1c3ea6efb77147cc934acbe05ad63e"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/dash_panel.png",
+          "bytes": 3842,
+          "sha256": "86acdad85c61c9173114cef66caa4fca3a4d5059f5d4effe67781ff5780558b2"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_0.frame.amf3.deflate",
+          "bytes": 112,
+          "sha256": "790051f9aabb8aa9644d1fb85bcf94c27dc43de182cc0415409dfcf25fc602d9"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_0.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_135.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "4dc22bf77c3f370fcf36970c64f2699604332ee6c1d0df8d43f5b739f26fa4f3"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_135.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_180.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "2e934ad7b0dc470e2ab74b0dc2b12a4f88ed44a2813e34a4a5f23c02fe2a5a87"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_180.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_225.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "f3e66aa970b08239843e19fe89707b89a3fd25b5b22339d5c0ea4aee696ad034"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_225.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_270.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "fa05cfbdb100174ec1acec746e1643b2c541a19b306dd3aab137995646fb6e28"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_270.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_315.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "4cd6596800fbf50c79c0c450eca90e5b75baddff73726468a732845c70018cd7"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_315.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_45.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "e90f94b7bb69d4e48e52657b4659eac5ef4865036aaa76ad7d73d8a932196454"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_45.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_90.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "caf2934613b872398eec5988272ec9d61072732077615c4f257c3719d4d2d289"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_90.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/smart.frame.amf3.deflate",
+          "bytes": 110,
+          "sha256": "3f56ffb8685ad22d6455fe2a50efa2b65971ad9fe8aed04b8cd9a1d5516b6b22"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/smart.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.atlas.amf3.deflate",
+          "bytes": 100,
+          "sha256": "79fdd3d3e63e117647af31d40b381ca6ccedd70aa10b24edd64d65d7ff06089e"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.parts.amf3.deflate",
+          "bytes": 295,
+          "sha256": "23a6cb18f980cabd4746c81cad8ac03b24a4947c31df341675b7bf60640c33ff"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.png",
+          "bytes": 384,
+          "sha256": "6de5f1af5e4bf0b87e42321ddaf8fb9b18bcc044bd99d41eb4e6de43d6ce217c"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.timeline.amf3.deflate",
+          "bytes": 227,
+          "sha256": "0740cf016f362c8e75e975bca84059576652f87d901ba28cc57b6e01669f51d7"
+        }
+      ],
+      "miaBackgroundFix": null
+    },
+    {
+      "roleId": 139991,
+      "name": "黑",
+      "roleAssetNamespace": "outlaw_panther_moon",
+      "nativeFrames": 192,
+      "nativeVideoSHA256": "e080fbc73f36dde8c8942190486e385c106aa379151d04a69622ba5bb72633b9",
+      "sourceConfigSHA256": "f62d2a3dbf1fb39522f75999ce414dae4fc607e77370c8b498f18e434b7d5f65",
+      "sourceClientSHA256": "1d9dbd353c429570833ccad106ab93b76794226e66087a9fc5c3fff80fd2ae10",
+      "sourcePreview": {
+        "roleId": 139991,
+        "questId": 185,
+        "log": "gacha/feature_battle_preview/autumn_beast_dice_offline/139991_outlaw_panther_moon",
+        "clip": [
+          0,
+          70
+        ],
+        "enablesAbility": false,
+        "enablesPowerFlip": false,
+        "terrain": "battle/terrain/skill_preview/skill_preview_gacha_suzumiya_haruhi.amf3.deflate",
+        "fieldData": "skill_preview_gacha_suzumiya_haruhi",
+        "field": "end_dungeon_gacha_skill_preview",
+        "zone": "skill_preview_gacha"
+      },
+      "sourceReplayConfig": {
+        "start_frame": 90,
+        "end_frame": 280,
+        "ball": {
+          "x": 0,
+          "y": -450,
+          "vx": 0,
+          "vy": 0
+        },
+        "hp_ratio": 1,
+        "skill_gauge_ratio": 1,
+        "power_flip_level": 0
+      },
+      "replayLogical": "gacha/feature_battle_preview/cnmod_autumn_beast_dice/139991.battle.amf3.deflate",
+      "terrainLogical": "battle/terrain/skill_preview/cnmod_autumn_beast_dice_139991.amf3.deflate",
+      "stageMask": [
+        0,
+        60,
+        1080,
+        1560
+      ],
+      "clipLeftTop": [
+        0,
+        70
+      ],
+      "recipe": {
+        "status": "unallocated-row-fragments-not-installed",
+        "gacha": {
+          "key": "cnmod_autumn_beast_dice_139991",
+          "columns": [
+            "AUTHOR_QUEST_ID_139991",
+            "gacha/feature_battle_preview/cnmod_autumn_beast_dice/139991",
+            "70",
+            "0",
+            "false",
+            "false"
+          ]
+        },
+        "quest": {
+          "key": "AUTHOR_QUEST_ID_139991",
+          "columns": [
+            "扭蛋_ハルヒ",
+            "quest/thumbnail/common/story",
+            "(None)",
+            "2000-01-01 00:00:00",
+            "(None)",
+            "0",
+            "3",
+            "false",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "20",
+            "2",
+            "1",
+            "cnmod_autumn_beast_dice_139991"
+          ]
+        },
+        "fieldData": {
+          "key": "cnmod_autumn_beast_dice_139991",
+          "columns": [
+            "cnmod_autumn_beast_dice_139991_field",
+            "battle/terrain/skill_preview/cnmod_autumn_beast_dice_139991",
+            "cnmod_autumn_beast_dice_139991_zone"
+          ]
+        },
+        "field": {
+          "key": "cnmod_autumn_beast_dice_139991_field",
+          "columns": [
+            "battle/field/world_end/end_dungeon/background/background",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate",
+            "battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod",
+            "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+          ]
+        },
+        "zone": {
+          "key": "cnmod_autumn_beast_dice_139991_zone",
+          "copyStoredBase64FromDonorRole": 139991,
+          "storedRowSHA256": "78a89920dfac7cba9b088781018f5270877c0a8c254c35093e747ca80559bdda"
+        }
+      },
+      "officialVisualDependencies": [
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.atlas.amf3.deflate",
+          "bytes": 80,
+          "sha256": "c69ca5381c84765e2930f1462aa6e0105e7ee3c35f10c3e87fd425b3944e0db6"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.parts.amf3.deflate",
+          "bytes": 133,
+          "sha256": "88ec901bf517d409b91ad0574abd397dec8da19dd456d0ebed73699c6f9ea823"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.png",
+          "bytes": 45410,
+          "sha256": "e3c98a4cf69d7c706de8a60b26066a6207833929a48e2acddd4c367cedd594bd"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "62c04bc3e5b315808a8809d81111115c2fa0c78e453592a9570eca041333e787"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.atlas.amf3.deflate",
+          "bytes": 83,
+          "sha256": "851a78e0351702b404578e0eaa91f9d8e6b8adc17a290f36045773a05d52489d"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.parts.amf3.deflate",
+          "bytes": 136,
+          "sha256": "3661948f304495e4487c7f7cfa3bde4fdd7ed56d1446beb4fcdbf494c771773b"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.png",
+          "bytes": 144979,
+          "sha256": "09a4ebef0bb69e22de6d87d27ededf3bb8ff3fda326c3d6157a88a80624a48d1"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/background/background.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "6c5607575d44eea4f9a4bd23e0c0149cc3c8a924b4abfc69b991269d81285b45"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.atlas.amf3.deflate",
+          "bytes": 109,
+          "sha256": "6a697d3d09cdc7375bacc6855bd81f444b62ab37cbe7834358dd1018e7f7f089"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.parts.amf3.deflate",
+          "bytes": 136,
+          "sha256": "6e619667eac7c027e035f2cbdf0c84e1f42801c2f42cd6b10d4046fbf74c79eb"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.png",
+          "bytes": 11929,
+          "sha256": "edc488a23d1a0b91256336f71709b74e98ee4b037d797d8aaf13be6753b4cc87"
+        },
+        {
+          "logical": "battle/field/world_town/town_street/foreground/foreground.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "6c5607575d44eea4f9a4bd23e0c0149cc3c8a924b4abfc69b991269d81285b45"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.atlas.amf3.deflate",
+          "bytes": 126,
+          "sha256": "9ed3b029fd237359fb938da168412b333648fc744ea08120bf194275d96d6ec9"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.parts.amf3.deflate",
+          "bytes": 274,
+          "sha256": "bf53b3d893b41bc544f6e55b1ee94f9a109b4891fdc8c3cdafe42520939bf2db"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.png",
+          "bytes": 322,
+          "sha256": "d3b835453a0b3bc3edff6c80e8767d411818ad9d7244652966aff05352351125"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/accumulation_attack_power_up/accumulation_attack_power_up.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "95a297f2c2ae21ccbed02af05d065ac2d535ac0aa85eb3926cf96d1f0375ddc2"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.atlas.amf3.deflate",
+          "bytes": 121,
+          "sha256": "a714db854a974c24d564ca385dbfdb0ca9697f31972d0acc2ab752ca2a704851"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.parts.amf3.deflate",
+          "bytes": 277,
+          "sha256": "866fbe1c1352e38532345d591933265250718daf086649cfb08e62448bff5f71"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.png",
+          "bytes": 250,
+          "sha256": "8e1aebbfad285c8f896e0dcdf98b4d21971a88c803904a4e684bcc32a9dd606d"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/condition_piercing/condition_piercing.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "95a297f2c2ae21ccbed02af05d065ac2d535ac0aa85eb3926cf96d1f0375ddc2"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.atlas.amf3.deflate",
+          "bytes": 118,
+          "sha256": "448f9a78a3d30a5bcb60a22c0f89ddd3697f1ed5e90aea967f9f09d7c04af5d1"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.parts.amf3.deflate",
+          "bytes": 275,
+          "sha256": "e415c00a7b55f8f409dcc13f55ae224eac94956cce8214315700cc7ef26097fe"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.png",
+          "bytes": 196,
+          "sha256": "20c31e180014ff8dffd40817d4d398b25766ce6d7919493d2dbde2719bf2beee"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/hp_recovery_small/hp_recovery_small.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "95a297f2c2ae21ccbed02af05d065ac2d535ac0aa85eb3926cf96d1f0375ddc2"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.parts.amf3.deflate",
+          "bytes": 351,
+          "sha256": "1fc05f248f4fb7f2ac4d86e660836db882c4bd6f7e5ade4d7c788b8fe096f8c5"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "248a65b3ea89bd5f7e772d40023f928b59d1e9a7f3cae867f0ec87e4b11aed9a"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.parts.amf3.deflate",
+          "bytes": 506,
+          "sha256": "e27a45fbaa5ac9b941a76a011df795724a11186658f8d2c51b5563d5f5171cba"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "f4af0df8a56f999dcf6c0de88c68a189af5b494941e695772a48bffc7f28da54"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.atlas.amf3.deflate",
+          "bytes": 243,
+          "sha256": "74377c4b4a62e5bd4da17ad202d5fab0a3c993d4d26671b6fffc7bab96316b4e"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.png",
+          "bytes": 504,
+          "sha256": "1a37f4e4e55aeffd32e70c18302f91a55d272eed6ab0727cdac1e1a7e663a8b7"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.atlas.amf3.deflate",
+          "bytes": 124,
+          "sha256": "249fe0902486cdee824917fa7461370b1a4e18f172e090748ea84831d6e9738e"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.parts.amf3.deflate",
+          "bytes": 278,
+          "sha256": "099e5b08970ac0edda4d8d300219aea68f1533e44488ee8020d5e7a4c23f5637"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.png",
+          "bytes": 222,
+          "sha256": "1c40fd3d18610a6fdd58c0165b9fa1a7245188215e430a78e81da924b0d45c41"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/skill_charge_middle/skill_charge_middle.timeline.amf3.deflate",
+          "bytes": 266,
+          "sha256": "86da52fcabf068be968cfc1e1ef65cfc543e8c7d2e0baa82a941c299a0b52112"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.parts.amf3.deflate",
+          "bytes": 237,
+          "sha256": "459ba0bd856a6fc76f4c9cb53c342af6536ca54ae14422af3f0789fa5ede73ad"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.timeline.amf3.deflate",
+          "bytes": 112,
+          "sha256": "fa4511a3b92d15ebf9e1463c29404a9047ac0aabc5bb83ae75db4d38726f5cd6"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.atlas.amf3.deflate",
+          "bytes": 133,
+          "sha256": "db766109c00db3db5cbca8413db110390f7db73b14dcf7f54503562f4e3362a8"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.png",
+          "bytes": 447,
+          "sha256": "a9172680b8f074db37a8374f7d5129ffd1184e56681fb3b59d32e75f8dc0788f"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "f48b0eaf8e8e18c16129f0a924feed4556a08e074bd37812c29b6902bfb07851"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.parts.amf3.deflate",
+          "bytes": 299,
+          "sha256": "2a716aa6e06e0fb251a4454c23c99ed026c00a1cc89433cd439f3a7b0a4db05a"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "6ddf95860e7a9af1b086cbeca7d97418c94b027699773547775630862c5e8d81"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.atlas.amf3.deflate",
+          "bytes": 251,
+          "sha256": "5f7aa1b45460a9432bdfb204739144cb7830786b6337949521ef52a1ad702246"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.png",
+          "bytes": 1179,
+          "sha256": "223858630a2f5bc94b753b9d17f6adc6b8ee8cf6435c3476273f490f3995927b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.frame.amf3.deflate",
+          "bytes": 108,
+          "sha256": "2f811fcbf538fdea3a3c83c8c7c30e4b9c361b566d9c106085f7ef420ac573d9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.atlas.amf3.deflate",
+          "bytes": 248,
+          "sha256": "0f4d8f09edbf6b024c7364fa2dee8eb55016a238467883b2ea09d1b035e92890"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.png",
+          "bytes": 800,
+          "sha256": "a888f4d2251b62c7e1c869e0d3e6db32294ebf12f42a61a0124056bab8582c6b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.atlas.amf3.deflate",
+          "bytes": 93,
+          "sha256": "666b28606cd7f276d6480b1b1210b40f5756bbcd9031646e625e71f64ff79ff5"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.parts.amf3.deflate",
+          "bytes": 293,
+          "sha256": "185e1bd546ff3a2345eec95dc517f2f87ec7e2d6a4362a1beb98d343a872f161"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.png",
+          "bytes": 147,
+          "sha256": "d6b6a2869ddb1edf4fdf3b5918a933e0f02848d45d1dc9ec589aeb9131581c94"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.timeline.amf3.deflate",
+          "bytes": 276,
+          "sha256": "17a309022fa28662e9d7174053e395657c6588b1e3dcaba3d1f8f4f458190a78"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.atlas.amf3.deflate",
+          "bytes": 937,
+          "sha256": "d6eae0bdaf2a65a6b27615f7cfb75b4e13df1b4bc775051d12b550579d972d92"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.png",
+          "bytes": 3812,
+          "sha256": "0d11fad24acf0030efd5bb5e9df3219f40a516e671c8c432abf16c57fbfe6e0d"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.frame.amf3.deflate",
+          "bytes": 112,
+          "sha256": "2a400eda1073bf36b6f75375ea40cb96c786d33facb660c018474d5ebb36e8ac"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "72383fd61963be91485ba5f7b04ba0a0b08d38a3d81688ccddbed5eb18e3d179"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "b58d07233f938765f3b4634309be9852541f0706a3958b1eb295fb7eed444c76"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "ec8ecf25cb1730cb6be8cacc1f6a07dab33af70aaf2f1e6a9abb40bcaac0df43"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "007da7ecb68c5b8b5686cd5f848d26ffa8aefe1dfa1a545645ea0d3af63cf7be"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "37c1ac9dd65ab116c9dbba0554834aa7281bbaed663aa926feba3dbc0453c3c9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "7d1d4053bf86ea10c883e8f6875a3dea2a87e14f28ae26157579140fa131d70c"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "9602c2c881d971ed4730d4d81cc1025ad7098dd93eb93c53ba05a1201adbcb38"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.frame.amf3.deflate",
+          "bytes": 110,
+          "sha256": "e80173427699e874197b33f56aec94050a143e71bd7bbf3d32a2e79f1ac35d02"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.frame.amf3.deflate",
+          "bytes": 124,
+          "sha256": "4b2bca3a1145a7151ad448d424e1bb67e483c78dcd4bb407cebfaab6b367c9ba"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "bbc62f0a0197b81b239d73eb1cd0d37865e2586fc8f01906769a6cbd20bc2feb"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.atlas.amf3.deflate",
+          "bytes": 252,
+          "sha256": "9cb374025995b637795b8dd52ba4257e93b55badb8da0af821685407b2ad058e"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.png",
+          "bytes": 543,
+          "sha256": "6c1b7a95622f13088d5856790af7f0f64d4e97f56c6528eca3524727df50685f"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/fever_gauge.atlas.amf3.deflate",
+          "bytes": 132,
+          "sha256": "cf61674d2df53674c902b4cc45a1f4b1fc165c324b91fc91efd81c81ac12f542"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/fever_gauge.png",
+          "bytes": 462,
+          "sha256": "d2e1739c4f6c2108e604686055a78f1821541dbe80f2f7e6b4fb712718fc2d21"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/town_street_fever_gauge.parts.amf3.deflate",
+          "bytes": 238,
+          "sha256": "4b2ddb48bb7063b4888aa5a5bf3fc068b517f59143e9d60aa84be3b456e9e90b"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/fever_gauge/town_street_fever_gauge.timeline.amf3.deflate",
+          "bytes": 112,
+          "sha256": "fa4511a3b92d15ebf9e1463c29404a9047ac0aabc5bb83ae75db4d38726f5cd6"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/outhole.atlas.amf3.deflate",
+          "bytes": 162,
+          "sha256": "77865dc580b8492c7b2a2cf852e29938a8c1b889ad1488e4d43a0fed77ae2852"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/outhole.png",
+          "bytes": 1432,
+          "sha256": "804fca8d247ea549c7b3786e48bc427317fcaf82be7184a6e4d1be4f2e50aa6d"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/town_street_outhole_zone2.frame.amf3.deflate",
+          "bytes": 107,
+          "sha256": "c0f216b98212a2ddd7a102067f651c76b0a8237478a8532e9af6991467809aab"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/outhole/town_street_outhole_zone2.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "7b17d83f18f298ec24cc2fcb2fd8d1293ba54051689048f63d8365db8b90ff62"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/rotation_panel.atlas.amf3.deflate",
+          "bytes": 243,
+          "sha256": "624855eb48eff937d49b4e35e02469201374ad0b6aea6ec85cf1f2240da02350"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/rotation_panel.png",
+          "bytes": 787,
+          "sha256": "46ea20b29ff5616b710ce8aa9ab30f9fa0c92d22e877491c05a187a3c513c25c"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/town_street_rotation_panel.frame.amf3.deflate",
+          "bytes": 106,
+          "sha256": "90fb090fe078b12139497ed817ead40cd80473f1fc888f22331ba96b1723b8a3"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/rotation_panel/town_street_rotation_panel.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/dash_panel.atlas.amf3.deflate",
+          "bytes": 934,
+          "sha256": "c17b9c174cdc9cca3e188010ab689e782f1c3ea6efb77147cc934acbe05ad63e"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/dash_panel.png",
+          "bytes": 3842,
+          "sha256": "86acdad85c61c9173114cef66caa4fca3a4d5059f5d4effe67781ff5780558b2"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_0.frame.amf3.deflate",
+          "bytes": 112,
+          "sha256": "790051f9aabb8aa9644d1fb85bcf94c27dc43de182cc0415409dfcf25fc602d9"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_0.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_135.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "4dc22bf77c3f370fcf36970c64f2699604332ee6c1d0df8d43f5b739f26fa4f3"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_135.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_180.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "2e934ad7b0dc470e2ab74b0dc2b12a4f88ed44a2813e34a4a5f23c02fe2a5a87"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_180.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_225.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "f3e66aa970b08239843e19fe89707b89a3fd25b5b22339d5c0ea4aee696ad034"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_225.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_270.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "fa05cfbdb100174ec1acec746e1643b2c541a19b306dd3aab137995646fb6e28"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_270.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_315.frame.amf3.deflate",
+          "bytes": 116,
+          "sha256": "4cd6596800fbf50c79c0c450eca90e5b75baddff73726468a732845c70018cd7"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_315.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_45.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "e90f94b7bb69d4e48e52657b4659eac5ef4865036aaa76ad7d73d8a932196454"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_45.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_90.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "caf2934613b872398eec5988272ec9d61072732077615c4f257c3719d4d2d289"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/fixed_90.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/smart.frame.amf3.deflate",
+          "bytes": 110,
+          "sha256": "3f56ffb8685ad22d6455fe2a50efa2b65971ad9fe8aed04b8cd9a1d5516b6b22"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/dash_panel/smart.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.atlas.amf3.deflate",
+          "bytes": 100,
+          "sha256": "79fdd3d3e63e117647af31d40b381ca6ccedd70aa10b24edd64d65d7ff06089e"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.parts.amf3.deflate",
+          "bytes": 295,
+          "sha256": "23a6cb18f980cabd4746c81cad8ac03b24a4947c31df341675b7bf60640c33ff"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.png",
+          "bytes": 384,
+          "sha256": "6de5f1af5e4bf0b87e42321ddaf8fb9b18bcc044bd99d41eb4e6de43d6ce217c"
+        },
+        {
+          "logical": "battle/field_object/world_town/town_street/yakumono/decoration/planter_a/planter_a.timeline.amf3.deflate",
+          "bytes": 227,
+          "sha256": "0740cf016f362c8e75e975bca84059576652f87d901ba28cc57b6e01669f51d7"
+        }
+      ],
+      "miaBackgroundFix": null
+    }
+  ]
+}

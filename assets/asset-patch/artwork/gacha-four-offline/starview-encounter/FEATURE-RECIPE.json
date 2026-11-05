@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "formalPoolId": null,
+  "formalUPRoster": null,
+  "ticket": null,
+  "rates": null,
+  "pity": null,
+  "formalConfigurationOwner": "repository maintainer",
+  "featureOrder": [
+    {
+      "kind": 0,
+      "movie": "gacha/feature_movie/cnmod_starview_encounter/cover"
+    },
+    {
+      "kind": 2,
+      "roleId": 169998,
+      "skillPreviewKey": "cnmod_starview_encounter_169998"
+    },
+    {
+      "kind": 0,
+      "roleId": 169998,
+      "movie": "gacha/feature_movie/cnmod_starview_encounter/169998"
+    },
+    {
+      "kind": 2,
+      "roleId": 139999,
+      "skillPreviewKey": "cnmod_starview_encounter_139999"
+    },
+    {
+      "kind": 0,
+      "roleId": 139999,
+      "movie": "gacha/feature_movie/cnmod_starview_encounter/139999"
+    },
+    {
+      "kind": 2,
+      "roleId": 149997,
+      "skillPreviewKey": "cnmod_starview_encounter_149997"
+    },
+    {
+      "kind": 0,
+      "roleId": 149997,
+      "movie": "gacha/feature_movie/cnmod_starview_encounter/149997"
+    },
+    {
+      "kind": 2,
+      "roleId": 139992,
+      "skillPreviewKey": "cnmod_starview_encounter_139992"
+    },
+    {
+      "kind": 0,
+      "roleId": 139992,
+      "movie": "gacha/feature_movie/cnmod_starview_encounter/139992"
+    },
+    {
+      "kind": 2,
+      "roleId": 179999,
+      "skillPreviewKey": "cnmod_starview_encounter_179999"
+    },
+    {
+      "kind": 0,
+      "roleId": 179999,
+      "movie": "gacha/feature_movie/cnmod_starview_encounter/179999"
+    },
+    {
+      "kind": 2,
+      "roleId": 129991,
+      "skillPreviewKey": "cnmod_starview_encounter_129991"
+    },
+    {
+      "kind": 0,
+      "roleId": 129991,
+      "movie": "gacha/feature_movie/cnmod_starview_encounter/129991"
+    }
+  ],
+  "bannerLogical": "dynamic/gacha_list_banner/cnmod_starview_encounter.png"
+}

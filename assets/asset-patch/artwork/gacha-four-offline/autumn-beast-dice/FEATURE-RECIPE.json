@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "formalPoolId": null,
+  "formalUPRoster": null,
+  "ticket": null,
+  "rates": null,
+  "pity": null,
+  "formalConfigurationOwner": "repository maintainer",
+  "featureOrder": [
+    {
+      "kind": 0,
+      "movie": "gacha/feature_movie/cnmod_autumn_beast_dice/cover"
+    },
+    {
+      "kind": 2,
+      "roleId": 149986,
+      "skillPreviewKey": "cnmod_autumn_beast_dice_149986"
+    },
+    {
+      "kind": 0,
+      "roleId": 149986,
+      "movie": "gacha/feature_movie/cnmod_autumn_beast_dice/149986"
+    },
+    {
+      "kind": 2,
+      "roleId": 139990,
+      "skillPreviewKey": "cnmod_autumn_beast_dice_139990"
+    },
+    {
+      "kind": 0,
+      "roleId": 139990,
+      "movie": "gacha/feature_movie/cnmod_autumn_beast_dice/139990"
+    },
+    {
+      "kind": 2,
+      "roleId": 139991,
+      "skillPreviewKey": "cnmod_autumn_beast_dice_139991"
+    },
+    {
+      "kind": 0,
+      "roleId": 139991,
+      "movie": "gacha/feature_movie/cnmod_autumn_beast_dice/139991"
+    }
+  ],
+  "bannerLogical": "dynamic/gacha_list_banner/cnmod_autumn_beast_dice.png"
+}

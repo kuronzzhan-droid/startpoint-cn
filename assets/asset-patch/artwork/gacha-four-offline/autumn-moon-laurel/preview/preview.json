@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "poolKey": "autumn-moon-laurel",
+  "title": "秋夕祭月·月轮桂灯",
+  "sourcePreviewSHA256": "3ff0482d6a5675058a3580a003735b2604112337cf1bf0637203e8f0dd796274",
+  "previewSHA256": "049ae393438819e4a5def16bb2d107435aed496208bd44b7122e16ff631d5df3",
+  "previewBytes": 4349848,
+  "gzipHeaderHex": "1f8b08000000000002ff",
+  "reviewDataSHA256": "77c56a4a992227a31ea536e9ab9687a7a8c088c7d7a0efcf2f7883cbfb90e2de",
+  "gameIntegrated": false,
+  "omittedLocalReferenceFields": [
+    "/model/nativeUI/assets/red_5/file",
+    "/model/nativeUI/assets/blue_5/file",
+    "/model/nativeUI/assets/yellow_5/file",
+    "/model/nativeUI/assets/green_5/file",
+    "/model/nativeUI/assets/white_5/file",
+    "/model/nativeUI/assets/black_5/file",
+    "/model/nativeUI/assets/character_shadow/file",
+    "/model/nativeUI/assets/rarity_five/file",
+    "/model/nativeUI/assets/rarity_plate_source/file"
+  ],
+  "htmlCharacters": 4348563,
+  "blankLinesWhitespaceNormalized": 1
+}

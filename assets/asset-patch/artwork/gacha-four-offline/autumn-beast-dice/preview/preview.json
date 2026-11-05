@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "poolKey": "autumn-beast-dice",
+  "title": "秋夕祭月·兽夜博饼",
+  "sourcePreviewSHA256": "97091d28ee6763de8db721080c97c4d0d4431719cc8d0aa70c4dcb9876f2d377",
+  "previewSHA256": "701b7272872d679551d54a2893bf1b8a7483fd7b6ea74fb93519e57cc0642b56",
+  "previewBytes": 3950949,
+  "gzipHeaderHex": "1f8b080000000000020a",
+  "reviewDataSHA256": "3e90b5f3c1bcc59a4577907514175dbbc90acd1f047fece019f49371d2c866e3",
+  "gameIntegrated": false,
+  "omittedLocalReferenceFields": [
+    "/model/nativeUI/assets/yellow_5/file",
+    "/model/nativeUI/assets/green_5/file",
+    "/model/nativeUI/assets/character_shadow/file",
+    "/model/nativeUI/assets/rarity_five/file",
+    "/model/nativeUI/assets/rarity_plate_source/file",
+    "/model/nativeThreeFooter/sources/view/file",
+    "/model/nativeThreeFooter/sources/guide/file",
+    "/model/nativeThreeFooter/sources/guideSource/file",
+    "/model/nativeThreeFooter/name/projection/sourceRules/airReference",
+    "/model/nativeThreeFooter/name/projection/sourceBindings/uiText/file",
+    "/model/nativeThreeFooter/name/projection/sourceBindings/compositor/file",
+    "/model/nativeThreeFooter/name/projection/sourceBindings/fontHeader/file",
+    "/model/nativeThreeFooter/name/projection/sourceBindings/alignmentReview/file",
+    "/model/nativeThreeFooter/name/projection/sourceBindings/sameJapaneseStrings/file",
+    "/model/nativeThreeFooter/rawInputs/gacha_pickup_character_bg/file",
+    "/model/nativeThreeFooter/rawInputs/gacha_pickup_character_bg_left/file",
+    "/model/nativeThreeFooter/rawInputs/gacha_pickup_character_bg_right/file"
+  ],
+  "htmlCharacters": 3949654,
+  "blankLinesWhitespaceNormalized": 0
+}

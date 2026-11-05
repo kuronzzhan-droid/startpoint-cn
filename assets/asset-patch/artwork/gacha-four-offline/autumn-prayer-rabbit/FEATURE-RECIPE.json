@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "formalPoolId": null,
+  "formalUPRoster": null,
+  "ticket": null,
+  "rates": null,
+  "pity": null,
+  "formalConfigurationOwner": "repository maintainer",
+  "featureOrder": [
+    {
+      "kind": 0,
+      "movie": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/cover"
+    },
+    {
+      "kind": 2,
+      "roleId": 159991,
+      "skillPreviewKey": "cnmod_autumn_prayer_rabbit_159991"
+    },
+    {
+      "kind": 0,
+      "roleId": 159991,
+      "movie": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/159991"
+    },
+    {
+      "kind": 2,
+      "roleId": 169988,
+      "skillPreviewKey": "cnmod_autumn_prayer_rabbit_169988"
+    },
+    {
+      "kind": 0,
+      "roleId": 169988,
+      "movie": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169988"
+    },
+    {
+      "kind": 2,
+      "roleId": 169991,
+      "skillPreviewKey": "cnmod_autumn_prayer_rabbit_169991"
+    },
+    {
+      "kind": 0,
+      "roleId": 169991,
+      "movie": "gacha/feature_movie/cnmod_autumn_prayer_rabbit/169991"
+    }
+  ],
+  "bannerLogical": "dynamic/gacha_list_banner/cnmod_autumn_prayer_rabbit.png"
+}

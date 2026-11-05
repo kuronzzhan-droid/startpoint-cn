@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "poolKey": "starview-encounter",
+  "title": "星见镇的奇遇",
+  "sourcePreviewSHA256": "fbed21b2cf6cd24077b52f9aea5c2a1109891798b6d1781fd65b4d8bd31c8824",
+  "previewSHA256": "93c53231b42bde699d3f88b9b84594c5a4ce123c12325ed954281adefc8986d4",
+  "previewBytes": 4368340,
+  "gzipHeaderHex": "1f8b080000000000020a",
+  "reviewDataSHA256": "cd8eb38a8f293d0fce0c051a130696d3814199fa568cdf4e91f5c9fc39335ca6",
+  "gameIntegrated": false,
+  "omittedLocalReferenceFields": [],
+  "htmlCharacters": 4366690,
+  "blankLinesWhitespaceNormalized": 1
+}
