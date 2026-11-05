@@ -1,0 +1,104 @@
+[
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/cover/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/cover/feature.movie.amf3.deflate",
+    "bytes": 18569,
+    "sha256": "480b043a78149a733cc0eaa84abf09ae2ff4b65435d97d2e5dae66a197cfe433"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/cover/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/cover/feature.timeline.amf3.deflate",
+    "bytes": 110,
+    "sha256": "95f7befd07981752c6964e82f2cae712ce220fae1da5c4230d0d09f9e6788f69"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/cover/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/cover/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 691,
+    "sha256": "e09972c6c1f72fe7e2e4ff9a2014f11f48f9b5f1055321e05d8e05821888606e"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/cover/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/cover/sprite_sheet.png",
+    "bytes": 3475663,
+    "sha256": "4dc5be3074368bf2388ca81bf59cb627e75d5bf239386c0b9433dcbd7ccbbf5b"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/159995/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/159995/feature.movie.amf3.deflate",
+    "bytes": 3252,
+    "sha256": "998f2b3c0f9e2b7a8924187397892b97b5801f5a9fd5c8dd779f2b8983163bfb"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/159995/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/159995/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/159995/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/159995/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 399,
+    "sha256": "d0c8080d2fa90cb8f5919245d04f545c9cebc3b15997fbb2d897348207912660"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/159995/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/159995/sprite_sheet.png",
+    "bytes": 2068538,
+    "sha256": "3b099119e90669580dad79f34e9d474ce3efd50b0b68967b7b75212b768c02c7"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/119991/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/119991/feature.movie.amf3.deflate",
+    "bytes": 3253,
+    "sha256": "31492b84f52a364bfa0643fb1eb03d95ef98064640d4b1fd620415824d589182"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/119991/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/119991/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/119991/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/119991/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 398,
+    "sha256": "e827d3ded967b8f7f237d44ae04b42721e1cc963c9f1455682e4a5f8736e5a3d"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/119991/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/119991/sprite_sheet.png",
+    "bytes": 1203174,
+    "sha256": "47e5656044cde244c3b6ae1f3f29a3d3374792d3c72f479d73ea73cfbd1045a1"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/119992/feature.movie.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/119992/feature.movie.amf3.deflate",
+    "bytes": 3253,
+    "sha256": "15e9e94236bbd90a1f7153b8c899f5e163313cd1d7bacf4987afe16a3e94eacc"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/119992/feature.timeline.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/119992/feature.timeline.amf3.deflate",
+    "bytes": 147,
+    "sha256": "035c5ed26d45199adc0ea36fcd759c580c73f03f217342d8be6b2351f8c785c8"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/119992/sprite_sheet.atlas.amf3.deflate",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/119992/sprite_sheet.atlas.amf3.deflate",
+    "bytes": 397,
+    "sha256": "0fca1f26e3faf20f580f17c06de419f82619bfed2b9c1e23049ca8ae7f997ebe"
+  },
+  {
+    "logical": "gacha/feature_movie/cnmod_autumn_moon_laurel/119992/sprite_sheet.png",
+    "member": "gacha/feature_movie/cnmod_autumn_moon_laurel/119992/sprite_sheet.png",
+    "bytes": 2003764,
+    "sha256": "b9604beacdaba2e101afb2216c4c71b261be41d580db2ca20a262472b1544957"
+  },
+  {
+    "logical": "dynamic/gacha_list_banner/cnmod_autumn_moon_laurel.png",
+    "member": "dynamic/gacha_list_banner/cnmod_autumn_moon_laurel.png",
+    "bytes": 113942,
+    "sha256": "eea79a34cfd917b7ef5e6537c0e004c5443dfda98f011523628da17b037418d6"
+  }
+]

@@ -1,0 +1,1288 @@
+{
+  "schemaVersion": 1,
+  "status": "offline-integration-recipe",
+  "gameIntegrated": false,
+  "namespaceRebindRuntimeVerified": false,
+  "files": [
+    {
+      "roleId": 159995,
+      "kind": "replay",
+      "logical": "gacha/feature_battle_preview/cnmod_autumn_moon_laurel/159995.battle.amf3.deflate",
+      "file": "payload/159995-replay.amf3.deflate",
+      "bytes": 131,
+      "sha256": "f4a7c57f215cec28d49e2ac28658071a3874e506e69b25751185351685b91de6",
+      "sourceLogical": "gacha/feature_battle_preview/autumn_moon_laurel_candidate/159995_still_obstinator_moon.battle.amf3.deflate",
+      "sourceSHA256": "f4a7c57f215cec28d49e2ac28658071a3874e506e69b25751185351685b91de6"
+    },
+    {
+      "roleId": 159995,
+      "kind": "terrain",
+      "logical": "battle/terrain/skill_preview/cnmod_autumn_moon_laurel_159995.amf3.deflate",
+      "file": "payload/159995-terrain.amf3.deflate",
+      "bytes": 1189,
+      "sha256": "6c69328cdd2a1927a737ae21f294a9501134222baa7f6c41729c3b45ad4b37a2",
+      "sourceLogical": "battle/terrain/skill_preview/skill_preview_gacha_rem.amf3.deflate",
+      "sourceSHA256": "6c69328cdd2a1927a737ae21f294a9501134222baa7f6c41729c3b45ad4b37a2"
+    },
+    {
+      "roleId": 119991,
+      "kind": "replay",
+      "logical": "gacha/feature_battle_preview/cnmod_autumn_moon_laurel/119991.battle.amf3.deflate",
+      "file": "payload/119991-replay.amf3.deflate",
+      "bytes": 139,
+      "sha256": "ffe9669d42d8a51fb096688752aa8febf1c1ecb8652c6728d449f5ff018b3fa0",
+      "sourceLogical": "gacha/feature_battle_preview/autumn_moon_laurel_candidate/119991_sorceress_teacher_moon.battle.amf3.deflate",
+      "sourceSHA256": "ffe9669d42d8a51fb096688752aa8febf1c1ecb8652c6728d449f5ff018b3fa0"
+    },
+    {
+      "roleId": 119991,
+      "kind": "terrain",
+      "logical": "battle/terrain/skill_preview/cnmod_autumn_moon_laurel_119991.amf3.deflate",
+      "file": "payload/119991-terrain.amf3.deflate",
+      "bytes": 1217,
+      "sha256": "c1f78087b67056cac411d702b6790cf60d9b54ff67e447c9e4178c022421b444",
+      "sourceLogical": "battle/terrain/skill_preview/skill_preview_gacha_suzumiya_haruhi.amf3.deflate",
+      "sourceSHA256": "c1f78087b67056cac411d702b6790cf60d9b54ff67e447c9e4178c022421b444"
+    },
+    {
+      "roleId": 119992,
+      "kind": "replay",
+      "logical": "gacha/feature_battle_preview/cnmod_autumn_moon_laurel/119992.battle.amf3.deflate",
+      "file": "payload/119992-replay.amf3.deflate",
+      "bytes": 133,
+      "sha256": "c769fa8fd4afb19204c3e56650126ff1b9a297bb3a06135bded941db58e52f8c",
+      "sourceLogical": "gacha/feature_battle_preview/autumn_moon_laurel_candidate/119992_tiger_treasure_hunter_moon.battle.amf3.deflate",
+      "sourceSHA256": "c769fa8fd4afb19204c3e56650126ff1b9a297bb3a06135bded941db58e52f8c"
+    },
+    {
+      "roleId": 119992,
+      "kind": "terrain",
+      "logical": "battle/terrain/skill_preview/cnmod_autumn_moon_laurel_119992.amf3.deflate",
+      "file": "payload/119992-terrain.amf3.deflate",
+      "bytes": 1074,
+      "sha256": "a6b044696d4e8090ac2763c17a1706f690b916dc9368d2b266ab8b0d0901fe39",
+      "sourceLogical": "battle/terrain/skill_preview/skill_preview_gacha_nikaido_saki.amf3.deflate",
+      "sourceSHA256": "a6b044696d4e8090ac2763c17a1706f690b916dc9368d2b266ab8b0d0901fe39"
+    },
+    {
+      "roleId": 119992,
+      "kind": "background-parts",
+      "logical": "battle/field/cnmod_autumn_moon_laurel/skill_preview_119992/background/background.parts.amf3.deflate",
+      "file": "payload/119992-background-parts.amf3.deflate",
+      "bytes": 164,
+      "sha256": "750e899860cb83d8d7a601a79819c7992fd3c661a4fd521714d841cc225e4b47",
+      "sourceLogical": "battle/field/world_end/end_dungeon/background/background.parts.amf3.deflate",
+      "sourceSHA256": "4a4f776e59aabdcc2343f628c8759c15999a664b7639a15800b72d746fd9bd23",
+      "pathRebindings": [
+        {
+          "before": "battle/field/world_end/end_dungeon/background/.gen/background/",
+          "after": "battle/field/cnmod_autumn_moon_laurel/skill_preview_119992/background/.gen/background/",
+          "scope": "image path prefix only"
+        }
+      ]
+    },
+    {
+      "roleId": 119992,
+      "kind": "background-atlas",
+      "logical": "battle/field/cnmod_autumn_moon_laurel/skill_preview_119992/background/background.atlas.amf3.deflate",
+      "file": "payload/119992-background-atlas.amf3.deflate",
+      "bytes": 105,
+      "sha256": "40e90165f39882f6fd2a98497fdd378d3a333638f6cf0d7cc5adb9612bb04c1e",
+      "sourceLogical": "battle/field/world_end/end_dungeon/background/background.atlas.amf3.deflate",
+      "sourceSHA256": "c69ca5381c84765e2930f1462aa6e0105e7ee3c35f10c3e87fd425b3944e0db6",
+      "pathRebindings": [
+        {
+          "before": "battle/field/world_end/end_dungeon/background/.gen/background/",
+          "after": "battle/field/cnmod_autumn_moon_laurel/skill_preview_119992/background/.gen/background/",
+          "scope": "image path prefix only"
+        }
+      ]
+    },
+    {
+      "roleId": 119992,
+      "kind": "background-image",
+      "logical": "battle/field/cnmod_autumn_moon_laurel/skill_preview_119992/background/background.png",
+      "file": "payload/119992-background-image.png",
+      "bytes": 45410,
+      "sha256": "e3c98a4cf69d7c706de8a60b26066a6207833929a48e2acddd4c367cedd594bd",
+      "sourceLogical": "battle/field/world_end/end_dungeon/background/background.png",
+      "sourceSHA256": "e3c98a4cf69d7c706de8a60b26066a6207833929a48e2acddd4c367cedd594bd",
+      "pathRebindings": []
+    },
+    {
+      "roleId": 119992,
+      "kind": "background-timeline",
+      "logical": "battle/field/cnmod_autumn_moon_laurel/skill_preview_119992/background/background.timeline.amf3.deflate",
+      "file": "payload/119992-background-timeline.amf3.deflate",
+      "bytes": 91,
+      "sha256": "62c04bc3e5b315808a8809d81111115c2fa0c78e453592a9570eca041333e787",
+      "sourceLogical": "battle/field/world_end/end_dungeon/background/background.timeline.amf3.deflate",
+      "sourceSHA256": "62c04bc3e5b315808a8809d81111115c2fa0c78e453592a9570eca041333e787",
+      "pathRebindings": []
+    }
+  ],
+  "scenes": [
+    {
+      "roleId": 159995,
+      "name": "丝缇涅尔",
+      "roleAssetNamespace": "still_obstinator_moon",
+      "nativeFrames": 282,
+      "nativeVideoSHA256": "32ad3d04ef79a471a84eff9aefe3db5ee49535138e0d922f769f3efa95bd59e6",
+      "sourceConfigSHA256": "267e2727d6e631f8267d123c4cef83f2e5a3e051c7831a9a7c2d2160b07409bb",
+      "sourceClientSHA256": "1d9dbd353c429570833ccad106ab93b76794226e66087a9fc5c3fff80fd2ae10",
+      "sourcePreview": {
+        "roleId": 159995,
+        "questId": 128,
+        "log": "gacha/feature_battle_preview/autumn_moon_laurel_candidate/159995_still_obstinator_moon",
+        "clip": [
+          0,
+          30
+        ],
+        "enablesAbility": false,
+        "enablesPowerFlip": false,
+        "terrain": "battle/terrain/skill_preview/skill_preview_gacha_rem.amf3.deflate",
+        "fieldData": "skill_preview_gacha_rem",
+        "field": "end_dungeon_gacha_skill_preview",
+        "zone": "skill_preview_gacha"
+      },
+      "sourceReplayConfig": {
+        "start_frame": 90,
+        "end_frame": 370,
+        "ball": {
+          "x": 40,
+          "y": -300,
+          "vx": 0,
+          "vy": 0
+        },
+        "hp_ratio": 1,
+        "skill_gauge_ratio": 1,
+        "power_flip_level": 0
+      },
+      "replayLogical": "gacha/feature_battle_preview/cnmod_autumn_moon_laurel/159995.battle.amf3.deflate",
+      "terrainLogical": "battle/terrain/skill_preview/cnmod_autumn_moon_laurel_159995.amf3.deflate",
+      "stageMask": [
+        0,
+        60,
+        1080,
+        1560
+      ],
+      "clipLeftTop": [
+        0,
+        30
+      ],
+      "recipe": {
+        "status": "unallocated-row-fragments-not-installed",
+        "gacha": {
+          "key": "cnmod_autumn_moon_laurel_159995",
+          "columns": [
+            "AUTHOR_QUEST_ID_159995",
+            "gacha/feature_battle_preview/cnmod_autumn_moon_laurel/159995",
+            "30",
+            "0",
+            "false",
+            "false"
+          ]
+        },
+        "quest": {
+          "key": "AUTHOR_QUEST_ID_159995",
+          "columns": [
+            "扭蛋_レム",
+            "quest/thumbnail/common/story",
+            "(None)",
+            "2000-01-01 00:00:01",
+            "(None)",
+            "0",
+            "1",
+            "false",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "25",
+            "2",
+            "1",
+            "cnmod_autumn_moon_laurel_159995"
+          ]
+        },
+        "fieldData": {
+          "key": "cnmod_autumn_moon_laurel_159995",
+          "columns": [
+            "cnmod_autumn_moon_laurel_159995_field",
+            "battle/terrain/skill_preview/cnmod_autumn_moon_laurel_159995",
+            "cnmod_autumn_moon_laurel_159995_zone"
+          ]
+        },
+        "field": {
+          "key": "cnmod_autumn_moon_laurel_159995_field",
+          "columns": [
+            "battle/field/world_end/end_dungeon/background/background",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate",
+            "battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod",
+            "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+          ]
+        },
+        "zone": {
+          "key": "cnmod_autumn_moon_laurel_159995_zone",
+          "copyStoredBase64FromDonorRole": 159995,
+          "storedRowSHA256": "7cd37367b2e72fceb48a9bfadf5326e51e0773ba7f4876b5cd171d3b27b21516"
+        }
+      },
+      "officialVisualDependencies": [
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.atlas.amf3.deflate",
+          "bytes": 80,
+          "sha256": "c69ca5381c84765e2930f1462aa6e0105e7ee3c35f10c3e87fd425b3944e0db6"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.parts.amf3.deflate",
+          "bytes": 133,
+          "sha256": "88ec901bf517d409b91ad0574abd397dec8da19dd456d0ebed73699c6f9ea823"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.png",
+          "bytes": 45410,
+          "sha256": "e3c98a4cf69d7c706de8a60b26066a6207833929a48e2acddd4c367cedd594bd"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "62c04bc3e5b315808a8809d81111115c2fa0c78e453592a9570eca041333e787"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.parts.amf3.deflate",
+          "bytes": 351,
+          "sha256": "1fc05f248f4fb7f2ac4d86e660836db882c4bd6f7e5ade4d7c788b8fe096f8c5"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "248a65b3ea89bd5f7e772d40023f928b59d1e9a7f3cae867f0ec87e4b11aed9a"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.parts.amf3.deflate",
+          "bytes": 506,
+          "sha256": "e27a45fbaa5ac9b941a76a011df795724a11186658f8d2c51b5563d5f5171cba"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "f4af0df8a56f999dcf6c0de88c68a189af5b494941e695772a48bffc7f28da54"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.atlas.amf3.deflate",
+          "bytes": 243,
+          "sha256": "74377c4b4a62e5bd4da17ad202d5fab0a3c993d4d26671b6fffc7bab96316b4e"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.png",
+          "bytes": 504,
+          "sha256": "1a37f4e4e55aeffd32e70c18302f91a55d272eed6ab0727cdac1e1a7e663a8b7"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.parts.amf3.deflate",
+          "bytes": 237,
+          "sha256": "459ba0bd856a6fc76f4c9cb53c342af6536ca54ae14422af3f0789fa5ede73ad"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.timeline.amf3.deflate",
+          "bytes": 112,
+          "sha256": "fa4511a3b92d15ebf9e1463c29404a9047ac0aabc5bb83ae75db4d38726f5cd6"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.atlas.amf3.deflate",
+          "bytes": 133,
+          "sha256": "db766109c00db3db5cbca8413db110390f7db73b14dcf7f54503562f4e3362a8"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.png",
+          "bytes": 447,
+          "sha256": "a9172680b8f074db37a8374f7d5129ffd1184e56681fb3b59d32e75f8dc0788f"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "f48b0eaf8e8e18c16129f0a924feed4556a08e074bd37812c29b6902bfb07851"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.parts.amf3.deflate",
+          "bytes": 299,
+          "sha256": "2a716aa6e06e0fb251a4454c23c99ed026c00a1cc89433cd439f3a7b0a4db05a"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "6ddf95860e7a9af1b086cbeca7d97418c94b027699773547775630862c5e8d81"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.atlas.amf3.deflate",
+          "bytes": 251,
+          "sha256": "5f7aa1b45460a9432bdfb204739144cb7830786b6337949521ef52a1ad702246"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.png",
+          "bytes": 1179,
+          "sha256": "223858630a2f5bc94b753b9d17f6adc6b8ee8cf6435c3476273f490f3995927b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.frame.amf3.deflate",
+          "bytes": 108,
+          "sha256": "2f811fcbf538fdea3a3c83c8c7c30e4b9c361b566d9c106085f7ef420ac573d9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.atlas.amf3.deflate",
+          "bytes": 248,
+          "sha256": "0f4d8f09edbf6b024c7364fa2dee8eb55016a238467883b2ea09d1b035e92890"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.png",
+          "bytes": 800,
+          "sha256": "a888f4d2251b62c7e1c869e0d3e6db32294ebf12f42a61a0124056bab8582c6b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.atlas.amf3.deflate",
+          "bytes": 93,
+          "sha256": "666b28606cd7f276d6480b1b1210b40f5756bbcd9031646e625e71f64ff79ff5"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.parts.amf3.deflate",
+          "bytes": 293,
+          "sha256": "185e1bd546ff3a2345eec95dc517f2f87ec7e2d6a4362a1beb98d343a872f161"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.png",
+          "bytes": 147,
+          "sha256": "d6b6a2869ddb1edf4fdf3b5918a933e0f02848d45d1dc9ec589aeb9131581c94"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.timeline.amf3.deflate",
+          "bytes": 276,
+          "sha256": "17a309022fa28662e9d7174053e395657c6588b1e3dcaba3d1f8f4f458190a78"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.atlas.amf3.deflate",
+          "bytes": 937,
+          "sha256": "d6eae0bdaf2a65a6b27615f7cfb75b4e13df1b4bc775051d12b550579d972d92"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.png",
+          "bytes": 3812,
+          "sha256": "0d11fad24acf0030efd5bb5e9df3219f40a516e671c8c432abf16c57fbfe6e0d"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.frame.amf3.deflate",
+          "bytes": 112,
+          "sha256": "2a400eda1073bf36b6f75375ea40cb96c786d33facb660c018474d5ebb36e8ac"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "72383fd61963be91485ba5f7b04ba0a0b08d38a3d81688ccddbed5eb18e3d179"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "b58d07233f938765f3b4634309be9852541f0706a3958b1eb295fb7eed444c76"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "ec8ecf25cb1730cb6be8cacc1f6a07dab33af70aaf2f1e6a9abb40bcaac0df43"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "007da7ecb68c5b8b5686cd5f848d26ffa8aefe1dfa1a545645ea0d3af63cf7be"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "37c1ac9dd65ab116c9dbba0554834aa7281bbaed663aa926feba3dbc0453c3c9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "7d1d4053bf86ea10c883e8f6875a3dea2a87e14f28ae26157579140fa131d70c"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "9602c2c881d971ed4730d4d81cc1025ad7098dd93eb93c53ba05a1201adbcb38"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.frame.amf3.deflate",
+          "bytes": 110,
+          "sha256": "e80173427699e874197b33f56aec94050a143e71bd7bbf3d32a2e79f1ac35d02"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.frame.amf3.deflate",
+          "bytes": 124,
+          "sha256": "4b2bca3a1145a7151ad448d424e1bb67e483c78dcd4bb407cebfaab6b367c9ba"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "bbc62f0a0197b81b239d73eb1cd0d37865e2586fc8f01906769a6cbd20bc2feb"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.atlas.amf3.deflate",
+          "bytes": 252,
+          "sha256": "9cb374025995b637795b8dd52ba4257e93b55badb8da0af821685407b2ad058e"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.png",
+          "bytes": 543,
+          "sha256": "6c1b7a95622f13088d5856790af7f0f64d4e97f56c6528eca3524727df50685f"
+        }
+      ],
+      "miaBackgroundFix": null
+    },
+    {
+      "roleId": 119991,
+      "name": "妮可拉",
+      "roleAssetNamespace": "sorceress_teacher_moon",
+      "nativeFrames": 382,
+      "nativeVideoSHA256": "2bb04e1358d743fd983583dbea56537e5b90b65269319440c2d888f86752ca2a",
+      "sourceConfigSHA256": "297fcd3329dcf1803b8ac2274368283637b46c9ec8d665de34bfee7a5ec144f6",
+      "sourceClientSHA256": "1d9dbd353c429570833ccad106ab93b76794226e66087a9fc5c3fff80fd2ae10",
+      "sourcePreview": {
+        "roleId": 119991,
+        "questId": 185,
+        "log": "gacha/feature_battle_preview/autumn_moon_laurel_candidate/119991_sorceress_teacher_moon",
+        "clip": [
+          0,
+          70
+        ],
+        "enablesAbility": false,
+        "enablesPowerFlip": false,
+        "terrain": "battle/terrain/skill_preview/skill_preview_gacha_suzumiya_haruhi.amf3.deflate",
+        "fieldData": "skill_preview_gacha_suzumiya_haruhi",
+        "field": "end_dungeon_gacha_skill_preview",
+        "zone": "skill_preview_gacha"
+      },
+      "sourceReplayConfig": {
+        "start_frame": 0,
+        "end_frame": 380,
+        "ball": {
+          "x": 0,
+          "y": -450,
+          "vx": 0,
+          "vy": 0
+        },
+        "hp_ratio": 1,
+        "skill_gauge_ratio": 1,
+        "power_flip_level": 0
+      },
+      "replayLogical": "gacha/feature_battle_preview/cnmod_autumn_moon_laurel/119991.battle.amf3.deflate",
+      "terrainLogical": "battle/terrain/skill_preview/cnmod_autumn_moon_laurel_119991.amf3.deflate",
+      "stageMask": [
+        0,
+        60,
+        1080,
+        1560
+      ],
+      "clipLeftTop": [
+        0,
+        70
+      ],
+      "recipe": {
+        "status": "unallocated-row-fragments-not-installed",
+        "gacha": {
+          "key": "cnmod_autumn_moon_laurel_119991",
+          "columns": [
+            "AUTHOR_QUEST_ID_119991",
+            "gacha/feature_battle_preview/cnmod_autumn_moon_laurel/119991",
+            "70",
+            "0",
+            "false",
+            "false"
+          ]
+        },
+        "quest": {
+          "key": "AUTHOR_QUEST_ID_119991",
+          "columns": [
+            "扭蛋_ハルヒ",
+            "quest/thumbnail/common/story",
+            "(None)",
+            "2000-01-01 00:00:00",
+            "(None)",
+            "0",
+            "3",
+            "false",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "20",
+            "2",
+            "1",
+            "cnmod_autumn_moon_laurel_119991"
+          ]
+        },
+        "fieldData": {
+          "key": "cnmod_autumn_moon_laurel_119991",
+          "columns": [
+            "cnmod_autumn_moon_laurel_119991_field",
+            "battle/terrain/skill_preview/cnmod_autumn_moon_laurel_119991",
+            "cnmod_autumn_moon_laurel_119991_zone"
+          ]
+        },
+        "field": {
+          "key": "cnmod_autumn_moon_laurel_119991_field",
+          "columns": [
+            "battle/field/world_end/end_dungeon/background/background",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate",
+            "battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod",
+            "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+          ]
+        },
+        "zone": {
+          "key": "cnmod_autumn_moon_laurel_119991_zone",
+          "copyStoredBase64FromDonorRole": 119991,
+          "storedRowSHA256": "7cd37367b2e72fceb48a9bfadf5326e51e0773ba7f4876b5cd171d3b27b21516"
+        }
+      },
+      "officialVisualDependencies": [
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.atlas.amf3.deflate",
+          "bytes": 80,
+          "sha256": "c69ca5381c84765e2930f1462aa6e0105e7ee3c35f10c3e87fd425b3944e0db6"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.parts.amf3.deflate",
+          "bytes": 133,
+          "sha256": "88ec901bf517d409b91ad0574abd397dec8da19dd456d0ebed73699c6f9ea823"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.png",
+          "bytes": 45410,
+          "sha256": "e3c98a4cf69d7c706de8a60b26066a6207833929a48e2acddd4c367cedd594bd"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "62c04bc3e5b315808a8809d81111115c2fa0c78e453592a9570eca041333e787"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.parts.amf3.deflate",
+          "bytes": 351,
+          "sha256": "1fc05f248f4fb7f2ac4d86e660836db882c4bd6f7e5ade4d7c788b8fe096f8c5"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "248a65b3ea89bd5f7e772d40023f928b59d1e9a7f3cae867f0ec87e4b11aed9a"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.parts.amf3.deflate",
+          "bytes": 506,
+          "sha256": "e27a45fbaa5ac9b941a76a011df795724a11186658f8d2c51b5563d5f5171cba"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "f4af0df8a56f999dcf6c0de88c68a189af5b494941e695772a48bffc7f28da54"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.atlas.amf3.deflate",
+          "bytes": 243,
+          "sha256": "74377c4b4a62e5bd4da17ad202d5fab0a3c993d4d26671b6fffc7bab96316b4e"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.png",
+          "bytes": 504,
+          "sha256": "1a37f4e4e55aeffd32e70c18302f91a55d272eed6ab0727cdac1e1a7e663a8b7"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.parts.amf3.deflate",
+          "bytes": 237,
+          "sha256": "459ba0bd856a6fc76f4c9cb53c342af6536ca54ae14422af3f0789fa5ede73ad"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.timeline.amf3.deflate",
+          "bytes": 112,
+          "sha256": "fa4511a3b92d15ebf9e1463c29404a9047ac0aabc5bb83ae75db4d38726f5cd6"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.atlas.amf3.deflate",
+          "bytes": 133,
+          "sha256": "db766109c00db3db5cbca8413db110390f7db73b14dcf7f54503562f4e3362a8"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.png",
+          "bytes": 447,
+          "sha256": "a9172680b8f074db37a8374f7d5129ffd1184e56681fb3b59d32e75f8dc0788f"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "f48b0eaf8e8e18c16129f0a924feed4556a08e074bd37812c29b6902bfb07851"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.parts.amf3.deflate",
+          "bytes": 299,
+          "sha256": "2a716aa6e06e0fb251a4454c23c99ed026c00a1cc89433cd439f3a7b0a4db05a"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "6ddf95860e7a9af1b086cbeca7d97418c94b027699773547775630862c5e8d81"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.atlas.amf3.deflate",
+          "bytes": 251,
+          "sha256": "5f7aa1b45460a9432bdfb204739144cb7830786b6337949521ef52a1ad702246"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.png",
+          "bytes": 1179,
+          "sha256": "223858630a2f5bc94b753b9d17f6adc6b8ee8cf6435c3476273f490f3995927b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.frame.amf3.deflate",
+          "bytes": 108,
+          "sha256": "2f811fcbf538fdea3a3c83c8c7c30e4b9c361b566d9c106085f7ef420ac573d9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.atlas.amf3.deflate",
+          "bytes": 248,
+          "sha256": "0f4d8f09edbf6b024c7364fa2dee8eb55016a238467883b2ea09d1b035e92890"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.png",
+          "bytes": 800,
+          "sha256": "a888f4d2251b62c7e1c869e0d3e6db32294ebf12f42a61a0124056bab8582c6b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.atlas.amf3.deflate",
+          "bytes": 93,
+          "sha256": "666b28606cd7f276d6480b1b1210b40f5756bbcd9031646e625e71f64ff79ff5"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.parts.amf3.deflate",
+          "bytes": 293,
+          "sha256": "185e1bd546ff3a2345eec95dc517f2f87ec7e2d6a4362a1beb98d343a872f161"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.png",
+          "bytes": 147,
+          "sha256": "d6b6a2869ddb1edf4fdf3b5918a933e0f02848d45d1dc9ec589aeb9131581c94"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.timeline.amf3.deflate",
+          "bytes": 276,
+          "sha256": "17a309022fa28662e9d7174053e395657c6588b1e3dcaba3d1f8f4f458190a78"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.atlas.amf3.deflate",
+          "bytes": 937,
+          "sha256": "d6eae0bdaf2a65a6b27615f7cfb75b4e13df1b4bc775051d12b550579d972d92"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.png",
+          "bytes": 3812,
+          "sha256": "0d11fad24acf0030efd5bb5e9df3219f40a516e671c8c432abf16c57fbfe6e0d"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.frame.amf3.deflate",
+          "bytes": 112,
+          "sha256": "2a400eda1073bf36b6f75375ea40cb96c786d33facb660c018474d5ebb36e8ac"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "72383fd61963be91485ba5f7b04ba0a0b08d38a3d81688ccddbed5eb18e3d179"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "b58d07233f938765f3b4634309be9852541f0706a3958b1eb295fb7eed444c76"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "ec8ecf25cb1730cb6be8cacc1f6a07dab33af70aaf2f1e6a9abb40bcaac0df43"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "007da7ecb68c5b8b5686cd5f848d26ffa8aefe1dfa1a545645ea0d3af63cf7be"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "37c1ac9dd65ab116c9dbba0554834aa7281bbaed663aa926feba3dbc0453c3c9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "7d1d4053bf86ea10c883e8f6875a3dea2a87e14f28ae26157579140fa131d70c"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "9602c2c881d971ed4730d4d81cc1025ad7098dd93eb93c53ba05a1201adbcb38"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.frame.amf3.deflate",
+          "bytes": 110,
+          "sha256": "e80173427699e874197b33f56aec94050a143e71bd7bbf3d32a2e79f1ac35d02"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.frame.amf3.deflate",
+          "bytes": 124,
+          "sha256": "4b2bca3a1145a7151ad448d424e1bb67e483c78dcd4bb407cebfaab6b367c9ba"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "bbc62f0a0197b81b239d73eb1cd0d37865e2586fc8f01906769a6cbd20bc2feb"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.atlas.amf3.deflate",
+          "bytes": 252,
+          "sha256": "9cb374025995b637795b8dd52ba4257e93b55badb8da0af821685407b2ad058e"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.png",
+          "bytes": 543,
+          "sha256": "6c1b7a95622f13088d5856790af7f0f64d4e97f56c6528eca3524727df50685f"
+        }
+      ],
+      "miaBackgroundFix": null
+    },
+    {
+      "roleId": 119992,
+      "name": "米娅",
+      "roleAssetNamespace": "tiger_treasure_hunter_moon",
+      "nativeFrames": 212,
+      "nativeVideoSHA256": "03f242ab64a410ce5e623f8bf5d6e6cf729fe0d281a3f21f81ce1132ac63f9ff",
+      "sourceConfigSHA256": "4b344db138329125bb829f5a8b4fa2a007786be6be82c65790c40b1efcf308f2",
+      "sourceClientSHA256": "1d9dbd353c429570833ccad106ab93b76794226e66087a9fc5c3fff80fd2ae10",
+      "sourcePreview": {
+        "roleId": 119992,
+        "questId": 92,
+        "log": "gacha/feature_battle_preview/autumn_moon_laurel_candidate/119992_tiger_treasure_hunter_moon",
+        "clip": [
+          0,
+          -300
+        ],
+        "enablesAbility": false,
+        "enablesPowerFlip": false,
+        "terrain": "battle/terrain/skill_preview/skill_preview_gacha_nikaido_saki.amf3.deflate",
+        "fieldData": "skill_preview_gacha_nikaido_saki",
+        "field": "end_dungeon_gacha_skill_preview",
+        "zone": "skill_preview_gacha"
+      },
+      "sourceReplayConfig": {
+        "start_frame": 90,
+        "end_frame": 300,
+        "ball": {
+          "x": -220,
+          "y": -718,
+          "vx": 0,
+          "vy": 0
+        },
+        "hp_ratio": 1,
+        "skill_gauge_ratio": 1,
+        "power_flip_level": 0
+      },
+      "replayLogical": "gacha/feature_battle_preview/cnmod_autumn_moon_laurel/119992.battle.amf3.deflate",
+      "terrainLogical": "battle/terrain/skill_preview/cnmod_autumn_moon_laurel_119992.amf3.deflate",
+      "stageMask": [
+        0,
+        60,
+        1080,
+        1560
+      ],
+      "clipLeftTop": [
+        0,
+        -300
+      ],
+      "recipe": {
+        "status": "unallocated-row-fragments-not-installed",
+        "gacha": {
+          "key": "cnmod_autumn_moon_laurel_119992",
+          "columns": [
+            "AUTHOR_QUEST_ID_119992",
+            "gacha/feature_battle_preview/cnmod_autumn_moon_laurel/119992",
+            "-300",
+            "0",
+            "false",
+            "false"
+          ]
+        },
+        "quest": {
+          "key": "AUTHOR_QUEST_ID_119992",
+          "columns": [
+            "扭蛋_二階堂サキ",
+            "quest/thumbnail/common/story",
+            "(None)",
+            "2000-01-01 00:00:00",
+            "(None)",
+            "0",
+            "3",
+            "false",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "10",
+            "1",
+            "1",
+            "cnmod_autumn_moon_laurel_119992"
+          ]
+        },
+        "fieldData": {
+          "key": "cnmod_autumn_moon_laurel_119992",
+          "columns": [
+            "cnmod_autumn_moon_laurel_119992_field",
+            "battle/terrain/skill_preview/cnmod_autumn_moon_laurel_119992",
+            "cnmod_autumn_moon_laurel_119992_zone"
+          ]
+        },
+        "field": {
+          "key": "cnmod_autumn_moon_laurel_119992_field",
+          "columns": [
+            "battle/field/cnmod_autumn_moon_laurel/skill_preview_119992/background/background",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "(None)",
+            "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate",
+            "battle/field_object/world_end/end_dungeon/transit_pod/end_dungeon_transit_pod",
+            "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge"
+          ]
+        },
+        "zone": {
+          "key": "cnmod_autumn_moon_laurel_119992_zone",
+          "copyStoredBase64FromDonorRole": 119992,
+          "storedRowSHA256": "7cd37367b2e72fceb48a9bfadf5326e51e0773ba7f4876b5cd171d3b27b21516"
+        }
+      },
+      "officialVisualDependencies": [
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.atlas.amf3.deflate",
+          "bytes": 80,
+          "sha256": "c69ca5381c84765e2930f1462aa6e0105e7ee3c35f10c3e87fd425b3944e0db6"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.parts.amf3.deflate",
+          "bytes": 140,
+          "sha256": "4a4f776e59aabdcc2343f628c8759c15999a664b7639a15800b72d746fd9bd23"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.png",
+          "bytes": 45410,
+          "sha256": "e3c98a4cf69d7c706de8a60b26066a6207833929a48e2acddd4c367cedd594bd"
+        },
+        {
+          "logical": "battle/field/world_end/end_dungeon/background/background.timeline.amf3.deflate",
+          "bytes": 91,
+          "sha256": "62c04bc3e5b315808a8809d81111115c2fa0c78e453592a9570eca041333e787"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.parts.amf3.deflate",
+          "bytes": 351,
+          "sha256": "1fc05f248f4fb7f2ac4d86e660836db882c4bd6f7e5ade4d7c788b8fe096f8c5"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "248a65b3ea89bd5f7e772d40023f928b59d1e9a7f3cae867f0ec87e4b11aed9a"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.parts.amf3.deflate",
+          "bytes": 506,
+          "sha256": "e27a45fbaa5ac9b941a76a011df795724a11186658f8d2c51b5563d5f5171cba"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/mana_get_ripple.timeline.amf3.deflate",
+          "bytes": 96,
+          "sha256": "f4af0df8a56f999dcf6c0de88c68a189af5b494941e695772a48bffc7f28da54"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.atlas.amf3.deflate",
+          "bytes": 243,
+          "sha256": "74377c4b4a62e5bd4da17ad202d5fab0a3c993d4d26671b6fffc7bab96316b4e"
+        },
+        {
+          "logical": "battle/field_object/common/yakumono/instant_item/obtainable_mana/obtainable_mana.png",
+          "bytes": 504,
+          "sha256": "1a37f4e4e55aeffd32e70c18302f91a55d272eed6ab0727cdac1e1a7e663a8b7"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.parts.amf3.deflate",
+          "bytes": 237,
+          "sha256": "459ba0bd856a6fc76f4c9cb53c342af6536ca54ae14422af3f0789fa5ede73ad"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/end_dungeon_fever_gauge.timeline.amf3.deflate",
+          "bytes": 112,
+          "sha256": "fa4511a3b92d15ebf9e1463c29404a9047ac0aabc5bb83ae75db4d38726f5cd6"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.atlas.amf3.deflate",
+          "bytes": 133,
+          "sha256": "db766109c00db3db5cbca8413db110390f7db73b14dcf7f54503562f4e3362a8"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/fever_gauge/fever_gauge.png",
+          "bytes": 447,
+          "sha256": "a9172680b8f074db37a8374f7d5129ffd1184e56681fb3b59d32e75f8dc0788f"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/gate/end_dungeon_gate.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "f48b0eaf8e8e18c16129f0a924feed4556a08e074bd37812c29b6902bfb07851"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.parts.amf3.deflate",
+          "bytes": 299,
+          "sha256": "2a716aa6e06e0fb251a4454c23c99ed026c00a1cc89433cd439f3a7b0a4db05a"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/end_dungeon_outhole_zone2.timeline.amf3.deflate",
+          "bytes": 109,
+          "sha256": "6ddf95860e7a9af1b086cbeca7d97418c94b027699773547775630862c5e8d81"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.atlas.amf3.deflate",
+          "bytes": 251,
+          "sha256": "5f7aa1b45460a9432bdfb204739144cb7830786b6337949521ef52a1ad702246"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/outhole/outhole.png",
+          "bytes": 1179,
+          "sha256": "223858630a2f5bc94b753b9d17f6adc6b8ee8cf6435c3476273f490f3995927b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.frame.amf3.deflate",
+          "bytes": 108,
+          "sha256": "2f811fcbf538fdea3a3c83c8c7c30e4b9c361b566d9c106085f7ef420ac573d9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/end_dungeon_rotation_panel.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.atlas.amf3.deflate",
+          "bytes": 248,
+          "sha256": "0f4d8f09edbf6b024c7364fa2dee8eb55016a238467883b2ea09d1b035e92890"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/rotation_panel/rotation_panel.png",
+          "bytes": 800,
+          "sha256": "a888f4d2251b62c7e1c869e0d3e6db32294ebf12f42a61a0124056bab8582c6b"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.atlas.amf3.deflate",
+          "bytes": 93,
+          "sha256": "666b28606cd7f276d6480b1b1210b40f5756bbcd9031646e625e71f64ff79ff5"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.parts.amf3.deflate",
+          "bytes": 293,
+          "sha256": "185e1bd546ff3a2345eec95dc517f2f87ec7e2d6a4362a1beb98d343a872f161"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.png",
+          "bytes": 147,
+          "sha256": "d6b6a2869ddb1edf4fdf3b5918a933e0f02848d45d1dc9ec589aeb9131581c94"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/block/stone_a/stone_a.timeline.amf3.deflate",
+          "bytes": 276,
+          "sha256": "17a309022fa28662e9d7174053e395657c6588b1e3dcaba3d1f8f4f458190a78"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.atlas.amf3.deflate",
+          "bytes": 937,
+          "sha256": "d6eae0bdaf2a65a6b27615f7cfb75b4e13df1b4bc775051d12b550579d972d92"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/dash_panel.png",
+          "bytes": 3812,
+          "sha256": "0d11fad24acf0030efd5bb5e9df3219f40a516e671c8c432abf16c57fbfe6e0d"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.frame.amf3.deflate",
+          "bytes": 112,
+          "sha256": "2a400eda1073bf36b6f75375ea40cb96c786d33facb660c018474d5ebb36e8ac"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_0.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "72383fd61963be91485ba5f7b04ba0a0b08d38a3d81688ccddbed5eb18e3d179"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_135.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "b58d07233f938765f3b4634309be9852541f0706a3958b1eb295fb7eed444c76"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_180.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "ec8ecf25cb1730cb6be8cacc1f6a07dab33af70aaf2f1e6a9abb40bcaac0df43"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_225.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "007da7ecb68c5b8b5686cd5f848d26ffa8aefe1dfa1a545645ea0d3af63cf7be"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_270.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.frame.amf3.deflate",
+          "bytes": 115,
+          "sha256": "37c1ac9dd65ab116c9dbba0554834aa7281bbaed663aa926feba3dbc0453c3c9"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_315.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "7d1d4053bf86ea10c883e8f6875a3dea2a87e14f28ae26157579140fa131d70c"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_45.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.frame.amf3.deflate",
+          "bytes": 114,
+          "sha256": "9602c2c881d971ed4730d4d81cc1025ad7098dd93eb93c53ba05a1201adbcb38"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/fixed_90.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.frame.amf3.deflate",
+          "bytes": 110,
+          "sha256": "e80173427699e874197b33f56aec94050a143e71bd7bbf3d32a2e79f1ac35d02"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/dash_panel/smart.timeline.amf3.deflate",
+          "bytes": 168,
+          "sha256": "4517a4c00bfe29f6668815f73727e53d6bdc436e3654df2cf5c1281c4ef419fa"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.frame.amf3.deflate",
+          "bytes": 124,
+          "sha256": "4b2bca3a1145a7151ad448d424e1bb67e483c78dcd4bb407cebfaab6b367c9ba"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_a.timeline.amf3.deflate",
+          "bytes": 272,
+          "sha256": "bbc62f0a0197b81b239d73eb1cd0d37865e2586fc8f01906769a6cbd20bc2feb"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.atlas.amf3.deflate",
+          "bytes": 252,
+          "sha256": "9cb374025995b637795b8dd52ba4257e93b55badb8da0af821685407b2ad058e"
+        },
+        {
+          "logical": "battle/field_object/world_end/end_dungeon/yakumono/yuremono/dungeon_hologram_01_overlap/dungeon_hologram_01_overlap.png",
+          "bytes": 543,
+          "sha256": "6c1b7a95622f13088d5856790af7f0f64d4e97f56c6528eca3524727df50685f"
+        }
+      ],
+      "miaBackgroundFix": {
+        "fieldResourcePrefix": "battle/field/cnmod_autumn_moon_laurel/skill_preview_119992/background/background",
+        "partsTranslationY": -245760,
+        "fixedPointDivisor": 4096,
+        "worldTranslationY": -360,
+        "candidatePhysicsTraceUnchanged": true,
+        "namespaceRebindRuntimeVerified": false
+      }
+    }
+  ]
+}
