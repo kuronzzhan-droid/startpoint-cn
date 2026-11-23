@@ -85,8 +85,8 @@ Endpoint | Status
 [/party_group/edit](../routes/party_group_edit.md) | :white_check_mark:
 [/payment/item_list](../routes/payment_item_list.md) | :white_check_mark:
 [/profile/get_my_profile](../routes/profile_get_my_profile.md) | :no_entry:
-[/profile/get_degree_list](../routes/profile_get_degree_list.md) | :white_check_mark:
-[/profile/update_degree](../routes/profile_update_degree.md) | :white_check_mark:
+``/profile/get_degree_list`` | :white_check_mark:
+``/profile/update_degree`` | :white_check_mark:
 ``/ranking_event/get_summary`` | :white_check_mark:
 ``/ranking_event/receive_reward`` | :white_check_mark:
 [/reproduce/post](../routes/reproduce_post.md) | :white_check_mark:
