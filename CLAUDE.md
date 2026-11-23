@@ -3,19 +3,24 @@
 StarPoint CN — 世界弹射物语(World Flipper)CN(雷霆)版服务端模拟器。
 Fastify + TypeScript，CN 服务入口 `src/cn-server.ts`（端口 8001），国际服入口 `src/server.ts`（8000）。
 
-## 当前进行中：后台管理界面重构（feature/admin-ui 分支）
+## 分支与运行产物（2026-11 现状）
 
-完整方案见 `docs/admin-refactor-plan.md`（必读：功能清单、解耦点、里程碑、PR 策略）。
+- `main`：源码整合分支，Git 只跟踪源码，不跟踪 `out/`（`tools/check-out-artifacts.cjs` 会拒绝提交 `out/`）。
+- `test-server`：测试服（175）的单向镜像，由 `scripts/test-server-sync/` 每天 04:00 经 GitHub API 推送。
+  它包含 `out/`，而且 `out/` 领先 `src/`（部分功能只有编译产物），所以**不要在 test-server 上开发或开 PR**，
+  也**不要在测试服目录里跑 `npm run build`**：tsc 会用较旧的 `src/` 覆盖正在运行的 `out/`。
+- 项目已转向 Unity 客户端；AIR 客户端只做维护，但测试服玩家仍在用 AIR，AIR 兼容代码不要删。
 
-### 进度（2026-07-04）
+## 后台管理界面重构（M0–M3 已在 main，M4 未做）
 
-- ✅ M0：换行符治理已在 main 完成（`.gitattributes` 全仓 LF，`*.bat` CRLF）
+完整方案见 `docs/admin-refactor-plan.md`（功能清单、解耦点、里程碑、PR 策略）。原 `feature/admin-ui` 分支已过时，不再使用。
+
+- ✅ M0：换行符治理（`.gitattributes` 全仓 LF，`*.bat` CRLF）
 - ✅ M1：`admin/` 脚手架（Vite + React 18 + AntD 5 + react-router + react-query）
   - 构建产物 → `web/dist`（gitignored），cn-server 挂载在 `/admin`（含 SPA fallback，`web/dist` 不存在时自动禁用）
-  - Dashboard 已接通 `GET /api/server/currentTime`；其余 4 页为占位
   - 根 package.json：`npm run build:admin` / `dev:admin`
-- ✅ M2：账号/存档页 + 玩家详情页（已完成，见下）
-- ✅ M3：邮件页、服务器时间卡片、种子页（已完成，见下）
+- ✅ M2：账号/存档页 + 玩家详情页（见下）
+- ✅ M3：邮件页、服务器时间卡片、种子页（见下）；之后又加了 Leaderboards / News / TimeControl 页
 - ⬜ M4：切换默认入口 + 删除旧页面（须经作者同意，独立 commit）
 
 ### M2 已完成内容
@@ -47,7 +52,6 @@ Fastify + TypeScript，CN 服务入口 `src/cn-server.ts`（端口 8001），国
 
 - **迁移期间旧后台零改动**：`web/pages/`、`src/routes/web/`、`web/public/` 在 M4 之前不许修改/删除
 - 最终要向上游 `DontBeAlarmed/startpoint-cn` 提 PR，commit 保持小而清晰（`feat(admin):` / `refactor(web_api):`）
-- 定期 `git rebase origin/main`
 - 全仓 LF（`.gitattributes` 已配置）；不要提交 `web/dist`、`admin/node_modules`
 - 未跟踪的 `decompile/`、`ffdec_26.2.1/`、`mod-tools/`、`pc-run/`、`弹国服/`、`assets/*.backup.json` 是本地逆向工作区，别动也别提交
 
