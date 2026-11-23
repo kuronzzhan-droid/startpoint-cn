@@ -189,7 +189,7 @@ CLOCK:checkClockState stateIdx=X avail=Y — 时钟状态检查
 | 卡池 gacha.json | 2020-01 | 2025-08 |
 | **推荐区间** | **2022-06** | **2025-08** |
 
-早于 2022 会因 CDN 版本不匹配进不去游戏。详见 [CHANGELOG.md §7](./CHANGELOG.md)。
+早于 2022 会因 CDN 版本不匹配进不去游戏。详见 [CHANGELOG.md §7](./changelog.md)。
 
 ## 每日挑战次数系统 ✅
 
@@ -470,7 +470,7 @@ canManaBoard2Open(151165) = false (时间未到)
 
 ---
 
-**最后更新：2026-07-01**（详细变更见 [CHANGELOG.md](./CHANGELOG.md)）
+**最后更新：2026-07-01**（详细变更见 [CHANGELOG.md](./changelog.md)）
 
 ## 参考文档
 
@@ -482,4 +482,4 @@ canManaBoard2Open(151165) = false (时间未到)
 
 生成脚本：`scripts/gen_gacha_timeline.js`, `scripts/gen_character_table.js`, `scripts/gen_quest_timeline.js`
 
-（详细变更见 [CHANGELOG.md](./CHANGELOG.md)）
+（详细变更见 [CHANGELOG.md](./changelog.md)）
